@@ -1,13 +1,26 @@
 @import "tailwindcss";
 
 :root {
+  /* Primary text colors (from mobile) */
   --ink: #393834;
-  --muted: #77736d;
+  --muted: #7c756e;
+  --muted-2: #8F8B84;
+
+  /* Brand colors (from mobile) */
+  --brand: #925442;
+  --brand-dark: #855A46;
+  --accent: #a76750;
+
+  /* Surfaces & backgrounds */
   --paper: #f7f3ec;
+  --surface: #f3eee9;
   --card: #fffdf9;
   --line: #e8dfd4;
-  --brand: #925442;
-  --brand-dark: #713d30;
+
+  /* Shadows */
+  --shadow-fab: 0 6px 16px rgba(0, 0, 0, 0.2);
+
+  /* Legacy brand-soft (web-only, for marketing shell) */
   --brand-soft: #ead8ce;
 }
 
