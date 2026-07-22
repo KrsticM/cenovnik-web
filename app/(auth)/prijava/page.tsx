@@ -2,54 +2,40 @@
 
 export const dynamic = "force-dynamic";
 
-import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
+import { AuthShell } from "@/components/AuthShell/AuthShell";
+import { SocialSignInButton } from "@/components/SocialSignInButton/SocialSignInButton";
+import { useAuth } from "@/contexts/AuthContext";
 
 function PrijavaContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { signInWithGoogle, signInWithApple } = useAuth();
   const [loading, setLoading] = useState(false);
   const error = searchParams.get("error");
+  const next = searchParams.get("next");
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
-    const supabase = createClient();
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-
-    if (error) {
-      console.error("Sign in error:", error);
+    const result = await signInWithGoogle(next || undefined);
+    if (!result.success) {
       setLoading(false);
     }
   };
 
   const handleAppleSignIn = async () => {
     setLoading(true);
-    const supabase = createClient();
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: "apple",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-
-    if (error) {
-      console.error("Sign in error:", error);
+    const result = await signInWithApple(next || undefined);
+    if (!result.success) {
       setLoading(false);
     }
   };
 
   return (
-    <div style={styles.shell}>
-      <div style={styles.container}>
-        <h1 style={styles.title}>Prijava</h1>
-
+    <AuthShell>
+      <div style={{ width: "100%" }}>
         {error && (
           <div style={styles.error}>
             Greška pri prijavi. Pokušajte ponovo.
@@ -57,44 +43,45 @@ function PrijavaContent() {
         )}
 
         <div style={styles.buttonGroup}>
-          <button
-            onClick={handleGoogleSignIn}
-            disabled={loading}
-            style={{
-              ...styles.button,
-              ...styles.buttonGoogle,
-              opacity: loading ? 0.6 : 1,
-              cursor: loading ? "not-allowed" : "pointer",
-            }}
-          >
-            {loading ? "Učitavam..." : "Prijava sa Google"}
-          </button>
-
-          <button
+          <SocialSignInButton
+            variant="apple"
+            label="Nastavi sa Apple nalogom"
             onClick={handleAppleSignIn}
             disabled={loading}
-            style={{
-              ...styles.button,
-              ...styles.buttonApple,
-              opacity: loading ? 0.6 : 1,
-              cursor: loading ? "not-allowed" : "pointer",
-            }}
-          >
-            {loading ? "Učitavam..." : "Prijava sa Apple"}
-          </button>
+            loading={loading}
+          />
 
-          <Link href="/prijava/email" style={styles.emailLink}>
-            <button style={{ ...styles.button, ...styles.buttonEmail }}>
-              Prijava sa e-mailom
-            </button>
+          <SocialSignInButton
+            variant="google"
+            label="Nastavi sa Google nalogom"
+            onClick={handleGoogleSignIn}
+            disabled={loading}
+            loading={loading}
+          />
+
+          <Link href={`/prijava/email${next ? `?next=${encodeURIComponent(next)}` : ""}`} style={{ textDecoration: "none", width: "100%" }}>
+            <SocialSignInButton
+              variant="email"
+              label="Nastavi sa Email nalogom"
+              onClick={() => {}}
+              disabled={loading}
+            />
           </Link>
         </div>
 
         <p style={styles.note}>
-          Kreirajući nalog, pristajete našim Uslovima servisa.
+          Prijavljivanjem prihvatate{" "}
+          <a href="https://www.ecenovnik.app/uslovi-koriscenja" target="_blank" rel="noopener noreferrer" style={styles.link}>
+            uslove korišćenja
+          </a>{" "}
+          i{" "}
+          <a href="https://www.ecenovnik.app/privatnost" target="_blank" rel="noopener noreferrer" style={styles.link}>
+            politiku privatnosti
+          </a>
+          .
         </p>
       </div>
-    </div>
+    </AuthShell>
   );
 }
 
@@ -115,16 +102,6 @@ const styles = {
     padding: "24px",
     backgroundColor: "var(--paper)",
   } as React.CSSProperties,
-  container: {
-    width: "100%",
-    maxWidth: "400px",
-  } as React.CSSProperties,
-  title: {
-    margin: "0 0 30px 0",
-    fontSize: "32px",
-    fontWeight: 600,
-    color: "var(--ink)",
-  } as React.CSSProperties,
   error: {
     padding: "12px 16px",
     marginBottom: "20px",
@@ -138,35 +115,14 @@ const styles = {
     flexDirection: "column" as const,
     gap: "12px",
   },
-  button: {
-    minHeight: "48px",
-    padding: "12px 16px",
-    borderRadius: "12px",
-    border: "none",
-    fontSize: "16px",
-    fontWeight: 600,
-    cursor: "pointer",
-    transition: "all 0.18s ease",
-  } as React.CSSProperties,
-  buttonGoogle: {
-    backgroundColor: "var(--brand)",
-    color: "white",
-  } as React.CSSProperties,
-  buttonApple: {
-    backgroundColor: "#000",
-    color: "white",
-  } as React.CSSProperties,
-  buttonEmail: {
-    backgroundColor: "var(--surface)",
-    color: "var(--brand)",
-  } as React.CSSProperties,
-  emailLink: {
-    textDecoration: "none",
-  } as React.CSSProperties,
   note: {
     marginTop: "24px",
     fontSize: "13px",
     color: "var(--muted)",
-    textAlign: "center",
+    textAlign: "center" as const,
+  } as React.CSSProperties,
+  link: {
+    color: "var(--brand)",
+    textDecoration: "underline",
   } as React.CSSProperties,
 };

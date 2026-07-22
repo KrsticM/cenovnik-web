@@ -1,7 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import type { User } from "@supabase/supabase-js";
 
-export const updateSession = async (request: NextRequest) => {
+export const updateSession = async (
+  request: NextRequest
+): Promise<{ response: NextResponse; user: User | null }> => {
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -14,12 +17,15 @@ export const updateSession = async (request: NextRequest) => {
     {
       cookies: {
         getAll() {
-          return request.cookies.getAll().map(({ name, value }) => ({
-            name,
-            value,
-          }));
+          return request.cookies.getAll();
         },
         setAll(cookiesToSet: { name: string; value: string; options: any }[]) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          });
           cookiesToSet.forEach(({ name, value, options }) => {
             response.cookies.set(name, value, options);
           });
@@ -28,8 +34,9 @@ export const updateSession = async (request: NextRequest) => {
     }
   );
 
-  // This refreshes a user's auth token
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  return response;
+  return { response, user };
 };

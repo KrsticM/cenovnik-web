@@ -2,68 +2,84 @@
 
 export const dynamic = "force-dynamic";
 
-import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
+import { AuthShell } from "@/components/AuthShell/AuthShell";
+import { OtpCodeInput } from "@/components/OtpCodeInput/OtpCodeInput";
+import { useAuth } from "@/contexts/AuthContext";
 
 type Step = "email" | "code";
 
-export default function EmailSignInPage() {
+function EmailSignInContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { signInWithEmail, verifyOtpCode } = useAuth();
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [resendTimer, setResendTimer] = useState(0);
+  const next = searchParams.get("next");
+
+  useEffect(() => {
+    if (resendTimer > 0) {
+      const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendTimer]);
 
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOtp({ email });
-
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-    } else {
+    const result = await signInWithEmail(email);
+    if (result.success) {
       setStep("code");
-      setLoading(false);
+      setResendTimer(60);
+    } else {
+      setError(result.msg || "Slanje koda nije uspelo. Pokušajte ponovo.");
     }
+    setLoading(false);
   };
 
   const handleVerifyCode = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (code.length !== 6) {
+      setError("Kod mora imati 6 cifara.");
+      return;
+    }
+
     setLoading(true);
     setError("");
 
-    const supabase = createClient();
-    const { error } = await supabase.auth.verifyOtp({
-      email,
-      token: code,
-      type: "email",
-    });
-
-    if (error) {
-      setError(error.message);
-      setLoading(false);
+    const result = await verifyOtpCode(email, code);
+    if (result.success) {
+      router.push(next || "/proizvodi");
     } else {
-      router.push("/proizvodi");
+      setError(result.msg || "Verifikacija nije uspela. Pokušajte ponovo.");
     }
+    setLoading(false);
   };
 
   return (
-    <div style={styles.shell}>
-      <div style={styles.container}>
-        <Link href="/prijava" style={styles.backLink}>
+    <AuthShell>
+      <div style={{ width: "100%" }}>
+        <Link href={`/prijava${next ? `?next=${encodeURIComponent(next)}` : ""}`} style={styles.backLink}>
           ← Nazad
         </Link>
 
         <h1 style={styles.title}>
-          {step === "email" ? "Unesite e-mail" : "Unesite kod"}
+          {step === "email" ? "Unesite email adresu" : "Unesite kod"}
         </h1>
+
+        <p style={styles.subtitle}>
+          {step === "email"
+            ? "Poslaćemo vam jednokratni kod za prijavu."
+            : `Kod je poslat na ${email}.`}
+        </p>
 
         {error && <div style={styles.error}>{error}</div>}
 
@@ -75,15 +91,16 @@ export default function EmailSignInPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              disabled={loading}
               style={styles.input}
             />
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !email}
               style={{
                 ...styles.button,
-                opacity: loading ? 0.6 : 1,
-                cursor: loading ? "not-allowed" : "pointer",
+                opacity: loading || !email ? 0.6 : 1,
+                cursor: loading || !email ? "not-allowed" : "pointer",
               }}
             >
               {loading ? "Slanje..." : "Pošalji kod"}
@@ -91,16 +108,7 @@ export default function EmailSignInPage() {
           </form>
         ) : (
           <form onSubmit={handleVerifyCode} style={styles.form}>
-            <div style={styles.codeInputContainer}>
-              <input
-                type="text"
-                placeholder="000000"
-                value={code}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                maxLength={6}
-                style={styles.codeInput}
-              />
-            </div>
+            <OtpCodeInput value={code} onChange={setCode} disabled={loading} />
             <button
               type="submit"
               disabled={loading || code.length !== 6}
@@ -110,18 +118,45 @@ export default function EmailSignInPage() {
                 cursor: loading || code.length !== 6 ? "not-allowed" : "pointer",
               }}
             >
-              {loading ? "Verifikujem..." : "Verifikuj kod"}
+              {loading ? "Verifikujem..." : "Prijavi se"}
             </button>
+
+            <div style={styles.actions}>
+              <button
+                type="button"
+                onClick={handleSendCode}
+                disabled={resendTimer > 0 || loading}
+                style={styles.actionButton}
+              >
+                {resendTimer > 0 ? `Pošalji ponovo za ${resendTimer}s` : "Pošalji kod ponovo"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setStep("email");
+                  setCode("");
+                  setEmail("");
+                  setError("");
+                  setResendTimer(0);
+                }}
+                disabled={loading}
+                style={styles.actionButton}
+              >
+                Promeni email adresu
+              </button>
+            </div>
           </form>
         )}
-
-        <p style={styles.note}>
-          {step === "email"
-            ? "Poslali smo kod na vašu e-mail adresu."
-            : "Kod je odslat na vašu e-mail adresu."}
-        </p>
       </div>
-    </div>
+    </AuthShell>
+  );
+}
+
+export default function EmailSignInPage() {
+  return (
+    <Suspense fallback={<div style={styles.shell}><p>Učitavam...</p></div>}>
+      <EmailSignInContent />
+    </Suspense>
   );
 }
 
@@ -134,10 +169,6 @@ const styles = {
     padding: "24px",
     backgroundColor: "var(--paper)",
   } as React.CSSProperties,
-  container: {
-    width: "100%",
-    maxWidth: "400px",
-  } as React.CSSProperties,
   backLink: {
     display: "inline-block",
     marginBottom: "24px",
@@ -147,10 +178,16 @@ const styles = {
     fontWeight: 600,
   } as React.CSSProperties,
   title: {
-    margin: "0 0 30px 0",
-    fontSize: "32px",
+    margin: "0 0 12px 0",
+    fontSize: "24px",
     fontWeight: 600,
     color: "var(--ink)",
+  } as React.CSSProperties,
+  subtitle: {
+    margin: "0 0 20px 0",
+    color: "var(--muted)",
+    fontSize: "14px",
+    lineHeight: 1.5,
   } as React.CSSProperties,
   error: {
     padding: "12px 16px",
@@ -164,7 +201,7 @@ const styles = {
     display: "flex",
     flexDirection: "column" as const,
     gap: "16px",
-  } as React.CSSProperties,
+  },
   input: {
     minHeight: "48px",
     padding: "12px 16px",
@@ -172,22 +209,6 @@ const styles = {
     border: "1px solid var(--line)",
     fontSize: "16px",
     fontFamily: "inherit",
-  } as React.CSSProperties,
-  codeInputContainer: {
-    display: "flex",
-    justifyContent: "center",
-  } as React.CSSProperties,
-  codeInput: {
-    width: "120px",
-    minHeight: "48px",
-    padding: "12px",
-    borderRadius: "12px",
-    border: "2px solid var(--brand)",
-    fontSize: "24px",
-    fontWeight: 600,
-    textAlign: "center",
-    letterSpacing: "0.5em",
-    fontFamily: "monospace",
   } as React.CSSProperties,
   button: {
     minHeight: "48px",
@@ -201,10 +222,21 @@ const styles = {
     cursor: "pointer",
     transition: "all 0.18s ease",
   } as React.CSSProperties,
-  note: {
-    marginTop: "24px",
-    fontSize: "13px",
-    color: "var(--muted)",
-    textAlign: "center",
+  actions: {
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: "8px",
+    marginTop: "12px",
+  },
+  actionButton: {
+    padding: "8px 12px",
+    backgroundColor: "transparent",
+    color: "var(--brand)",
+    border: "none",
+    borderRadius: "6px",
+    fontSize: "14px",
+    fontWeight: 500,
+    cursor: "pointer",
+    transition: "all 0.2s ease",
   } as React.CSSProperties,
 };
