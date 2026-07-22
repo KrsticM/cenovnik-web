@@ -1,0 +1,35 @@
+.checkbox {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border: 2px solid #d5c7bc;
+  border-radius: 7px;
+  background: white;
+  color: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: bold;
+  padding: 0;
+}
+
+.checkbox:hover {
+  border-color: var(--brand);
+}
+
+.checkbox span {
+  display: none;
+}
+
+.checked {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: white;
+}
+
+.checked span {
+  display: block;
+}

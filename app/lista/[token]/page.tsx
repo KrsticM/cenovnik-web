@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import ShoppingListView from "./ShoppingListView";
+import { SharedListView } from "@/components/SharedListView/SharedListView";
 
 export const metadata: Metadata = {
   title: "Lista za kupovinu",
@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 
 export default async function SharedListPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
-  return <ShoppingListView token={token} />;
+  return <SharedListView token={token} />;
 }
