@@ -13,6 +13,10 @@
   opacity: 0.6;
 }
 
+.item:first-child {
+  border-top: none;
+}
+
 .info {
   flex: 1;
   min-width: 0;

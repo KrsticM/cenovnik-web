@@ -7,7 +7,7 @@
 }
 
 .titleSection {
-  padding: 30px 30px 24px;
+  padding: 30px 30px 18px;
   border-bottom: 1px solid var(--line);
 }
 
@@ -42,7 +42,7 @@
   }
 
   .titleSection {
-    padding: 26px 20px 20px;
+    padding: 26px 20px 14px;
   }
 
   .title {

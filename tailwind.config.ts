@@ -7,6 +7,9 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["Work Sans", "system-ui", "-apple-system", "sans-serif"],
+      },
       colors: {
         ecenovnik: {
           ink: "#393834",

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
+import { ListNavbar } from "../ListNavbar/ListNavbar";
 import { ListHeader } from "../ListHeader/ListHeader";
 import { ListCard } from "../ListCard/ListCard";
 import { ListItem } from "../ListItem/ListItem";
@@ -165,6 +166,7 @@ export function SharedListView({ token }: SharedListViewProps) {
 
   return (
     <>
+      <ListNavbar />
       <main className={styles.shell}>
         <ListHeader />
         <ListCard title={list.name} itemCount={list.items.length}>
