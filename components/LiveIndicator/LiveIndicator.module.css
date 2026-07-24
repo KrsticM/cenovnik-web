@@ -1,0 +1,25 @@
+.indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #5c9c71;
+  box-shadow: 0 0 0 4px rgba(92, 156, 113, 0.12);
+}
+
+.text {
+  display: none;
+}
+
+@media (min-width: 560px) {
+  .text {
+    display: inline;
+  }
+}

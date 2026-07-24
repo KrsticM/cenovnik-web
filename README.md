@@ -1,20 +1,21 @@
 # eCenovnik web
 
-Web prikaz lista za kupovinu podeljenih iz eCenovnik mobilne aplikacije.
+Puna web verzija eCenovnik aplikacije — web prikaz lista za kupovinu podeljenih iz mobilne aplikacije, plus prikaz proizvoda, upravljanje listama, poređenje cena, i korisnički nalozi.
 
-Podeljeni linkovi koriste rutu:
+## Stack
 
-```text
-https://www.ecenovnik.app/lista/:shareToken
-```
+- **Framework**: Next.js 16 (App Router) + React 19
+- **Backend**: Supabase (PostgreSQL, Auth, Realtime)
+- **Styling**: Tailwind v4 + plain CSS (custom properties)
+- **Deployment**: Vercel
 
 ## Lokalni razvoj
 
 Supabase podešavanja su u lokalnom `.env.local` fajlu (fajl se ne komituje):
 
 ```text
-SUPABASE_URL=...
-SUPABASE_ANON_KEY=...
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 ```
 
 Pokrenite aplikaciju sa:
@@ -24,6 +25,8 @@ npm install
 npm run dev
 ```
 
+Aplikacija će biti dostupna na `http://localhost:3000`.
+
 ## Supabase dozvole
 
 Pre prvog javnog korišćenja pokrenite sadržaj fajla
@@ -31,8 +34,10 @@ Pre prvog javnog korišćenja pokrenite sadržaj fajla
 anonimnom korisniku read-only pristup isključivo listama sa aktivnim
 `share_token` poljem i proizvodima koji pripadaju tim listama.
 
-## Provera
+## Build & Deployment
 
 ```bash
 npm run build
 ```
+
+Aplikacija je postavljena na Vercel. Svaki push na `main` grani se automatski deploy-uje.
