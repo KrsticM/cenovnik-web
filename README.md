@@ -22,7 +22,6 @@ Pokrenite aplikaciju sa:
 
 ```bash
 npm install
-npm run dev
 ```
 
 Aplikacija će biti dostupna na `http://localhost:3000`.

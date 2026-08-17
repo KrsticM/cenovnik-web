@@ -1,0 +1,25 @@
+/* Shared auth layout tokens */
+
+:root {
+  --auth-main-width: 100%;
+  --auth-content-max-width: 1040px;
+  --auth-container-max-width: 560px;
+  --auth-form-column-max-width: 480px;
+  --auth-horizontal-padding: 32px;
+  --auth-back-button-icon-size: 14px;
+  --auth-back-button-height: 44px;
+  --auth-back-button-gap: 8px;
+}
+
+@media (max-width: 1024px) {
+  :root {
+    --auth-content-max-width: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  :root {
+    --auth-container-max-width: 100%;
+    --auth-horizontal-padding: 16px;
+  }
+}

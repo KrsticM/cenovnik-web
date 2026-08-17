@@ -8,6 +8,7 @@ import { Suspense, useState } from "react";
 import { AuthShell } from "@/components/AuthShell/AuthShell";
 import { SocialSignInButton } from "@/components/SocialSignInButton/SocialSignInButton";
 import { useAuth } from "@/contexts/AuthContext";
+import styles from "./page.module.css";
 
 function PrijavaContent() {
   const router = useRouter();
@@ -34,15 +35,15 @@ function PrijavaContent() {
   };
 
   return (
-    <AuthShell>
-      <div style={{ width: "100%" }}>
+    <AuthShell showBranding>
+      <div className={styles.container}>
         {error && (
-          <div style={styles.error}>
+          <div className={styles.error}>
             Greška pri prijavi. Pokušajte ponovo.
           </div>
         )}
 
-        <div style={styles.buttonGroup}>
+        <div className={styles.buttonGroup}>
           <SocialSignInButton
             variant="apple"
             label="Nastavi sa Apple nalogom"
@@ -59,7 +60,7 @@ function PrijavaContent() {
             loading={loading}
           />
 
-          <Link href={`/prijava/email${next ? `?next=${encodeURIComponent(next)}` : ""}`} style={{ textDecoration: "none", width: "100%" }}>
+          <Link href={`/prijava/email${next ? `?next=${encodeURIComponent(next)}` : ""}`} className={styles.emailLink}>
             <SocialSignInButton
               variant="email"
               label="Nastavi sa Email nalogom"
@@ -69,13 +70,13 @@ function PrijavaContent() {
           </Link>
         </div>
 
-        <p style={styles.note}>
+        <p className={styles.note}>
           Prijavljivanjem prihvatate{" "}
-          <a href="https://www.ecenovnik.app/uslovi-koriscenja" target="_blank" rel="noopener noreferrer" style={styles.link}>
+          <a href="https://www.ecenovnik.app/uslovi-koriscenja" target="_blank" rel="noopener noreferrer" className={styles.link}>
             uslove korišćenja
           </a>{" "}
           i{" "}
-          <a href="https://www.ecenovnik.app/privatnost" target="_blank" rel="noopener noreferrer" style={styles.link}>
+          <a href="https://www.ecenovnik.app/privatnost" target="_blank" rel="noopener noreferrer" className={styles.link}>
             politiku privatnosti
           </a>
           .
@@ -87,42 +88,8 @@ function PrijavaContent() {
 
 export default function PrijavaPage() {
   return (
-    <Suspense fallback={<div style={styles.shell}><p>Učitavam...</p></div>}>
+    <Suspense fallback={<div className={styles.fallback}><p>Učitavam...</p></div>}>
       <PrijavaContent />
     </Suspense>
   );
 }
-
-const styles = {
-  shell: {
-    minHeight: "100vh",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "24px",
-    backgroundColor: "var(--paper)",
-  } as React.CSSProperties,
-  error: {
-    padding: "12px 16px",
-    marginBottom: "20px",
-    borderRadius: "12px",
-    backgroundColor: "#ffebee",
-    color: "#c62828",
-    fontSize: "14px",
-  } as React.CSSProperties,
-  buttonGroup: {
-    display: "flex",
-    flexDirection: "column" as const,
-    gap: "12px",
-  },
-  note: {
-    marginTop: "24px",
-    fontSize: "13px",
-    color: "var(--muted)",
-    textAlign: "center" as const,
-  } as React.CSSProperties,
-  link: {
-    color: "var(--brand)",
-    textDecoration: "underline",
-  } as React.CSSProperties,
-};

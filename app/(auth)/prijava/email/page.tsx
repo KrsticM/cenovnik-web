@@ -4,10 +4,11 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, Suspense, useCallback } from "react";
 import { AuthShell } from "@/components/AuthShell/AuthShell";
 import { OtpCodeInput } from "@/components/OtpCodeInput/OtpCodeInput";
 import { useAuth } from "@/contexts/AuthContext";
+import styles from "./page.module.css";
 
 type Step = "email" | "code";
 
@@ -20,6 +21,7 @@ function EmailSignInContent() {
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [displayError, setDisplayError] = useState("");
   const [resendTimer, setResendTimer] = useState(0);
   const next = searchParams.get("next");
 
@@ -29,6 +31,32 @@ function EmailSignInContent() {
       return () => clearTimeout(timer);
     }
   }, [resendTimer]);
+
+  useEffect(() => {
+    if (loading && step === "code") {
+      setError("");
+    }
+  }, [loading, step]);
+
+  useEffect(() => {
+    if (error && step === "code" && !loading) {
+      const timer = setTimeout(() => setDisplayError(error), 80);
+      return () => clearTimeout(timer);
+    } else {
+      setDisplayError("");
+    }
+  }, [error, step, loading]);
+
+  const handleCodeChange = useCallback((newCode: string) => {
+    setCode(newCode);
+    setError("");
+  }, []);
+
+  useEffect(() => {
+    if (step === "code" && code.length === 6 && !loading && !error) {
+      handleVerifyCode(new Event("submit") as any);
+    }
+  }, [code, step, loading, error]);
 
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,26 +93,63 @@ function EmailSignInContent() {
   };
 
   return (
-    <AuthShell>
-      <div style={{ width: "100%" }}>
-        <Link href={`/prijava${next ? `?next=${encodeURIComponent(next)}` : ""}`} style={styles.backLink}>
-          ← Nazad
+    <AuthShell showBranding={false}>
+      <div className={styles.container}>
+        <Link href={`/prijava${next ? `?next=${encodeURIComponent(next)}` : ""}`} className={styles.backLink}>
+          <svg
+            className={styles.backIcon}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            width="14"
+            height="14"
+          >
+            <path d="M15 19l-7-7 7-7" />
+          </svg>
+          Nazad
         </Link>
 
-        <h1 style={styles.title}>
+        {step === "code" && (
+          <div className={styles.badge}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className={styles.badgeIcon}>
+              <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
+            </svg>
+          </div>
+        )}
+
+        <h1 className={styles.title}>
           {step === "email" ? "Unesite email adresu" : "Unesite kod"}
         </h1>
 
-        <p style={styles.subtitle}>
+        <p className={styles.subtitle}>
           {step === "email"
             ? "Poslaćemo vam jednokratni kod za prijavu."
-            : `Kod je poslat na ${email}.`}
+            : (
+                <>
+                  Kod je poslat na <b>{email}</b>.{' '}
+                  <button
+                    type="button"
+                    className={styles.inlineLink}
+                    onClick={() => {
+                      setStep("email");
+                      setCode("");
+                      setError("");
+                      setResendTimer(0);
+                    }}
+                  >
+                    Promeni
+                  </button>
+                </>
+              )}
         </p>
 
-        {error && <div style={styles.error}>{error}</div>}
+        {displayError && <div className={styles.error}>{displayError}</div>}
 
         {step === "email" ? (
-          <form onSubmit={handleSendCode} style={styles.form}>
+          <form onSubmit={handleSendCode} className={styles.form}>
             <input
               type="email"
               placeholder="vasa@email.com"
@@ -92,58 +157,35 @@ function EmailSignInContent() {
               onChange={(e) => setEmail(e.target.value)}
               required
               disabled={loading}
-              style={styles.input}
+              className={styles.input}
             />
             <button
               type="submit"
               disabled={loading || !email}
-              style={{
-                ...styles.button,
-                opacity: loading || !email ? 0.6 : 1,
-                cursor: loading || !email ? "not-allowed" : "pointer",
-              }}
+              className={`${styles.button} ${loading || !email ? styles.disabled : ""}`}
             >
               {loading ? "Slanje..." : "Pošalji kod"}
             </button>
           </form>
         ) : (
-          <form onSubmit={handleVerifyCode} style={styles.form}>
-            <OtpCodeInput value={code} onChange={setCode} disabled={loading} />
-            <button
-              type="submit"
-              disabled={loading || code.length !== 6}
-              style={{
-                ...styles.button,
-                opacity: loading || code.length !== 6 ? 0.6 : 1,
-                cursor: loading || code.length !== 6 ? "not-allowed" : "pointer",
-              }}
-            >
-              {loading ? "Verifikujem..." : "Prijavi se"}
-            </button>
-
-            <div style={styles.actions}>
-              <button
-                type="button"
-                onClick={handleSendCode}
-                disabled={resendTimer > 0 || loading}
-                style={styles.actionButton}
-              >
-                {resendTimer > 0 ? `Pošalji ponovo za ${resendTimer}s` : "Pošalji kod ponovo"}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setStep("email");
-                  setCode("");
-                  setEmail("");
-                  setError("");
-                  setResendTimer(0);
-                }}
-                disabled={loading}
-                style={styles.actionButton}
-              >
-                Promeni email adresu
-              </button>
+          <form onSubmit={handleVerifyCode} className={styles.form}>
+            <OtpCodeInput value={code} onChange={handleCodeChange} disabled={loading} />
+            <div className={styles.resendRow}>
+              {resendTimer > 0 ? (
+                <span className={styles.resendText}>Pošalji kod ponovo za {resendTimer}s</span>
+              ) : (
+                <>
+                  <span className={styles.resendText}>Niste dobili kod?</span>
+                  <button
+                    type="button"
+                    onClick={handleSendCode}
+                    disabled={loading}
+                    className={styles.inlineLink}
+                  >
+                    Pošalji ponovo
+                  </button>
+                </>
+              )}
             </div>
           </form>
         )}
@@ -154,89 +196,8 @@ function EmailSignInContent() {
 
 export default function EmailSignInPage() {
   return (
-    <Suspense fallback={<div style={styles.shell}><p>Učitavam...</p></div>}>
+    <Suspense fallback={<div className={styles.fallback}><p>Učitavam...</p></div>}>
       <EmailSignInContent />
     </Suspense>
   );
 }
-
-const styles = {
-  shell: {
-    minHeight: "100vh",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "24px",
-    backgroundColor: "var(--paper)",
-  } as React.CSSProperties,
-  backLink: {
-    display: "inline-block",
-    marginBottom: "24px",
-    color: "var(--brand)",
-    textDecoration: "none",
-    fontSize: "14px",
-    fontWeight: 600,
-  } as React.CSSProperties,
-  title: {
-    margin: "0 0 12px 0",
-    fontSize: "24px",
-    fontWeight: 600,
-    color: "var(--ink)",
-  } as React.CSSProperties,
-  subtitle: {
-    margin: "0 0 20px 0",
-    color: "var(--muted)",
-    fontSize: "14px",
-    lineHeight: 1.5,
-  } as React.CSSProperties,
-  error: {
-    padding: "12px 16px",
-    marginBottom: "20px",
-    borderRadius: "12px",
-    backgroundColor: "#ffebee",
-    color: "#c62828",
-    fontSize: "14px",
-  } as React.CSSProperties,
-  form: {
-    display: "flex",
-    flexDirection: "column" as const,
-    gap: "16px",
-  },
-  input: {
-    minHeight: "48px",
-    padding: "12px 16px",
-    borderRadius: "12px",
-    border: "1px solid var(--line)",
-    fontSize: "16px",
-    fontFamily: "inherit",
-  } as React.CSSProperties,
-  button: {
-    minHeight: "48px",
-    padding: "12px 16px",
-    borderRadius: "12px",
-    border: "none",
-    fontSize: "16px",
-    fontWeight: 600,
-    backgroundColor: "var(--brand)",
-    color: "white",
-    cursor: "pointer",
-    transition: "all 0.18s ease",
-  } as React.CSSProperties,
-  actions: {
-    display: "flex",
-    flexDirection: "column" as const,
-    gap: "8px",
-    marginTop: "12px",
-  },
-  actionButton: {
-    padding: "8px 12px",
-    backgroundColor: "transparent",
-    color: "var(--brand)",
-    border: "none",
-    borderRadius: "6px",
-    fontSize: "14px",
-    fontWeight: 500,
-    cursor: "pointer",
-    transition: "all 0.2s ease",
-  } as React.CSSProperties,
-};

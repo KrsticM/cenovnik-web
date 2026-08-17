@@ -7,14 +7,17 @@ interface BrandMarkProps {
 }
 
 export function BrandMark({ size = "md", showImage = false }: BrandMarkProps) {
+  const sizeMap = { sm: 36, md: 52 };
+  const imageSize = sizeMap[size] || 52;
+
   return (
     <div className={`${styles.mark} ${styles[size]}`}>
       {showImage ? (
         <Image
           src="/icon.png"
           alt=""
-          width={size === "sm" ? 36 : 52}
-          height={size === "sm" ? 36 : 52}
+          width={imageSize}
+          height={imageSize}
           className={styles.image}
         />
       ) : (
