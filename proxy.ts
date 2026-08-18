@@ -62,7 +62,7 @@ export const config = {
     // Match all paths except:
     // - _next/static (static files)
     // - _next/image (image optimization files)
-    // - favicon.ico, icon.png (static assets)
-    "/((?!_next/static|_next/image|favicon.ico|icon.png).*)",
+    // - favicon.ico, static assets (.png, .jpg, .svg, .webp, etc.)
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|webp|gif|ico)).*)",
   ],
 };
