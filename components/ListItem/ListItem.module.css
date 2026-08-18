@@ -38,13 +38,10 @@
 
 .quantity {
   flex-shrink: 0;
-  min-width: 40px;
-  padding: 7px 10px;
-  border-radius: 11px;
-  background: var(--brand-soft);
-  color: var(--brand-dark);
-  font-size: 14px;
-  font-weight: 800;
+  min-width: 44px;
+  padding: 6px 8px !important;
+  font-size: 13px !important;
+  font-weight: 700;
   text-align: center;
 }
 

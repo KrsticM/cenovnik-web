@@ -1,3 +1,4 @@
+import { getProductImageUrl } from "@/lib/productImageUrl";
 import styles from "./ProductImage.module.css";
 
 interface ProductImageProps {
@@ -16,7 +17,7 @@ export function ProductImage({ barcode, productName, onPreview }: ProductImagePr
     >
       <img
         className={styles.image}
-        src={`https://img.cenovnik.krsticm.dev/images/products/${encodeURIComponent(barcode)}/thumb.jpg`}
+        src={getProductImageUrl(barcode, "thumb")}
         alt=""
         onError={(e) => {
           if (e.currentTarget.parentElement) {

@@ -1,5 +1,6 @@
 import { Checkbox } from "../Checkbox/Checkbox";
 import { ProductImage } from "../ProductImage/ProductImage";
+import { Badge } from "../ui/badge";
 import styles from "./ListItem.module.css";
 
 interface ListItemProps {
@@ -40,9 +41,9 @@ export function ListItem({
         {barcode && <p className={styles.barcode}>Barkod {barcode}</p>}
       </div>
 
-      <span className={styles.quantity} aria-label={`Količina ${quantity}`}>
+      <Badge variant="secondary" aria-label={`Količina ${quantity}`} className={styles.quantity}>
         × {quantity}
-      </span>
+      </Badge>
     </li>
   );
 }

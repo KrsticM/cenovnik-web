@@ -1,0 +1,32 @@
+.container {
+  margin-inline: auto;
+  width: min(100% - var(--container-gutter, 64px), var(--container-max, 1040px));
+}
+
+.container--sm {
+  --container-gutter: 32px;
+  --container-max: 720px;
+}
+
+.container--md {
+  --container-gutter: 64px;
+  --container-max: 1040px;
+}
+
+.container--lg {
+  --container-gutter: 64px;
+  --container-max: 1280px;
+}
+
+.container--full {
+  --container-gutter: 32px;
+  --container-max: 100%;
+}
+
+.container--center {
+  min-height: 100vh;
+  display: grid;
+  place-content: center;
+  justify-items: start;
+  padding-block: 64px;
+}
