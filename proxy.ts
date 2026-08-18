@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
 const publicRoutes = [
-  { path: "lista", exact: true },
+  { path: "lista", exact: false },
   { path: "prijava", exact: false },
   { path: "auth/callback", exact: false },
   { path: "api/lista", exact: false },
@@ -62,7 +62,7 @@ export const config = {
     // Match all paths except:
     // - _next/static (static files)
     // - _next/image (image optimization files)
-    // - favicon.ico (favicon file)
-    "/((?!_next/static|_next/image|favicon.ico).*)",
+    // - favicon.ico, icon.png (static assets)
+    "/((?!_next/static|_next/image|favicon.ico|icon.png).*)",
   ],
 };

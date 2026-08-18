@@ -28,8 +28,9 @@ export const updateSession = async (request: NextRequest) => {
     }
   );
 
-  // This refreshes a user's auth token
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  return response;
+  return { response, user };
 };

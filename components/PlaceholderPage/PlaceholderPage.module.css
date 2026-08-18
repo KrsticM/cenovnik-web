@@ -1,0 +1,81 @@
+/* PlaceholderPage — minimal content shell (navbar handled by layout) */
+
+.main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 2rem 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .main {
+    padding: 2rem;
+  }
+}
+
+/* Content container — capped width */
+.container {
+  width: 100%;
+  max-width: 48rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+  text-align: center;
+}
+
+/* Eyebrow label — small caps, letter-spaced */
+.eyebrow {
+  margin: 0 0 0.75rem;
+  color: var(--brand);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+/* Large heading — responsive size (clamp for fluid scaling) */
+.title {
+  margin: 0 0 1.5rem;
+  max-width: 100%;
+  font: 600 clamp(2.25rem, 8vw, 3.5rem) / 1.2 "Work Sans", system-ui,
+    -apple-system, sans-serif;
+  letter-spacing: -0.035em;
+  color: var(--ink);
+  text-align: center;
+}
+
+/* Description text — generous line height */
+.description {
+  margin: 0 auto;
+  max-width: 560px;
+  font-size: 1rem;
+  line-height: 1.5;
+  font-weight: 400;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* Action container — buttons, CTAs */
+.actionContainer {
+  margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .actionContainer {
+    flex-direction: row;
+    justify-content: center;
+  }
+}

@@ -8,6 +8,8 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get("code");
   const next = searchParams.get("next") || "/proizvodi";
 
+  console.log("[auth/callback] Processing auth with next:", next);
+
   if (code) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
