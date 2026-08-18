@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/client";
 
 export type Item = {
   productId: string;
@@ -14,11 +14,6 @@ export type ShoppingList = {
   items: Item[];
 };
 
-export type RealtimeConfig = {
-  url: string;
-  anonKey: string;
-};
-
 interface UseShoppingListDataReturn {
   list: ShoppingList | null;
   loading: boolean;
@@ -30,7 +25,6 @@ export function useShoppingListData(token: string): UseShoppingListDataReturn {
   const [list, setList] = useState<ShoppingList | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
-  const [realtimeConfig, setRealtimeConfig] = useState<RealtimeConfig | null>(null);
 
   const load = useCallback(
     async (background = false) => {
@@ -44,7 +38,6 @@ export function useShoppingListData(token: string): UseShoppingListDataReturn {
           throw new Error(data.error || "Lista trenutno nije dostupna.");
         }
         setList(data);
-        setRealtimeConfig(data.realtime);
         setError("");
       } catch (requestError) {
         setError(
@@ -64,11 +57,9 @@ export function useShoppingListData(token: string): UseShoppingListDataReturn {
 
   // Setup real-time subscription
   useEffect(() => {
-    if (!list?.id || !realtimeConfig) return;
+    if (!list?.id) return;
 
-    const supabase = createClient(realtimeConfig.url, realtimeConfig.anonKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
+    const supabase = createClient();
 
     const channel = supabase
       .channel(`shared-list:${list.id}`)
@@ -97,7 +88,7 @@ export function useShoppingListData(token: string): UseShoppingListDataReturn {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [list?.id, realtimeConfig, load]);
+  }, [list?.id, load]);
 
   return { list, loading, error, refresh: load };
 }
