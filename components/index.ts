@@ -15,3 +15,11 @@ export { EmptyState } from "./StateShells/EmptyState";
 
 // Main composite component
 export { SharedListView } from "./SharedListView/SharedListView";
+
+// Layout primitives
+export { Container } from "./Container/Container";
+export { Grid } from "./Grid/Grid";
+
+// Page shells
+export { PlaceholderCard } from "./PlaceholderCard/PlaceholderCard";
+export { PlaceholderPage } from "./PlaceholderPage/PlaceholderPage";

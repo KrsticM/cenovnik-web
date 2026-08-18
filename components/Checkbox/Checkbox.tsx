@@ -1,3 +1,4 @@
+import { Checkbox as RadixCheckbox } from "@/components/ui/checkbox";
 import styles from "./Checkbox.module.css";
 
 interface CheckboxProps {
@@ -8,14 +9,11 @@ interface CheckboxProps {
 
 export function Checkbox({ checked, onChange, ariaLabel }: CheckboxProps) {
   return (
-    <button
-      type="button"
+    <RadixCheckbox
+      checked={checked}
+      onCheckedChange={() => onChange()}
       aria-label={ariaLabel}
-      aria-pressed={checked}
-      onClick={onChange}
-      className={`${styles.checkbox} ${checked ? styles.checked : ""}`}
-    >
-      <span>✓</span>
-    </button>
+      className={styles.checkbox}
+    />
   );
 }

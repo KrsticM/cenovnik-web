@@ -1,0 +1,23 @@
+.grid {
+  display: grid;
+  gap: inherit;
+  grid-template-columns: repeat(var(--grid-cols-base, 2), 1fr);
+}
+
+@media (min-width: 640px) {
+  .grid {
+    grid-template-columns: repeat(var(--grid-cols-sm, var(--grid-cols-base, 2)), 1fr);
+  }
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(var(--grid-cols-md, 3), 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(var(--grid-cols-lg, 4), 1fr);
+  }
+}

@@ -1,63 +1,38 @@
 "use client";
 
-import { useEffect } from "react";
-import styles from "./ImageModal.module.css";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface ImageModalProps {
-  productName: string;
-  barcode: string;
+  open: boolean;
+  title: string;
+  imageUrl: string;
+  fallbackUrl?: string;
   onClose: () => void;
 }
 
-export function ImageModal({ productName, barcode, onClose }: ImageModalProps) {
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-
-    document.addEventListener("keydown", handleEscape);
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.removeEventListener("keydown", handleEscape);
-      document.body.style.overflow = "";
-    };
-  }, [onClose]);
-
+export function ImageModal({ open, title, imageUrl, fallbackUrl, onClose }: ImageModalProps) {
   return (
-    <div className={styles.backdrop} role="presentation" onMouseDown={onClose}>
-      <section
-        className={styles.dialog}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="image-dialog-title"
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        <div className={styles.header}>
-          <h2 id="image-dialog-title" className={styles.title}>
-            {productName}
-          </h2>
-          <button
-            className={styles.closeButton}
-            type="button"
-            aria-label="Zatvori sliku"
-            onClick={onClose}
-          >
-            ×
-          </button>
-        </div>
-        <div className={styles.content}>
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="flex flex-col gap-0 p-0 w-[calc(100%-2rem)] sm:max-w-[600px] max-h-[95dvh] sm:max-h-[90dvh]">
+        <DialogHeader>
+          <DialogTitle className="border-b border-border px-6 py-5 pr-10 text-lg font-bold text-foreground m-0">
+            {title}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="flex-1 min-h-0 overflow-auto flex items-start justify-center p-4 sm:p-6">
           <img
-            className={styles.fullImage}
-            src={`https://img.cenovnik.krsticm.dev/images/products/${encodeURIComponent(barcode)}/full.jpg`}
-            alt={productName}
+            className="max-w-full max-h-full object-contain"
+            src={imageUrl}
+            alt={title}
             onError={(e) => {
-              e.currentTarget.onerror = null;
-              e.currentTarget.src = `https://img.cenovnik.krsticm.dev/images/products/${encodeURIComponent(barcode)}/thumb.jpg`;
+              if (fallbackUrl) {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = fallbackUrl;
+              }
             }}
           />
         </div>
-      </section>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -1,0 +1,7 @@
+/* (auth) layout — full-height wrapper for unauthenticated routes (no navbar) */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
