@@ -1,95 +1,102 @@
-# eCenovnik web
+# eCenovnik Web
 
-Web verzija eCenovnik aplikacije sa parittetom funkcionalnosti sa mobilnom aplikacijom. Korisnici mogu pregledati proizvode, kreirat i upravljati listama za kupovinu, deliti liste, i porediti cene na različitim prodavnicama — sve u realnom vremenu.
+Web version of the eCenovnik grocery price-comparison platform with feature parity to the mobile app. Users can browse products, create and manage shopping lists, share lists, and compare prices across retailers in real-time.
 
-## Status
+**Live**: `https://web.ecenovnik.app` (production)
 
-✅ **Phase 1 (Auth)**: Email OTP sign-in fully implemented and tested end-to-end  
-✅ **Phase 1 (Routing & Lists)**: Auth middleware, shared list page sa Realtime sinhronizacijom  
-⏳ **Phase 2 (Product Browsing)**: Product grid, search, detail page  
-⏳ **OAuth Setup Blocker**: Google Web Client ID and Apple Services ID must be configured in Supabase dashboard before OAuth flows work
+## Quick Start
 
-Za detalje, pogledajte `CLAUDE.md` i `CONTEXT.md`.
-
-## Stack
-
-- **Framework**: Next.js 16 (App Router) + React 19
-- **Backend**: Supabase (PostgreSQL, Auth, Realtime sa postgres_changes listeners)
-- **Styling**: Tailwind CSS v4 + CSS Modules (DRY, component-scoped)
-- **Deployment**: Vercel (auto-deploy na push na `main`)
-- **State Management**: React Context (AuthContext, future: TanStack Query za data fetching)
-
-## Karakteristike
-
-✅ **Autentifikacija**: Email OTP + OAuth (Google, Apple) — Supabase Auth  
-✅ **Deljene liste**: Stranica `/lista/[token]` sa Realtime sinhronizacijom — WebSocket push updates  
-✅ **Navbar**: Fixed sticky header sa brand logo i sign-out dugme (za authentificirane korisnike)  
-✅ **Responsive Design**: Mobile-first layout (320px–1920px) — CSS Modules + Tailwind  
-⏳ **Product Browsing**: Grid, search, filter po prodavnicama (Phase 2)  
-⏳ **Shopping Lists**: Kreiranje, uređivanje, brisanje, poređenje cena (Phase 3)  
-⏳ **Settings**: Upravljanje korisničkim naloglom i preferencama (Phase 4)
-
-## Lokalni razvoj
+### Prerequisites
+- Node.js 18+ / npm
+- Supabase account with project configured
 
 ### Setup
 
-Supabase podešavanja:
+1. **Clone and install**:
 ```bash
-# .env.local (ne komitovati)
+git clone <repo>
+cd cenovnik-web
+npm install
+```
+
+2. **Environment variables** (`.env.local`, not committed):
+```bash
 NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=xxx
 ```
 
-### Pokretanje
-
+3. **Run locally**:
 ```bash
-npm install
 npm run dev
 ```
+Open `http://localhost:3000` → login at `/prijava` (email OTP or OAuth).
 
-Aplikacija će biti dostupna na `http://localhost:3000`.
-
-**Autentifikacija**: Koristi `/prijava` za login. Kada se uloguješ, vidiš `/proizvodi` placeholder (Phase 2 će biti product grid).  
-**Deljene liste**: Koristi `/lista/{share_token}` (dostupno bez autentifikacije, ako je token validan).
-
-## Supabase RLS politike
-
-Pre prvog javnog korišćenja pokrenite:
-```sql
--- supabase/public_shopping_lists.sql
--- Daje anonimnom korisniku read-only pristup deljenim listama
-```
-
-Pokrenite kroz Supabase SQL editor. Politike osiguravaju da unauthentificirani korisnici mogu videti samo liste sa `share_token` poljem.
-
-## Build & Deployment
-
-### Production Build
-
+### Build
 ```bash
-npm run build  # Proverava TypeScript i kreira optimizovani build
-npm run dev    # Pokreće dev server sa hot reload
+npm run build
+npm run dev  # test production build locally
 ```
 
-### Deployment
+## Tech Stack
 
-Aplikacija je hostovana na Vercel. Svaki push na `main` grani se automatski deploy-uje na `web.ecenovnik.app`.
+- **Framework**: Next.js 16 (App Router) + React 19
+- **Language**: TypeScript (strict mode)
+- **Styling**: Tailwind CSS v4 + shadcn/ui components
+- **Database**: Supabase (PostgreSQL + Auth + Realtime)
+- **State**: React Context (Auth, future: TanStack Query)
+- **Deployment**: Vercel (auto-deploy on push to `main`)
 
-**Branch deployments**: Push na drugi branch → Vercel kreira preview URL (npr. `lista-za-kupovinu-auto-refresh--cenovnik-web.vercel.app`).
+## Key Libraries
 
-## Arhitektura
+- `@supabase/ssr` (0.12.4+) — Supabase SSR client for auth + RLS
+- `@supabase/supabase-js` (2.110.8+) — Supabase JS client
+- `@radix-ui/*` + `shadcn/ui` — Accessible, unstyled component primitives
+- `class-variance-authority` — Type-safe component variants
+- `tailwind-merge` + `clsx` — Tailwind class composition
 
-**Client**: Next.js 16 sa App Router (React Server Components + Client Components)  
-**Database**: Supabase PostgreSQL sa Realtime pubsub (`postgres_changes`)  
-**Auth**: Supabase Auth (email OTP, OAuth)  
-**RLS**: Row-Level Security politike na `shopping_lists`, `shopping_list_items`, `products`  
+## Architecture
 
-Nema API gateway-a — klijent direktno koristi Supabase client biblioteke sa RLS zaštitom.
+**Auth**: Direct Supabase client (no API layer) with Row-Level Security policies. Session via cookie (Supabase SSR pattern).
 
-## Development Notes
+**Routing**: Next.js App Router with middleware (`proxy.ts`). Unauthenticated → `/prijava`, authenticated → `/proizvodi`.
 
-Pogledajte `CLAUDE.md` za:
-- Detaljnu roadmap (6 faza do launchanja)
-- Arhitekturalne odluke
-- Component guidelines (CSS Modules, dumb components, SRP)
-- Development preferences (commit message style, responsive design requirements)
+**Data**: Supabase PostgreSQL. Real-time syncing via Realtime subscriptions (WebSocket, `postgres_changes`).
+
+## Development
+
+### Conventions
+- **Components**: Tailwind + shadcn primitives (no CSS Modules for new work)
+- **Responsive**: Mobile-first (320px–1920px via `clamp()`, `min()`, media queries)
+- **Commits**: Descriptive, no "AI assistant" credits in messages
+- **Error handling**: All Supabase errors translated to Serbian for users
+
+### Key Files
+- `contexts/AuthContext.tsx` — Auth state, sign-in methods
+- `app/(auth)/prijava/` — Login flows (welcome + OTP)
+- `app/(authenticated)/` — Protected routes (navbar present)
+- `lib/supabase/` — Client setup (browser, server, middleware)
+
+## Features
+
+✅ **Email OTP sign-in** — Full end-to-end, tested  
+✅ **OAuth wiring** — Google & Apple, awaiting provider config in Supabase dashboard  
+✅ **Shared lists** — Real-time sync via Supabase subscriptions  
+✅ **Responsive design** — 320px–1920px  
+⏳ **Product browsing** — Phase 2 (in development)  
+⏳ **Shopping lists** — Phase 3 (planned)
+
+## Roadmap & Details
+
+See [`docs/CLAUDE.md`](docs/CLAUDE.md) for:
+- 6-phase roadmap (auth, products, lists, sharing, search, refinement)
+- Architecture decisions and rationale
+- Detailed status and blockers
+- Development preferences
+
+## Deployment
+
+Deployed automatically to Vercel on every push to `main`. Preview URLs generated for feature branches.
+
+## License
+
+[License info here, if applicable]
