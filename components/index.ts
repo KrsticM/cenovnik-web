@@ -21,5 +21,4 @@ export { Container } from "./Container/Container";
 export { Grid } from "./Grid/Grid";
 
 // Page shells
-export { PlaceholderCard } from "./PlaceholderCard/PlaceholderCard";
 export { PlaceholderPage } from "./PlaceholderPage/PlaceholderPage";
