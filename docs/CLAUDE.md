@@ -699,5 +699,5 @@ SharedListView (main orchestrator - "use client")
 
 ---
 
-**Last Updated**: 2026-08-18 (Phase 1, Step 9 — SharedListView refactoring & architecture polish, complete)
+**Last Updated**: 2026-08-21 (Phase 1, Step 12 — Email OTP sign-in end-to-end, complete; Phase 2 prerequisites set; design polish deferred to Phase 1B)
 **Author**: Dusan Marjanski
