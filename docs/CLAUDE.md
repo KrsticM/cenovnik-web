@@ -306,20 +306,20 @@ Both clients use Supabase client libraries directly with Row-Level Security poli
 ## Data Model (Mirrors Mobile)
 
 **Existing in Supabase** (shared with mobile):
-- `products`: id, name, barcode, category, image_url, created_at
-- `retailers`: id, name, logo_url, url
-- `product_prices`: product_id, retailer_id, price, last_updated
+- `products`: id, product_name, has_image, created_at
+- `barcodes`: id, product_id, barcode (joined to products via foreign key)
+- `current_prices`: product_id, store_id, regular_price, discounted_price, price_date (live per-store pricing)
+- `stores`: id, retailer_id, retailer_name, address (physical store locations)
 - `auth.users`: Supabase managed (email, uid, etc.)
-- `user_stores`: user_id, store_id (many-to-many user preferences)
+- `user_stores`: user_id, store_id (many-to-many user preferences; used for scoped pricing in mobile, not yet in web)
 - `shopping_lists`: id, user_id, name, created_at, updated_at
 - `shopping_list_items`: id, list_id, product_id, quantity, added_at
 - `share_tokens`: id, list_id, token, created_at, expires_at
 - `app_config`: min_version, store_urls (version gating)
 
-**New for web** (optional):
-- None initially; reuse mobile schema
-- Consider `web_sessions` table if adding analytics
-- Consider `feature_flags` table for A/B testing
+**Web-specific tables** (optional, future):
+- `web_sessions`: if adding analytics (not implemented)
+- `feature_flags`: for A/B testing (not implemented)
 
 ---
 
@@ -536,13 +536,23 @@ See **## Status** section below.
 - **Commits**: One atomic commit with full Phase 1 auth completion
 - **Status**: ✅ Complete, end-to-end email OTP tested and working, OAuth wiring ready for provider config, plain shadcn styling (visual polish deferred to Phase 1B)
 
-### Phase 2: Core Product Browsing ⏳
-- [ ] Product service layer (Supabase queries)
-- [ ] Home/products page with grid
-- [ ] Search with infinite scroll
-- [ ] Product detail page
-- [ ] Store selection UI
-- [ ] Styling & responsive design
+### Phase 2: Core Product Browsing ⏳ (In Progress)
+
+**Step 1 (2026-08-21)**: /proizvodi Functional UI v1 ✅
+- [x] Product service layer (`lib/services/products.ts` — browse feed, search, pricing)
+- [x] Types (`types/product.ts` — Product shape)
+- [x] Price formatting (`lib/formatPrice.ts` — RSD display)
+- [x] /proizvodi listing page: Tailwind + shadcn, debounced search, product grid, "load more" button
+- [x] Lowest-price display (across all stores; store-scoped pricing deferred until /prodavnice exists)
+- [x] Error/loading/empty states (inline, minimal)
+- **Architecture**: Ported directly from `cenovnik-mobile/services/products.ts`; plain `useState`/`useEffect` (no TanStack Query, keep it simple for v1)
+- **Data fetching**: Browser-side Supabase queries via `@/lib/supabase/client`
+- **Styling**: Tailwind + shadcn/ui (`Button`, `Input`, `Skeleton`), no CSS Modules (consistent with prijava precedent)
+- **Known gaps in v1**: No clickable product detail routes; no barcode scanner; responsive layout tested but visual design is placeholder
+- **Next steps**: Product detail page (/proizvodi/[id]), visual polish/design refinement, consider TanStack Query for pagination caching
+
+**Tech debt note**: TanStack Query — nice-to-have for v2+, explore for pagination/caching; current `useState`/`useEffect` pattern matches mobile's existing approach and keeps first pass focused.
+
 - **Target Start**: 2026-08-20
 - **Target End**: 2026-09-02
 - **Prerequisites**: ✅ Phase 1 auth (email OTP) complete, ✅ Realtime subscriptions working, ⏳ OAuth needs Supabase provider config (Google Web Client ID + Apple Services ID — external setup, not code)
@@ -636,7 +646,7 @@ See **## Status** section below.
 ## Development Preferences
 
 - **Commit messages**: Do not mention Claude or AI assistance; keep commits focused on the work itself
-- **Code style**: Use CSS modules for components (not inline Tailwind); follow Uncle Bob's DRY principle
+- **Code style**: **Phase 2+**: Tailwind + shadcn/ui for auth and product pages (new, confirmed in Phase 2); **legacy**: CSS Modules for shared/list components (will converge on Tailwind during refactor). Use Uncle Bob's DRY principle regardless of styling approach.
 - **Component structure**: Each component gets its own folder with .tsx and .module.css
 - **Architecture**: Industry-standard patterns (composition over inheritance, single responsibility)
 - **⚠️ CRITICAL: Responsive Design**: ALL pages and components MUST be responsive across mobile (320px), tablet (600px), and desktop (1920px). Use `clamp()` for fluid typography, `min()` for fluid container widths, and mobile-first media queries. Test on iPhone, iPad, and desktop viewports before committing. This is NOT optional — every page must work on all device sizes.
@@ -699,5 +709,5 @@ SharedListView (main orchestrator - "use client")
 
 ---
 
-**Last Updated**: 2026-08-21 (Phase 1, Step 12 — Email OTP sign-in end-to-end, complete; Phase 2 prerequisites set; design polish deferred to Phase 1B)
+**Last Updated**: 2026-08-21 (Phase 2, Step 1 — /proizvodi functional UI v1 complete; product service layer, search, grid, load-more; lowest price across all stores; next: product detail page + visual design)
 **Author**: Dusan Marjanski

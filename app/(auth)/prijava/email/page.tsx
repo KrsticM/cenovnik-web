@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Container } from "@/components/ui/container";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
@@ -72,8 +73,9 @@ function EmailOtpContent() {
   }, [otp, step, handleVerifyOtp]);
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm space-y-6">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-background">
+      <Container size="sm">
+        <div className="w-full max-w-sm space-y-6">
         {step === "email" ? (
           <>
             <div className="space-y-2 text-center">
@@ -183,7 +185,8 @@ function EmailOtpContent() {
             </div>
           </>
         )}
-      </div>
+        </div>
+      </Container>
     </main>
   );
 }

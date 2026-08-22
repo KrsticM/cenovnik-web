@@ -149,7 +149,7 @@ export async function fetchLowestPrices(
     console.error("Supabase error details:", {
       message: error.message,
       code: error.code,
-      status: error.status,
+      status: (error as any).status,
       hint: (error as any).hint,
       details: (error as any).details,
     });
