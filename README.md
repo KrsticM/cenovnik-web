@@ -62,6 +62,8 @@ npm run dev  # test production build locally
 
 **Data**: Supabase PostgreSQL. Real-time syncing via Realtime subscriptions (WebSocket, `postgres_changes`).
 
+**Responsive Layout**: Industry-standard `Container` primitive (`components/ui/container.tsx`) — Tailwind-native with adaptive horizontal gutters across all breakpoints. Ensures consistent page-level spacing from mobile (320px, `px-4`) through ultra-wide (3xl+, `lg:px-8`). Used by all authenticated pages for alignment consistency.
+
 ## Development
 
 ### Conventions
@@ -81,8 +83,11 @@ npm run dev  # test production build locally
 ✅ **Email OTP sign-in** — Full end-to-end, tested  
 ✅ **OAuth wiring** — Google & Apple, awaiting provider config in Supabase dashboard  
 ✅ **Shared lists** — Real-time sync via Supabase subscriptions  
-✅ **Responsive design** — 320px–1920px  
-⏳ **Product browsing** — Phase 2 (in development)  
+✅ **Responsive design** — 320px–1920px (3xl breakpoint for 8-column grid at 1920px+)  
+✅ **Product browsing** — Phase 2 Step 2 (production-ready: search, filtering, infinite scroll, mobile-parity UI)  
+✅ **Responsive Container system** — Tailwind-native with adaptive gutters (16px → 24px → 32px)  
+⏳ **Product details** — Phase 2 (planned: /proizvodi/[id], clickable cards)  
+⏳ **Store selection** — Phase 2 (planned: /prodavnice)  
 ⏳ **Shopping lists** — Phase 3 (planned)
 
 ## Roadmap & Details

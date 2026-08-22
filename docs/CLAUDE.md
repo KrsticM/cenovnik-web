@@ -557,6 +557,61 @@ See **## Status** section below.
 - **Target End**: 2026-09-02
 - **Prerequisites**: ✅ Phase 1 auth (email OTP) complete, ✅ Realtime subscriptions working, ⏳ OAuth needs Supabase provider config (Google Web Client ID + Apple Services ID — external setup, not code)
 
+**Step 2 (2026-08-23)**: /proizvodi Production Polish & Performance Optimization ✅
+- [x] **Responsive Container Foundation**
+  - [x] Created `Container` primitive (`components/ui/container.tsx`) — Tailwind/shadcn-native, NOT CSS Modules (aligns with Phase 2+ architecture)
+  - [x] Responsive gutters: `px-4` → `sm:px-6` → `lg:px-8` (16px → 24px → 32px per side)
+  - [x] Size variants: `sm` (720px), `md` (1040px), `lg` (1280px), `full` (no max-width)
+  - [x] Adopted in `/proizvodi`, `/prijava`, `/prijava/email` for consistent page-level spacing
+  - [x] Uses `cva` + `cn()` matching existing shadcn primitives pattern (forwardRef, interfaces, exports)
+  - [x] **Decision**: Industry-standard single outer wrapper per page (not multiple nested containers) for alignment consistency
+  - [x] **Reasoning**: CSS Grid's `align-items: stretch` makes all cards in a row equal height; single container ensures all sections share responsive gutters
+  
+- [x] **ProductCard Layout (Mobile Parity)**
+  - [x] Added `flex h-full flex-col` to root card — stretches to grid row height, flex column layout
+  - [x] Product name: left-aligned, `line-clamp-2` (unchanged) — matches `cenovnik-mobile` exactly (NOT centered)
+  - [x] Price footer: `mt-auto` pins to bottom of card regardless of name line count
+  - [x] Footer content: `flex flex-col items-center gap-1 text-center` — centers label + price as block (matches mobile)
+  - [x] Verified against `cenovnik-mobile/components/ProductGridCard.tsx` for exact parity
+  - [x] **Decision**: Match mobile, not user's initial assumption (he said "centralized" for both, but mobile only centers footer)
+  
+- [x] **Price Fetching Bug Fix**
+  - [x] **Root cause identified**: useProductPrices hook had dependency array `[products.length, userStoreIds]` where `userStoreIds` is an array reference, causing flaky timing
+  - [x] **Solution**: Created useMemo'd stable strings for product IDs and store IDs (only recalculate when actual data changes)
+  - [x] **Result**: Prices now fetch immediately after products load, visible on first render (was blank until "Load More" clicked)
+  - [x] Added `isLoadingPrices` state to hook for future UI states (loading skeletons)
+  
+- [x] **"Učitaj još" Button Logic Fix**
+  - [x] **Critical bug**: Button showed when loading finished, even with < 20 results (logic was `hasMore || !loading`)
+  - [x] **Solution**: Changed ProductGrid condition from `(hasMore || !loading)` to just `hasMore`
+  - [x] **Cascading fix**: handleSearchChange now sets `hasMore = (results.length === PRODUCTS_PER_PAGE)` for initial search
+  - [x] **Result**: Button now correctly hides when search returns 11 results, shows when search/browse has full page (20+)
+  
+- [x] **Performance Optimization**
+  - [x] useProductBrowse loadMore(): Changed O(n²) deduplication (`prev.some()`) to O(n) with Set
+  - [x] Removed unused `newIds` variable
+  - [x] ProductCard & ProductGrid wrapped in `memo()` with proper equality checks to prevent cascade re-renders
+  - [x] useProductPrices: Removed all debug console.log statements (kept error logging for production)
+  - [x] useProductSearch: Removed all debug console.log statements
+  - [x] useProductBrowse: Removed all debug console.log statements
+  
+- [x] **3xl Breakpoint Support**
+  - [x] Added `--breakpoint-3xl: 1920px` to `@theme` block in `app/globals.css`
+  - [x] ProductGrid's `3xl:grid-cols-8` class now generates CSS (was dead code before)
+  
+- [x] **Architecture Decisions**
+  - [x] **Tailwind-native, no CSS Modules**: New `Container` follows shadcn conventions (cva, forwardRef, cn), not legacy CSS Modules pattern
+  - [x] **Single outer Container per page**: Ensures consistent guttering and alignment across all sections
+  - [x] **Stable dependency arrays**: useMemo for product/store ID strings prevents effect flapping
+  - [x] **Memoization strategy**: Only ProductCard and ProductGrid memoized (not every component) to balance perf vs complexity
+  - [x] **Error logging preserved**: console.error for "Failed to fetch prices/stores" kept for production debugging
+  
+- **Files Created**: `components/ui/container.tsx`
+- **Files Modified**: `app/(authenticated)/proizvodi/page.tsx`, `app/(authenticated)/proizvodi/components/ProductCard.tsx`, `app/(authenticated)/proizvodi/components/ProductGrid.tsx`, `app/(authenticated)/proizvodi/hooks/useProductPrices.ts`, `app/(authenticated)/proizvodi/hooks/useProductSearch.ts`, `app/(authenticated)/proizvodi/hooks/useProductBrowse.ts`, `app/(auth)/prijava/page.tsx`, `app/(auth)/prijava/email/page.tsx`, `app/globals.css`
+- **Commit**: d6bf447 — "Proizvodi page: production-ready with responsive grid, optimized prices, and smart pagination"
+- **Status**: ✅ Complete. All bugs fixed, production-ready code (no debug logs), performance optimized, mobile parity achieved, build verified with no type errors.
+- **Next**: Product detail page (`/proizvodi/[id]`), store selection UI (`/prodavnice`), visual design refinement
+
 ### Phase 3: Shopping Lists ⏳
 - [ ] Shopping list service
 - [ ] Lists index page
@@ -709,5 +764,5 @@ SharedListView (main orchestrator - "use client")
 
 ---
 
-**Last Updated**: 2026-08-21 (Phase 2, Step 1 — /proizvodi functional UI v1 complete; product service layer, search, grid, load-more; lowest price across all stores; next: product detail page + visual design)
+**Last Updated**: 2026-08-23 (Phase 2, Step 2 complete — /proizvodi production-ready: responsive Container foundation, mobile-parity ProductCard layout, price fetching fix, button logic fix, O(n²)→O(n) perf optimization, debug logs removed; next: product detail page /proizvodi/[id], store selection UI)
 **Author**: Dusan Marjanski
