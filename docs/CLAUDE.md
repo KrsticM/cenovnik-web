@@ -306,20 +306,20 @@ Both clients use Supabase client libraries directly with Row-Level Security poli
 ## Data Model (Mirrors Mobile)
 
 **Existing in Supabase** (shared with mobile):
-- `products`: id, name, barcode, category, image_url, created_at
-- `retailers`: id, name, logo_url, url
-- `product_prices`: product_id, retailer_id, price, last_updated
+- `products`: id, product_name, has_image, created_at
+- `barcodes`: id, product_id, barcode (joined to products via foreign key)
+- `current_prices`: product_id, store_id, regular_price, discounted_price, price_date (live per-store pricing)
+- `stores`: id, retailer_id, retailer_name, address (physical store locations)
 - `auth.users`: Supabase managed (email, uid, etc.)
-- `user_stores`: user_id, store_id (many-to-many user preferences)
+- `user_stores`: user_id, store_id (many-to-many user preferences; used for scoped pricing in mobile, not yet in web)
 - `shopping_lists`: id, user_id, name, created_at, updated_at
 - `shopping_list_items`: id, list_id, product_id, quantity, added_at
 - `share_tokens`: id, list_id, token, created_at, expires_at
 - `app_config`: min_version, store_urls (version gating)
 
-**New for web** (optional):
-- None initially; reuse mobile schema
-- Consider `web_sessions` table if adding analytics
-- Consider `feature_flags` table for A/B testing
+**Web-specific tables** (optional, future):
+- `web_sessions`: if adding analytics (not implemented)
+- `feature_flags`: for A/B testing (not implemented)
 
 ---
 
@@ -536,16 +536,81 @@ See **## Status** section below.
 - **Commits**: One atomic commit with full Phase 1 auth completion
 - **Status**: ✅ Complete, end-to-end email OTP tested and working, OAuth wiring ready for provider config, plain shadcn styling (visual polish deferred to Phase 1B)
 
-### Phase 2: Core Product Browsing ⏳
-- [ ] Product service layer (Supabase queries)
-- [ ] Home/products page with grid
-- [ ] Search with infinite scroll
-- [ ] Product detail page
-- [ ] Store selection UI
-- [ ] Styling & responsive design
+### Phase 2: Core Product Browsing ⏳ (In Progress)
+
+**Step 1 (2026-08-21)**: /proizvodi Functional UI v1 ✅
+- [x] Product service layer (`lib/services/products.ts` — browse feed, search, pricing)
+- [x] Types (`types/product.ts` — Product shape)
+- [x] Price formatting (`lib/formatPrice.ts` — RSD display)
+- [x] /proizvodi listing page: Tailwind + shadcn, debounced search, product grid, "load more" button
+- [x] Lowest-price display (across all stores; store-scoped pricing deferred until /prodavnice exists)
+- [x] Error/loading/empty states (inline, minimal)
+- **Architecture**: Ported directly from `cenovnik-mobile/services/products.ts`; plain `useState`/`useEffect` (no TanStack Query, keep it simple for v1)
+- **Data fetching**: Browser-side Supabase queries via `@/lib/supabase/client`
+- **Styling**: Tailwind + shadcn/ui (`Button`, `Input`, `Skeleton`), no CSS Modules (consistent with prijava precedent)
+- **Known gaps in v1**: No clickable product detail routes; no barcode scanner; responsive layout tested but visual design is placeholder
+- **Next steps**: Product detail page (/proizvodi/[id]), visual polish/design refinement, consider TanStack Query for pagination caching
+
+**Tech debt note**: TanStack Query — nice-to-have for v2+, explore for pagination/caching; current `useState`/`useEffect` pattern matches mobile's existing approach and keeps first pass focused.
+
 - **Target Start**: 2026-08-20
 - **Target End**: 2026-09-02
 - **Prerequisites**: ✅ Phase 1 auth (email OTP) complete, ✅ Realtime subscriptions working, ⏳ OAuth needs Supabase provider config (Google Web Client ID + Apple Services ID — external setup, not code)
+
+**Step 2 (2026-08-23)**: /proizvodi Production Polish & Performance Optimization ✅
+- [x] **Responsive Container Foundation**
+  - [x] Created `Container` primitive (`components/ui/container.tsx`) — Tailwind/shadcn-native, NOT CSS Modules (aligns with Phase 2+ architecture)
+  - [x] Responsive gutters: `px-4` → `sm:px-6` → `lg:px-8` (16px → 24px → 32px per side)
+  - [x] Size variants: `sm` (720px), `md` (1040px), `lg` (1280px), `full` (no max-width)
+  - [x] Adopted in `/proizvodi`, `/prijava`, `/prijava/email` for consistent page-level spacing
+  - [x] Uses `cva` + `cn()` matching existing shadcn primitives pattern (forwardRef, interfaces, exports)
+  - [x] **Decision**: Industry-standard single outer wrapper per page (not multiple nested containers) for alignment consistency
+  - [x] **Reasoning**: CSS Grid's `align-items: stretch` makes all cards in a row equal height; single container ensures all sections share responsive gutters
+  
+- [x] **ProductCard Layout (Mobile Parity)**
+  - [x] Added `flex h-full flex-col` to root card — stretches to grid row height, flex column layout
+  - [x] Product name: left-aligned, `line-clamp-2` (unchanged) — matches `cenovnik-mobile` exactly (NOT centered)
+  - [x] Price footer: `mt-auto` pins to bottom of card regardless of name line count
+  - [x] Footer content: `flex flex-col items-center gap-1 text-center` — centers label + price as block (matches mobile)
+  - [x] Verified against `cenovnik-mobile/components/ProductGridCard.tsx` for exact parity
+  - [x] **Decision**: Match mobile, not user's initial assumption (he said "centralized" for both, but mobile only centers footer)
+  
+- [x] **Price Fetching Bug Fix**
+  - [x] **Root cause identified**: useProductPrices hook had dependency array `[products.length, userStoreIds]` where `userStoreIds` is an array reference, causing flaky timing
+  - [x] **Solution**: Created useMemo'd stable strings for product IDs and store IDs (only recalculate when actual data changes)
+  - [x] **Result**: Prices now fetch immediately after products load, visible on first render (was blank until "Load More" clicked)
+  - [x] Added `isLoadingPrices` state to hook for future UI states (loading skeletons)
+  
+- [x] **"Učitaj još" Button Logic Fix**
+  - [x] **Critical bug**: Button showed when loading finished, even with < 20 results (logic was `hasMore || !loading`)
+  - [x] **Solution**: Changed ProductGrid condition from `(hasMore || !loading)` to just `hasMore`
+  - [x] **Cascading fix**: handleSearchChange now sets `hasMore = (results.length === PRODUCTS_PER_PAGE)` for initial search
+  - [x] **Result**: Button now correctly hides when search returns 11 results, shows when search/browse has full page (20+)
+  
+- [x] **Performance Optimization**
+  - [x] useProductBrowse loadMore(): Changed O(n²) deduplication (`prev.some()`) to O(n) with Set
+  - [x] Removed unused `newIds` variable
+  - [x] ProductCard & ProductGrid wrapped in `memo()` with proper equality checks to prevent cascade re-renders
+  - [x] useProductPrices: Removed all debug console.log statements (kept error logging for production)
+  - [x] useProductSearch: Removed all debug console.log statements
+  - [x] useProductBrowse: Removed all debug console.log statements
+  
+- [x] **3xl Breakpoint Support**
+  - [x] Added `--breakpoint-3xl: 1920px` to `@theme` block in `app/globals.css`
+  - [x] ProductGrid's `3xl:grid-cols-8` class now generates CSS (was dead code before)
+  
+- [x] **Architecture Decisions**
+  - [x] **Tailwind-native, no CSS Modules**: New `Container` follows shadcn conventions (cva, forwardRef, cn), not legacy CSS Modules pattern
+  - [x] **Single outer Container per page**: Ensures consistent guttering and alignment across all sections
+  - [x] **Stable dependency arrays**: useMemo for product/store ID strings prevents effect flapping
+  - [x] **Memoization strategy**: Only ProductCard and ProductGrid memoized (not every component) to balance perf vs complexity
+  - [x] **Error logging preserved**: console.error for "Failed to fetch prices/stores" kept for production debugging
+  
+- **Files Created**: `components/ui/container.tsx`
+- **Files Modified**: `app/(authenticated)/proizvodi/page.tsx`, `app/(authenticated)/proizvodi/components/ProductCard.tsx`, `app/(authenticated)/proizvodi/components/ProductGrid.tsx`, `app/(authenticated)/proizvodi/hooks/useProductPrices.ts`, `app/(authenticated)/proizvodi/hooks/useProductSearch.ts`, `app/(authenticated)/proizvodi/hooks/useProductBrowse.ts`, `app/(auth)/prijava/page.tsx`, `app/(auth)/prijava/email/page.tsx`, `app/globals.css`
+- **Commit**: d6bf447 — "Proizvodi page: production-ready with responsive grid, optimized prices, and smart pagination"
+- **Status**: ✅ Complete. All bugs fixed, production-ready code (no debug logs), performance optimized, mobile parity achieved, build verified with no type errors.
+- **Next**: Product detail page (`/proizvodi/[id]`), store selection UI (`/prodavnice`), visual design refinement
 
 ### Phase 3: Shopping Lists ⏳
 - [ ] Shopping list service
@@ -636,9 +701,9 @@ See **## Status** section below.
 ## Development Preferences
 
 - **Commit messages**: Do not mention Claude or AI assistance; keep commits focused on the work itself
-- **Code style**: Use CSS modules for components (not inline Tailwind); follow Uncle Bob's DRY principle
+- **Code style**: **Phase 2+**: Tailwind + shadcn/ui for auth and product pages (new, confirmed in Phase 2); **legacy**: CSS Modules for shared/list components (will converge on Tailwind during refactor). Use Uncle Bob's DRY principle regardless of styling approach.
 - **Component structure**: Each component gets its own folder with .tsx and .module.css
-- **Architecture**: Industry-standard patterns (composition over inheritance, single responsibility)
+- **Architecture**: Industry-standard patterns (composition over inheritance, single responsibility). **⚠️ Do not deviate from documented architecture decisions (shadcn/ui components, Tailwind styling, composition patterns) without explicit approval — any deviations must include a concrete reason and require user sign-off.**
 - **⚠️ CRITICAL: Responsive Design**: ALL pages and components MUST be responsive across mobile (320px), tablet (600px), and desktop (1920px). Use `clamp()` for fluid typography, `min()` for fluid container widths, and mobile-first media queries. Test on iPhone, iPad, and desktop viewports before committing. This is NOT optional — every page must work on all device sizes.
 
 ---
@@ -699,5 +764,112 @@ SharedListView (main orchestrator - "use client")
 
 ---
 
-**Last Updated**: 2026-08-21 (Phase 1, Step 12 — Email OTP sign-in end-to-end, complete; Phase 2 prerequisites set; design polish deferred to Phase 1B)
+## Navbar Architecture & Design (Phase 2, Step 3)
+
+### Overview
+The global application navbar (`components/Navbar/`) provides primary navigation and authentication controls. It appears on all authenticated pages via `app/(authenticated)/layout.tsx` and follows a responsive mobile-first design with a hamburger menu pattern on narrow viewports.
+
+### Component Structure
+```
+components/Navbar/
+├── Navbar.tsx           (main orchestrator, state management)
+├── NavLink.tsx          (reusable nav link with active state)
+├── MobileNavMenu.tsx    (mobile dropdown panel)
+└── navItems.ts          (navigation definition constant)
+```
+
+### Navigation Items
+Three primary sections (mobile-parity with cenovnik-mobile):
+1. **Proizvodi** (`/proizvodi`) — Product browsing & search (Store icon)
+2. **Lista** (`/lista`) — Shopping list management (ShoppingCart icon)
+3. **Podešavanja** (`/podesavanja`) — Settings & sign-out (Settings icon)
+
+### Responsive Design & Breakpoints
+
+**Desktop (≥640px)**:
+- Fixed header with brand logo (left), centered nav links (Proizvodi / Lista / Podešavanja), sign-out button (right)
+- All controls inline, no dropdown
+- Nav links show icon + label
+- Sign-out visible as standalone button
+
+**Mobile (<640px)**:
+- Fixed header with brand logo (left), hamburger menu icon (right)
+- Nav links and sign-out hidden; hamburger toggles mobile dropdown
+- Dropdown panel appears below navbar with stacked full-width menu items
+- Nav links show icon + label (same as desktop, full-width)
+- Sign-out button moves into dropdown as final menu item
+- Hamburger icon swaps Menu → X when open
+
+**Rationale**: 320px viewport width prevents inline links + sign-out button from fitting. Hamburger menu is industry standard for mobile nav collapse, maximizes usable space, matches mobile app bottom-tab affordance.
+
+### Styling & Color Palette
+
+**Technology**: Tailwind CSS v4 with semantic color classes aliased to CSS variables.
+
+**Key Classes**:
+- `text-primary` → `var(--brand)` (warm brown/tan primary color)
+- `text-muted-foreground` → `var(--muted)` (neutral gray for inactive links)
+- `bg-secondary` → `var(--brand-soft)` (light tan background for active/hover)
+- `text-secondary-foreground` → `var(--brand-dark)` (dark brown for hover text)
+- `bg-background` → `var(--paper)` (off-white page background)
+- `border-border` → `var(--line)` (subtle light gray divider)
+
+**Active Link State**: 
+- Background: `bg-secondary` (light tan)
+- Text: `text-primary` (darker brown)
+- Aria-current="page" for semantics
+
+**Hover State** (inactive links):
+- Background: `bg-secondary`
+- Text: `text-secondary-foreground`
+- Transition: 200ms ease
+
+**Components**:
+- Uses shadcn `Button` component with `variant="outline"` for sign-out button (consistent with system)
+- lucide-react icons (Store, ShoppingCart, Settings, Menu, X) for visual consistency
+- No CSS Modules (Phase 2+ architecture uses Tailwind only)
+
+### State Management
+
+**Navbar component**:
+- `isMenuOpen` (boolean): Controls mobile dropdown visibility
+- `pathname` (from usePathname): Detects current route for active link highlighting
+- `user` (from useAuth): Shows/hides navbar content when authenticated
+
+**Mobile dropdown closes on**:
+- Clicking any nav link (auto-navigates + closes)
+- Clicking sign-out button (after sign-out completes)
+- No click-outside close (user explicitly opens/closes via hamburger)
+
+### Accessibility
+
+- Hamburger button: `aria-label` updates per state ("Otvori meni" / "Zatvori meni")
+- Hamburger button: `aria-expanded={isMenuOpen}` reflects open/close state
+- Nav links: `aria-current="page"` when active (ARIA standard for current page indicator)
+- Mobile menu: `id="mobile-menu"` and hamburger `aria-controls="mobile-menu"` (explicit relationship)
+- Semantic HTML: `<header>`, `<nav>`, `<Link>` (from Next.js), `<button>` (mouse + keyboard accessible)
+
+### Design Decisions & Rationale
+
+1. **Hamburger over icon-only links** (mobile): Icon-only "Proizvodi" / "Lista" / "Podešavanja" at 320px would overflow or require extreme scaling. Hamburger menu is the industry standard and doesn't sacrifice discoverability.
+
+2. **Sign-out in mobile dropdown** (not persistent button): Sign-out on mobile is destructive and infrequent. Moving it into the dropdown reclaims valuable navbar space (15–20px width) and groups it with other settings, matching mobile app mental model where sign-out lives in Settings tab.
+
+3. **Fixed navbar** (position: fixed, z-index: 50): Persistent navigation improves UX across long pages. Footer navigation (mobile app pattern) isn't viable on desktop. Fixed header with z-index ensures it overlays all content without blocking interaction.
+
+4. **Tailwind semantic classes** (not inline styles): Maintains consistency with Phase 2+ architecture and allows centralized color theme management via globals.css. CSS variables are aliased to Tailwind tokens, enabling both systems to coexist.
+
+5. **Composition over inheritance** (Navbar + NavLink + MobileNavMenu): Each component has a single responsibility. NavLink is reusable in both desktop and mobile contexts. MobileNavMenu is isolated and testable. Navbar orchestrates state but delegates rendering.
+
+### Future Enhancements
+
+- **Active indicator animation**: Subtle underline or scale animation on active link (currently: background + text color change)
+- **Dropdown transitions**: Fade-in/slide animation for mobile menu open/close (currently: instant)
+- **Keyboard navigation**: Test Tab order through mobile dropdown when open; add focus trap if needed
+- **Search/filter links**: If future pages added to nav, consider grouping in secondary menu or mega-menu
+- **Notification badge**: Possible future: badge on Lista icon showing item count (design TBD)
+
+---
+
+**Last Updated**: 2026-08-23 (Phase 2, Step 3 in progress — Navbar refactored to Tailwind + shadcn architecture: split ListNavbar into Navbar orchestrator + NavLink + MobileNavMenu components, extracted navItems constant, implemented responsive hamburger menu for mobile (<640px) with inline links on desktop (≥640px), /lista placeholder page added; next: product detail page /proizvodi/[id], store selection UI)
 **Author**: Dusan Marjanski

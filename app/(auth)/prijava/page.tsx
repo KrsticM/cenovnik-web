@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Container } from "@/components/ui/container";
 import { useAuth } from "@/contexts/AuthContext";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -43,8 +44,9 @@ function PrijavaContent() {
     next !== null ? `/prijava/email?next=${encodeURIComponent(next || "")}` : "/prijava/email";
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm space-y-6">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-background">
+      <Container size="sm">
+        <div className="w-full max-w-sm space-y-6">
         <div className="space-y-2 text-center">
           <h1 className="font-sans text-2xl font-semibold text-foreground">Prijava</h1>
         </div>
@@ -80,7 +82,8 @@ function PrijavaContent() {
             </Button>
           </Link>
         </div>
-      </div>
+        </div>
+      </Container>
     </main>
   );
 }

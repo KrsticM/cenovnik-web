@@ -1,6 +1,6 @@
 "use client";
 
-import { ListNavbar } from "@/components/ListNavbar/ListNavbar";
+import { Navbar } from "@/components/Navbar/Navbar";
 import styles from "./layout.module.css";
 
 export default function AuthenticatedLayout({
@@ -10,7 +10,7 @@ export default function AuthenticatedLayout({
 }) {
   return (
     <div className={styles.root}>
-      <ListNavbar />
+      <Navbar />
       {children}
     </div>
   );
