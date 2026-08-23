@@ -703,7 +703,7 @@ See **## Status** section below.
 - **Commit messages**: Do not mention Claude or AI assistance; keep commits focused on the work itself
 - **Code style**: **Phase 2+**: Tailwind + shadcn/ui for auth and product pages (new, confirmed in Phase 2); **legacy**: CSS Modules for shared/list components (will converge on Tailwind during refactor). Use Uncle Bob's DRY principle regardless of styling approach.
 - **Component structure**: Each component gets its own folder with .tsx and .module.css
-- **Architecture**: Industry-standard patterns (composition over inheritance, single responsibility)
+- **Architecture**: Industry-standard patterns (composition over inheritance, single responsibility). **⚠️ Do not deviate from documented architecture decisions (shadcn/ui components, Tailwind styling, composition patterns) without explicit approval — any deviations must include a concrete reason and require user sign-off.**
 - **⚠️ CRITICAL: Responsive Design**: ALL pages and components MUST be responsive across mobile (320px), tablet (600px), and desktop (1920px). Use `clamp()` for fluid typography, `min()` for fluid container widths, and mobile-first media queries. Test on iPhone, iPad, and desktop viewports before committing. This is NOT optional — every page must work on all device sizes.
 
 ---
