@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
+import { Geist } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
+
+const geist = Geist({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.ecenovnik.app"),
@@ -30,7 +33,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="sr">
+    <html lang="sr" className={geist.className}>
       <body>
         <AuthProvider>{children}</AuthProvider>
       </body>

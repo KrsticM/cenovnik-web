@@ -1,6 +1,7 @@
 "use client";
 
 import { Navbar } from "@/components/Navbar/Navbar";
+import { ShoppingListProvider } from "@/contexts/ShoppingListContext";
 import styles from "./layout.module.css";
 
 export default function AuthenticatedLayout({
@@ -9,9 +10,11 @@ export default function AuthenticatedLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className={styles.root}>
-      <Navbar />
-      {children}
-    </div>
+    <ShoppingListProvider>
+      <div className={styles.root}>
+        <Navbar />
+        {children}
+      </div>
+    </ShoppingListProvider>
   );
 }

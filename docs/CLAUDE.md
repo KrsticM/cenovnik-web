@@ -209,7 +209,7 @@
 3. **Analytics & Monitoring**
    - Setup Vercel Analytics (Web Vitals tracking)
    - Log errors to Sentry or similar
-   - Track key events (search, add to cart, share list)
+   - Track key events (search, add to list, share list)
 
 4. **Accessibility**
    - ARIA labels on interactive elements
@@ -871,5 +871,538 @@ Three primary sections (mobile-parity with cenovnik-mobile):
 
 ---
 
-**Last Updated**: 2026-08-23 (Phase 2, Step 3 in progress — Navbar refactored to Tailwind + shadcn architecture: split ListNavbar into Navbar orchestrator + NavLink + MobileNavMenu components, extracted navItems constant, implemented responsive hamburger menu for mobile (<640px) with inline links on desktop (≥640px), /lista placeholder page added; next: product detail page /proizvodi/[id], store selection UI)
+## Design Direction & Inspiration (Phase 2+)
+
+This section documents the web app's design direction, reference applications, and open design questions. It serves as a brief for "Claude Design" conversations and design review discussions. All decisions here are living — subject to refinement and change as the team reviews reference sites and iterates on UX patterns.
+
+### Product & UX Strategy: Exploration-Focused Browsing
+
+**Core strategic choice**: Cenovnik is designed for **exploration-focused browsing**, not just task-completion utility. Users should be able to casually browse products/prices the way one might browse a social feed — even without a specific shopping goal in mind — and the app should make that pleasant enough to encourage extended session length.
+
+**Business rationale**: Standard (free) tier users see ads; longer engaged sessions directly support ad revenue. Paying subscribers are an alternative monetization path. This makes "time spent browsing comfortably" a legitimate design goal, not scope creep. Engagement time is a real product metric tied to monetization.
+
+**Design implications already identified**:
+- **Calmer color palette** (ties to the Option A sage-green refinement documented below) suits sustained casual browsing better than high-urgency bright colors. Muted tones invite lingering; bright greens imply "buy now urgency."
+- **Infinite scroll + maximized product-grid real estate** (navbar scroll-collapse hides nav to expand search/grid on scroll) reduces friction to keep scrolling, matching Instagram-feed patterns.
+- **Low-friction, easily-reversible interactions** (see "Misclick Safety" principle below) reduce the psychological "cost" of casual interaction, encouraging exploration without fear of mistakes.
+- **OpenStreetMap store favoriting** (below) acts as a lightweight engagement hook — favoriting markets is itself an exploratory, low-commitment action that deepens engagement without requiring purchase intent.
+
+**Explicitly future / not yet scoped** (design for extensibility, no concrete plan yet):
+- Personalized recommendations based on browsing/list history
+- Trending/popular products section
+- Social proof elements (e.g., "2,000 people bought this week")
+
+These are directions the user is open to, kept in mind for design flexibility, but not committed roadmap items.
+
+---
+
+### Misclick Safety & Low-Commitment Interaction (Design Principle)
+
+Because browsing is meant to be casual and exploratory, accidental taps must be cheap to undo. No action in the product/list flow should feel risky or hard to reverse.
+
+**Concrete existing pattern**: The quantity-selector interaction (minus/plus/trash buttons) already makes over-incrementing trivially reversible — tap minus once to undo.
+
+**Critical structural safeguard**: There is **no checkout/payment step in the app**. Items only ever go into a **shopping list** for the user's own personal shopping trip; Cenovnik does not process purchases or handle payments. This structurally removes the highest-stakes misclick (accidental purchase) by design. This must be stated plainly so future design/development doesn't accidentally introduce e-commerce-style "buy now" affordances.
+
+---
+
+### Reference Applications
+
+The following live applications serve as design and UX inspiration:
+
+**PRIMARY REFERENCE: Airbnb** ⭐
+- Focus: Product browsing, search UX, responsive navbar behavior
+- Why chosen: Matches exactly what we want on `/proizvodi` page — navbar with icon + options in center (Proizvodi / Lista / Podešavanja), powerful search, beautiful animation where search bar merges into navbar, product grid layout.
+- Key inspiration: The navbar scroll-collapse animation on the search/listings page. As users scroll down, the navbar transitions from "logo — nav links — search/filter controls" to a condensed "logo — search bar — account icon" state. The logo (left) and account controls (right) remain visible; the center space gets reclaimed for search. This pattern maximizes viewport real estate on pages with heavy browsing/scrolling.
+- Target implementation: Apply this exact pattern to Cenovnik's `/proizvodi` page. On scroll down, the navbar should collapse to prioritize the search bar; on scroll up or initial page load, it expands to show the full nav.
+- **Status**: Primary direction locked in. Proceed with this as the template.
+
+**Color Direction: Option C — Warm Optimistic** ✅ (CHOSEN 2026-08-30)
+- **Primary**: `#d97706` (Amber/Orange) — warmth, celebration, energy
+- **Secondary**: `#f5f1e8` (Warm Neutral) — approachability, calm
+- **Accent**: `#0ea5e9` (Cool Blue) — confidence, interaction feedback
+- **Typography**: Geist (geometric sans-serif, modern + friendly)
+- **Why chosen**: Feels warm and welcoming without urgency. Amber/orange celebrates savings and deals (not cold fintech blue). Cool blue accent provides confidence and interactive clarity. Best fits the "casual, exploratory browsing" strategy and engagement-focused goals.
+
+**Arc Browser** (secondary aesthetic inspiration)
+- Why considered: Feels quite innovative with good transitions. Looks like a 2026 site — the design language and interaction polish appeal for the overall web app aesthetic.
+- Use case: Reference for modern, polished micro-interactions and transition timing.
+- Status: Informational; not prescriptive.
+
+**Wolt** (pattern reference — quantity selector)
+- Why considered: Design feels too playful/game-like for a serious price-comparison app, so NOT the overall reference. However, one specific interaction pattern from Wolt is worth adopting: the quantity selector for cart items (see "Cart Quantity Selector Pattern" section below).
+- Status: One pattern adopted (see below); overall aesthetic not carried forward.
+
+**Reference Apps — Not Selected (Rationale)**:
+- **Revolut**: Feels more appropriate for landing page redesign if we do one; too fintech-focused for grocery price comparison.
+- **Stripe**: Too minimalist and plain; doesn't convey the personality we want.
+- **Amazon**: Too basic; just transactional, doesn't match our UX goals.
+- **Figma & Notion**: Both okay for landing page and marketing materials; more inspiration than core app reference.
+
+**Final Reference Direction**:
+- **Primary**: Airbnb (navbar + browsing UX)
+- **Secondary aesthetic**: Arc Browser (polish + transitions)
+- **Specific pattern**: Wolt quantity selector (cart interaction detail)
+
+This combination gives us: serious, usable design (Airbnb) + modern polish (Arc) + delightful cart interaction (Wolt pattern).
+
+### Navbar Scroll-Behavior Collapse (Planned Enhancement)
+
+**Current state**: The Navbar (documented above) is static — it does not change on scroll.
+
+**Target behavior** (inspired by Airbnb):
+- **Desktop/tablet (≥640px)**: On scroll down, hide the center nav links (Proizvodi / Lista / Podešavanja) to reveal an expanded search bar. Keep the logo (left) and account actions (right) always visible.
+- **Mobile (<640px)**: Hamburger menu icon behavior unchanged; consider if search bar expansion is needed or if the navbar simply gets out of the way via scroll-hide pattern (not yet decided).
+
+**Rationale**: Browsing product listings is the primary use case; search is more important than top-level nav links on this page. The collapse frees ~200px of navbar space for search input, improving discoverability of filtering options and reducing context-switching.
+
+**Timeline**: Planned after product detail pages and store selection UI (Phase 2, Step 5+). Not a blocker for current work.
+
+### List Quantity Selector Pattern (Wolt-Inspired, Planned for Phase 2 Step 4)
+
+**Pattern Overview**: A smooth, delightful way to adjust product quantities in the shopping list without requiring modal/page navigation.
+
+**Interaction Flow**:
+
+1. **Collapsed state** (product already in list): The product card shows the quantity as a simple number in a rounded badge (e.g., "2") in the top-right corner. User can continue browsing.
+
+2. **Expanded state** (on tap/click): The badge animates to reveal minus (−) and plus (+) buttons on either side of the number, plus a trash/delete icon. This gives the user a compact control bar for:
+   - **Decrease quantity**: Tap minus (−) to reduce quantity by 1. If quantity reaches 0, remove from list.
+   - **Increase quantity**: Tap plus (+) to increase quantity by 1.
+   - **Remove from list**: Tap trash icon to delete the item entirely.
+
+3. **Collapse back**: Tapping elsewhere on the product card or anywhere on the page collapses the controls back to the badge number.
+
+**Rationale**:
+- **Immediate feedback**: Users see item count right on the product card without opening a modal or sidebar.
+- **Smooth interaction**: The animation (number → controls) provides visual delight and clarifies that this is an interactive element.
+- **Friction reduction**: Add to list, adjust quantity, all from the browse grid. No modal/page hop needed.
+- **Low cognitive load**: Controls appear on demand; the default state is clean and simple.
+
+**Technical Details**:
+- Quantity badge styling: rounded pill-shaped container (e.g., `rounded-full`, `bg-secondary`, `text-primary`), positioned absolute top-right of product card.
+- Expanded control bar: flex row with minus-number-plus-delete, animated appearance (scale or fade-in), positioned over the badge.
+- Animation timing: ~200ms ease for smooth expansion/collapse (consistent with project's `--transition-base`).
+- States: collapsed (badge only) ↔ expanded (full controls). Tap outside to collapse.
+
+**Implementation Priority**: Phase 2, Step 4 (after product detail page, before advanced filtering). This pattern is valuable enough to prioritize after core product pages are done.
+
+**Future Extensions**:
+- Estimated price update as quantity changes (real-time total shown on the card or in cart sidebar).
+- Favorite/bookmark icon on the card (separate from quantity controls).
+- Add to list selector (if multi-list is already implemented — user picks which list without leaving the grid).
+
+---
+
+### Shopping List UX (Partially Resolved + Open Questions)
+
+**Resolved**: The Wolt quantity-selector pattern (above) handles the "adjust items in list while browsing" experience elegantly. This removes one layer of friction — users no longer need a modal/sidebar just to change quantity.
+
+**Still Open**: How should users **view and manage the full shopping list** while browsing? The quantity badge on product cards is great for adding/adjusting, but doesn't show the complete list, totals, or multi-list management.
+
+**Options Under Consideration**:
+
+1. **Modal drawer** — clicking a list icon (navbar or product card) opens a modal showing the full shopping list. Product grid remains visible behind the modal (semi-transparent overlay). User can see items, totals, and manage multi-list selector. Closes to return to browsing.
+
+2. **Persistent side panel** — a right-hand drawer stays open while browsing. Product grid shrinks to accommodate. User can see full list and switch between lists without disrupting browsing. Mobile: collapses or becomes a modal to preserve space.
+
+3. **Dedicated page only** — a separate `/lista` page shows the full list with edit/manage controls. Users tap a navbar link or list icon to go to the page, manage, then return to `/proizvodi`. Simpler initial implementation but requires navigation away from the grid.
+
+**Open questions**:
+- Placement in navbar: Should a list icon live in the navbar (next to other nav items on desktop, in the mobile dropdown)? Or remain a dedicated page link like it currently is?
+- Default list behavior: When adding an item via the quantity selector, does it go to the active/default list automatically, or does the user pick the list first?
+- Multi-list selector: If the user has 5 shopping lists, how do they switch the active list while browsing? Dropdown in the modal/panel? Navbar dropdown? Separate management page?
+- List total visibility: Should the navbar show a list badge with item count and/or total price, updated in real-time as the user adjusts quantities?
+
+**Constraint**: Whatever pattern is chosen must support the multi-list paradigm: one list is active/default (items go there via quantity selector unless user changes it), and users can explicitly add items to other lists with extra interaction.
+
+**Important note on consistency**: The app already has an existing shopping-list view at `lista/{token}` (public shared lists, accessible without login), rendering via the `SharedListView` component. Whichever full-list view pattern is chosen for the authenticated `/lista` experience (modal, panel, or dedicated page) should maintain visual and interaction consistency with this existing shared-list view where practical. Both views serve users managing shopping lists; ideally they don't feel like completely separate UI patterns.
+
+**Next step**: After deciding on the full-list view pattern (modal, panel, or page), return to the color palette / animations review to finalize the overall aesthetic, then hand off to Claude Design for prototyping.
+
+### Multi-List Support (Hard Requirement)
+
+The product roadmap includes support for multiple shopping lists per user. This affects all list UX design:
+
+- **Active list**: One list per session is marked as the default. Items added while browsing (via the quantity selector) go to this list by default.
+- **Switching lists**: Users can explicitly switch the active list via a dropdown/selector in the navbar, on the list page, or in the list modal/panel.
+- **Adding to other lists**: From the list UI, users can pick a different list for individual items or batch-add to a specific list (exact UX TBD).
+- **Design implication**: The list icon should reflect the active list (or offer a way to see/switch quickly), not assume a single flat list.
+
+### Animations & Transitions (Open Question)
+
+**Current thinking**: Micro-interactions and animations are valuable for perceived performance and delight, but unclear where they best fit in the authenticated web app.
+
+- **Candidates for animation**: Navbar scroll-collapse (above), search result transitions, active nav link indicators, list item add/remove (success feedback).
+- **Landing/marketing page**: Animation treatment will be richer when the landing page is refactored (not in scope for authenticated-app work currently).
+- **Questions**: Should we prioritize polish animations now, or defer until core features are complete? Are there specific interactions that feel sluggish without animation?
+
+This is flagged as a design-review discussion point rather than a locked decision.
+
+### Color Palette & Typography (Open for Revision)
+
+**Current state** (documented in the Navbar Architecture section):
+- **Palette**: Warm brown/tan primary (`var(--brand)`, oklch(0.5136 0.0877 37.00)), with soft secondary and dark accents. Chosen to evoke earth tones and approachability (groceries, savings).
+- **Typography**: Work Sans (400–800 weights) for all text. Chosen for neutrality and readability.
+
+**Status: NOT locked in.**
+
+Context worth noting:
+- **Cost of change is low**: The web app currently has ~10–20 users on the iOS mobile app. A redesigned color palette and typography for web will not disrupt existing users significantly.
+- **Web leads, mobile follows**: The web app redesign is *intended* to be the design reference for future mobile versions. Whatever palette/typography direction is chosen for web is expected to become the standard that both iOS (via a redesign) and the future Android app adopt — *not the reverse* (i.e., we are not locked to the current mobile app's aesthetics).
+- **Stakeholder openness**: The co-founder has agreed that changing the palette and typography is on the table if the team identifies something that better conveys "product price comparison" and "smart savings" than the current warm-earth aesthetic.
+
+**Design considerations for review**:
+- What color palette best communicates a budget/savings use case? (e.g., fintech apps like Revolut use cool blues; price-comparison sites use bold accent colors; grocery chains use warm/natural tones)
+- Does the current Work Sans choice feel friendly and approachable, or should a different sans-serif be considered? (e.g., Inter for modern minimalism, Poppins for playfulness, Geist for tech-forward feel)
+- Should the palette tie to a specific category (fintech, retail, productivity) or stay neutral and let the *product* define the identity?
+
+This is an open design-direction conversation, not a settled choice.
+
+### Status & Next Steps
+
+This section is a **living design brief**, not a locked spec. The next phase of work involves:
+
+1. **Reference site review**: User to examine Airbnb's navbar behavior, Wolt's list management, and candidate apps in depth; provide feedback on what feels right for Cenovnik.
+2. **Design refinement**: Based on feedback, refine the open questions (cart UX pattern, color/typography direction, animation strategy).
+3. **Claude Design handoff**: Once clear direction emerges, export this section + design system tokens via `/design-sync` to Claude Design for prototyping and iteration.
+4. **Implementation**: After design approval in Claude Design, return to Claude Code to build.
+
+All of the above is subject to change as the team gathers feedback and explores alternatives.
+
+### Color Palettes & Typography (Documented Options)
+
+Three color palette directions were explored and documented. Use this section as a reference if the team revisits the color direction in the future.
+
+**CHOSEN: Option A — Green + Neutral + Gold** ✅
+
+*Emotion: "Smart savings, healthy choices, fresh & natural"*
+
+- **Primary**: `#2ea853` (Fresh Green) — growth, organic, nature, savings
+- **Secondary**: `#f5f1e8` (Warm Neutral) — approachability, calm, background
+- **Accent**: `#f59e0b` (Gold) — optimism, value, celebration of deals found
+- **Typography**: Geist (geometric sans-serif, modern + friendly)
+- **Why chosen**: Immediately communicates grocery/savings without coldness. Green says "smart choice"; gold celebrates the savings. Geist feels 2026 and modern while staying approachable.
+- **Brand feeling**: "I'm making intelligent, healthy choices that save me money, and this app makes it easy and delightful."
+
+**Refinement under consideration (within Option A)**:
+- User is exploring whether a more muted/pastel sage-green fits better than the current bright `#2ea853`. Reference swatches for comparison: `#70845F` (deep sage/olive) or `#A1A67C` (lighter olive/sage tone).
+- Also exploring a pastel cream neutral in place of the current `#f5f1e8` (which is already warm but may not be pastel enough) — reference: `#FFEDD0` (soft cream/peach).
+- Two alternate accent tones from the same reference palette are noted as possibilities to compare against the current gold `#f59e0b`: `#DA864D` (warm terracotta/rust) or `#CA643C` (deeper rust/burnt orange).
+- **Status**: Open refinement question, not finalized. Goal is to verify whether these more pastel/muted tones better convey the "smart savings, fresh, natural" emotional direction than the currently more saturated colors, before locking in final hex values.
+- **Next step**: Update the color-palette Artifact with a visual comparison showing Option A with both the current bright green and the muted-sage variant side by side, so the user can assess directly.
+
+**Alternative Option B — Blue + Green + Gold**
+
+*Emotion: "Trust, growth, optimism, intelligent savings"*
+
+- **Primary**: `#0ea5e9` (Sky Blue) — trust, reliability, stability
+- **Secondary**: `#22c55e` (Fresh Green) — savings, growth, health
+- **Accent**: `#f59e0b` (Gold) — celebration, value, deals
+- **Similar to**: Revolut, Stripe, modern fintech
+- **Why not chosen now**: Less grocery-focused; leans toward fintech aesthetic. Kept as option if repositioning toward "financial wellness" in future.
+
+**Alternative Option C — Warm Optimistic**
+
+*Emotion: "Warmth, celebration, ease, approachable confidence"*
+
+- **Primary**: `#d97706` (Amber/Orange) — warmth, celebration, energy
+- **Secondary**: `#f5f1e8` (Warm Neutral) — approachability, calm
+- **Accent**: `#0ea5e9` (Cool Blue) — confidence, interaction feedback
+- **Why not chosen now**: Similar warmth to current palette; Option A feels fresher and more differentiated. Kept as option if team wants to stay in warm tones but add more energy.
+
+**Reference**: Interactive visual palette explorer: [Cenovnik Color Palettes](https://claude.ai/code/artifact/3eb7cb97-f93e-45a9-9cc4-05ffca375159) (shows all three with UI examples, buttons, badges, product cards in context).
+
+---
+
+## Features for Claude Design Brief (Phase 2+)
+
+This section captures the features that need visual design and interaction patterns. It will be exported to Claude Design as part of the design handoff.
+
+### Feature Scope
+
+**Web app design target**: All features currently live in the Cenovnik mobile app (iOS), plus web-specific UX enhancements.
+
+**Current constraints**:
+- Shopping lists: Single list per user (not yet multi-list; premium feature planned for future)
+- Maps & store discovery: **OpenStreetMap** integration (chosen near-term approach) for exploring nearby markets. Flow: user explores nearby markets on map → selects favorite markets → product search/browsing then shows prices scoped to those favorite markets.
+- Real-time updates: Supabase Realtime subscriptions for shared list collaboration
+
+### Feature List (To Be Expanded)
+
+#### Core Features (Already Prototyped/In Build)
+
+1. **Product Browsing & Search** (`/proizvodi`)
+   - Product grid with responsive layout (2 cols mobile → 8 cols ultra-wide)
+   - Search bar with debounced live results
+   - Infinite scroll pagination
+   - Product cards with: image, name, price, store availability
+   - **List interaction**: Wolt-inspired quantity selector (collapsed badge → expands to minus/plus/trash on tap)
+   - **Navbar behavior**: Airbnb-style scroll-collapse (navbar condenses on scroll to prioritize search bar)
+   - Filter/sort controls (TBD exact placement; possibly in search bar or sidebar)
+
+2. **Product Detail Page** (`/proizvodi/[id]`)
+   - Full product info: image, name, description, category
+   - Prices across stores (table or card layout)
+   - Store logos and "Shop at X" links
+   - Add to list button/control
+   - Related products or similar items
+   - **Design needed**: Card/modal layout, store comparison table layout
+
+3. **Shopping List Experience** (`/lista` — page or modal UX TBD)
+   - **Note**: The format for the authenticated shopping list experience (dedicated page vs. modal drawer) is NOT yet decided. Both remain open options per the earlier "Shopping List / Cart UX" design-question section. The design brief should address both possibilities or explicitly choose one with rationale.
+   - View active shopping list items
+   - Quantity controls (similar to Wolt pattern; inline adjust or modal)
+   - Item price and subtotal
+   - **Add to list flow** (from product page): Modal or inline controls
+   - **Full list management**: View total, remove items, clear list
+   - **Multi-list future**: Selector to pick which list (for now, just the default list; layout should support selector addition)
+   - **Real-time sync**: Items update in real-time if shared or edited on mobile
+   - **Existing shared-list feature**: Mobile-created lists can be shared via link and opened by anyone (including unauthenticated users) in the browser at `lista/{token}` — already implemented at `app/lista/[token]/page.tsx` (outside the `(authenticated)` route group), rendering via the `SharedListView` component, backed by `app/api/lista/[token]/route.ts`. **Important**: Whichever UX pattern is chosen for the authenticated `/lista` experience (page or modal), it should be designed with awareness of this existing public shared-list view, and visual/interaction pattern consistency between the two should be maintained where practical, so the product doesn't present two completely divergent shopping-list interfaces.
+   - **Design needed**: List layout, totals presentation, empty state, and a decision on page vs. modal format
+
+4. **Store/Market Selection** (`/prodavnice`)
+   - List of available stores/markets nearby
+   - User's preferred stores (favorites/filters)
+   - **OpenStreetMap integration**: Show user location and nearby stores on map (see "Product & UX Strategy" section — favoriting markets is a lightweight engagement hook that keeps users browsing)
+   - Filter by store type (supermarket, discount, organic, etc.)
+   - Toggle store preferences (affects product prices shown in product search and browse)
+   - **Design needed**: Map view, store card layout, location permission flow
+
+5. **Settings/Account Page** (`/podesavanja`)
+   - User profile info (name, email, avatar)
+   - Preferred stores (linked from market selection)
+   - Notification preferences (TBD)
+   - Sign-out control
+   - **Future**: Premium subscription status
+   - **Design needed**: Settings card/form layout, toggle switches
+
+#### Navigation & Global Elements
+
+1. **Navbar** (all authenticated pages)
+   - Logo/brand mark (left)
+   - Nav links: Proizvodi / Lista / Podešavanja (center, on desktop)
+   - Account icon / sign-out (right, desktop); hamburger menu (right, mobile)
+   - Scroll-collapse behavior: center links hide on scroll, search bar expands (Airbnb pattern)
+   - List badge: shows item count in active list (real-time)
+   - **Design notes**: Already implemented in code; scroll-behavior animation is Phase 2 Step 5+ enhancement
+
+2. **Search Bar** (primarily on `/proizvodi`, possibly global in navbar)
+   - Text input with debounced live results
+   - Search results dropdown/modal with product preview
+   - Filters/sort options
+   - Recent searches or popular searches (TBD)
+   - **Design needed**: Dropdown styling, result card layout, filter controls
+
+#### Not Yet Scoped (Future)
+
+- Shared list collaboration (real-time, invite links)
+- Premium subscriptions & multi-list feature
+- Push notifications for price drops
+- Recipe/meal planning (if ever added)
+- User reviews or ratings (if ever added)
+
+---
+
+### Design Handoff Checklist
+
+Before exporting to Claude Design, confirm:
+- [ ] All feature descriptions include user flow and interaction points
+- [ ] Color palette (Option A) applied to component sketches
+- [ ] Geist typography locked in (weights: 400, 500, 600, 700 minimum)
+- [ ] Responsive breakpoints defined: 320px (mobile), 640px (tablet), 1024px (desktop), 1920px (ultra-wide)
+- [ ] Accessibility notes: WCAG AA contrast, keyboard navigation, ARIA labels
+- [ ] Micro-interactions documented: cart badge animation, scroll-collapse, quantity selector expand/collapse
+- [ ] Icon set choice confirmed (currently lucide-react; visual alignment with Geist typeface)
+- [ ] Component library established (shadcn/ui components already integrated; new designs should reference existing controls where possible)
+
+---
+
+## Claude Design Handoff Brief
+
+### Design System Specifications
+
+**Color Palette** (LOCKED):
+- **Primary**: `#70845F` (Deep Sage Green) — buttons, links, active states, primary CTAs
+- **Secondary**: `#FFEDD0` (Soft Cream/Peach) — backgrounds, card containers, neutral spaces
+- **Accent**: `#DA864D` (Warm Terracotta) — highlights, success states, deal badges, secondary CTAs
+- **Neutrals**: `#1a1a1a` (ink/text), `#666` (muted text), `#e0e0e0` (borders), `#f8f8f8` (subtle bg)
+- **Typography**: Geist (weights: 400, 500, 600, 700 minimum; fallback: system sans-serif)
+
+**Responsive Breakpoints**:
+- Mobile: 320px–639px (hamburger menu, full-width components)
+- Tablet: 640px–1023px (inline nav, 2-col grids)
+- Desktop: 1024px–1919px (nav links visible, 4-col grids)
+- Ultra-wide: 1920px+ (8-col grids, centered max-width container ~1280px)
+
+### User Flows & Interaction Points
+
+#### 1. Product Browsing Flow (Core Loop)
+
+**Entry**: User lands on `/proizvodi` or taps "Proizvodi" in navbar.
+
+**Flow**:
+1. **Navbar**: Shows logo (left) + nav links (center, hidden on scroll-down) + list badge (right, always visible)
+   - On scroll down: nav links fade/slide out, search bar expands to reclaim center space (Airbnb pattern)
+   - On scroll up: nav links fade/slide back in, search bar normalizes
+   - List badge shows current item count, always clickable to open list view
+
+2. **Search Bar** (primary interaction point):
+   - Placeholder text: "Search products, stores, deals..."
+   - Debounced ~400ms live results as user types
+   - Search dropdown appears below input, showing results (product cards, max 8-10 visible, scroll to see more)
+   - Search results show product image (thumb), name, price (highlighted in accent color), store logos
+
+3. **Product Grid**:
+   - Infinite scroll: as user scrolls to bottom, load next page (~20 products per page)
+   - Each card is clickable (links to product detail page)
+   - Quantity badge in top-right corner (see interaction point #4 below)
+
+4. **List Quantity Selector** (Wolt-inspired, friction-reducing interaction):
+   - **Collapsed state**: Badge shows quantity number (e.g., "2") in top-right corner
+     - If no item in list: no badge visible
+     - If item in list: badge visible, rounded pill shape, background color = primary (`#70845F`), text = secondary (`#FFEDD0`)
+   - **Interaction**: Tap badge → expands with animation (scale/fade-in, ~200ms)
+   - **Expanded state**: Badge expands to reveal minus (−) | number | plus (+) | trash (🗑) buttons in a flex row
+     - Minus: tap to decrement, if count reaches 0, item removed from list (badge disappears)
+     - Plus: tap to increment, adds 1 to count
+     - Trash: tap to remove entirely
+   - **Collapse**: Tap outside badge OR tap item card again → badge collapses back to number, smooth animation
+   - **Misclick safety**: User can tap minus once to undo accidental increment; no purchase confirmation needed
+
+5. **Continued Browsing**: User scrolls, searches, or taps product cards to explore. Quantity selector stays low-friction for casual adding/adjusting.
+
+---
+
+#### 2. Product Detail Page (`/proizvodi/[id]`)
+
+**Entry**: User taps a product card from grid or search results.
+
+**Flow**:
+1. **Header**: Large product image (full width, responsive)
+2. **Product Info**: Name, category, description, nutritional info (if available)
+3. **Prices Table**: Shows price by store
+   - Columns: Store logo | Store name | Price | Availability
+   - Prices highlighted in accent color (`#DA864D`)
+4. **Add to List**: Button (primary color `#70845F`) appears prominently
+   - Tap → adds to default active list
+   - If list already has item: updates quantity via quantity selector (same Wolt pattern)
+5. **Back/Navigation**: Back arrow or breadcrumb to return to browsing
+
+---
+
+#### 3. Shopping List View (`/lista` — page or modal, TBD)
+
+**Entry**: User taps list badge in navbar OR "Lista" nav link.
+
+**Flow** (if modal):
+1. **Modal Overlay**: Semi-transparent overlay behind modal, allows scrolling product grid behind
+2. **List Panel**: Right-side or center modal, showing:
+   - **Header**: "Your Shopping List" + active list name + close button (X)
+   - **List Items**: Each item shows:
+     - Product image (thumb)
+     - Product name
+     - Quantity (same Wolt selector pattern: tap badge to expand/collapse)
+     - Price per item + total for that item
+     - Delete icon (trash, right-aligned)
+   - **List Total**: At bottom, "Total: $XX.XX" (sum of all item totals)
+   - **Multi-list Selector** (if multiple lists exist): Dropdown or selector showing active list + option to switch
+   - **Clear List Button**: Empties all items (confirmation optional, TBD)
+   - **Continue Shopping Button**: Closes modal, returns focus to product grid
+
+**Flow** (if dedicated page `/lista`):
+1. **Same content as above**, but as a full page instead of modal
+2. **Return to Browse**: Back button or "Continue Shopping" link returns to `/proizvodi`
+
+**Consistency note**: Existing public shared-list view (`lista/{token}`, no login) uses similar layout — maintain visual/interaction parity so users don't feel disoriented switching between authenticated and shared contexts.
+
+---
+
+#### 4. Store/Market Selection (`/prodavnice`)
+
+**Entry**: User taps "Store Preferences" or sees a "Select Nearby Markets" call-to-action.
+
+**Flow**:
+1. **Map View** (OpenStreetMap):
+   - Shows user's current location (blue dot/marker)
+   - Nearby markets/stores displayed as pins (color = primary `#70845F`)
+   - Tap marker → opens store card with info (name, type, address, hours)
+
+2. **Store List** (alternative view, scrollable):
+   - Toggles between map and list view
+   - Each store shows name, type badge (e.g., "Supermarket", "Discount", "Organic"), distance from user
+   - Toggle switch next to each store to add/remove from favorites
+
+3. **Interaction**: 
+   - Tap store → toggles favorite status (visual feedback: store highlights, color shifts to accent `#DA864D`)
+   - Once user selects favorite markets, product prices shown in browse/search are scoped to those markets (lightweight engagement hook)
+
+4. **Confirmation**: "3 markets selected" badge appears in navbar or at top of market selection view
+
+---
+
+#### 5. Navbar Interactions (All Pages)
+
+**Desktop (`≥640px`)**:
+- Logo (left, always visible, links to `/`)
+- Nav links (center): Proizvodi | Lista | Podešavanja (text + icon, color = primary `#70845F`, hover = accent `#DA864D`)
+  - Active link: background = secondary (`#FFEDD0`), text = primary
+- List badge (right, always visible): shows item count, tappable
+- Account menu (right, after badge): opens dropdown with settings/sign-out options
+
+**Mobile (`<640px`)**:
+- Logo (left)
+- Hamburger menu icon (right, tap to toggle)
+- When hamburger open: dropdown panel slides down, showing nav links + sign-out
+
+**Scroll Collapse** (Airbnb pattern, `/proizvodi` page):
+- On scroll down: nav links fade out, search bar expands to center (freed space = ~200px)
+- On scroll up: nav links fade back in, search bar normalizes
+- List badge always stays visible
+- Smooth animation, ~300ms transition
+
+---
+
+#### 6. Edge Cases & Interactions
+
+**Misclick Recovery**:
+- Adding item by accident: tap minus button once (in expanded quantity selector) to undo
+- No confirmation dialogs anywhere — all actions are reversible
+
+**Empty States**:
+- No items in list: "Your list is empty. Start adding products!" + link to "Browse Products"
+- No search results: "No products found. Try a different search." + suggestions
+
+**Real-time Updates**:
+- If user adds item to list while viewing product detail: badge appears and updates
+- List totals update in real-time as user adjusts quantities
+
+**Multi-list Handling** (future, but design for extensibility):
+- Default list is active; user can switch via dropdown in list modal
+- Adding item while list is not active: prompts to select which list, or defaults to active list
+
+---
+
+### Design Deliverables Needed
+
+1. **Component Library**: Button, Badge, Card, Modal, Navbar, SearchBar, QuantitySelector
+2. **Page Templates**: `/proizvodi` (browse + navbar collapse), `/proizvodi/[id]` (detail), `/lista` (list modal or page), `/prodavnice` (map + list)
+3. **Responsive Frames**: 320px, 640px, 1024px, 1920px
+4. **Interaction Specs**: Animations (scroll-collapse, badge expand/collapse, hover states), transition timings
+5. **Accessibility Specs**: Color contrast verification (WCAG AA), keyboard navigation (Tab order, Enter = select, Escape = close modals), ARIA labels
+6. **Design System**: Color tokens, typography scale, spacing scale (8px grid), border radius, shadows
+
+---
+
+### Notes for Designer
+
+- **Exploration focus**: Design should invite lingering. Avoid high-contrast urgency — the sage-green + cream + terracotta palette is muted and calming on purpose.
+- **Low friction**: Every interaction should feel effortless (Wolt quantity selector, scroll-collapse reveal, easy market toggling).
+- **No purchase psychology**: This is NOT an e-commerce design — no "Buy Now", no checkout, no payment-flow affordances. Items go to a personal shopping list only.
+- **Consistent patterns**: Reuse the quantity selector everywhere items can be adjusted; reuse card layouts; keep navbar behavior consistent.
+- **Responsive-first**: Design mobile (320px) first, then expand. Every breakpoint should feel native, not squeezed.
+
+---
+
+**Last Updated**: 2026-08-30 (Phase 2, Step 3 complete — Design Direction + UX Strategy finalized. Exploration-focused browsing documented as core strategy (casual feed-like browsing for engagement/ad-revenue). Misclick-safety principle formalized. Cart→List terminology corrected throughout (no e-commerce checkout flow; items only go to personal shopping list). OpenStreetMap confirmed as near-term maps approach with favorite-market price-scoping flow. Wolt quantity-selector pattern locked for Phase 2 Step 4. Color Palette Option A (Green + Neutral + Gold) + Geist typography + pastel refinement options documented. Design ready for Claude Design handoff.)
 **Author**: Dusan Marjanski
