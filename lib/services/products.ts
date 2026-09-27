@@ -1,11 +1,12 @@
 import { Product } from "@/types/product";
 import { createClient } from "@/lib/supabase/client";
+import { fetchStoresByIds } from "@/lib/services/stores";
 
 const PRODUCTS_COLLECTION = "products";
 const CURRENT_PRICES_COLLECTION = "current_prices";
 const DEFAULT_PRODUCT_LIMIT = 20;
+const PRICE_ROWS_PAGE = 1000;
 const PRODUCTS_SELECT = "id, product_name, has_image, barcodes ( barcode )";
-const CURRENT_PRICES_SELECT = "product_id, regular_price, discounted_price";
 
 type ProductRow = {
   id: string;
@@ -14,17 +15,13 @@ type ProductRow = {
   barcodes: { barcode: string }[] | null;
 };
 
-type CurrentPriceRow = {
-  product_id: string;
-  regular_price: number;
-  discounted_price: number | null;
-};
-
 type LowestPriceRow = {
   product_id: string;
   regular_price: number;
   discounted_price: number | null;
 };
+
+type OfferPriceRow = LowestPriceRow & { store_id: string };
 
 function mapProduct(row: ProductRow): Product {
   return {
@@ -126,43 +123,143 @@ export async function searchProducts(
   return { products, hasMore, found };
 }
 
-export async function fetchLowestPrices(
-  productIds: string[],
-  storeIds?: string[],
-): Promise<Record<string, number>> {
-  if (productIds.length === 0) return {};
+// PostgREST filter syntax treats these as operators, and *,% as wildcards.
+const FILTER_UNSAFE = /[,()*%"\\]/g;
+
+// No count and no ORDER BY, so Postgres can stop at the limit instead of scanning every match.
+// Names starting with the query (or with a word that does) rank ahead of plain substring hits.
+export async function fetchSuggestionCandidates(searchQuery: string, limit: number): Promise<Product[]> {
+  const term = searchQuery.trim().replace(FILTER_UNSAFE, " ").replace(/\s+/g, " ").trim();
+  if (!term) return [];
 
   const supabase = createClient();
 
-  let query = supabase
-    .from(CURRENT_PRICES_COLLECTION)
-    .select("product_id, regular_price, discounted_price")
-    .in("product_id", productIds);
-
-  if (storeIds && storeIds.length > 0) {
-    query = query.in("store_id", storeIds);
+  if (/^\d{6,}$/.test(term)) {
+    const { data, error } = await supabase
+      .from(PRODUCTS_COLLECTION)
+      .select("id, product_name, has_image, barcodes!inner ( barcode )")
+      .eq("barcodes.barcode", term)
+      .limit(limit);
+    if (error) throw error;
+    return ((data as ProductRow[] | null) ?? []).map(mapProduct);
   }
 
-  const { data, error } = await query;
+  const [wordStart, contains] = await Promise.all([
+    supabase
+      .from(PRODUCTS_COLLECTION)
+      .select(PRODUCTS_SELECT)
+      .or(`product_name.ilike."${term}*",product_name.ilike."* ${term}*"`)
+      .limit(limit),
+    supabase
+      .from(PRODUCTS_COLLECTION)
+      .select(PRODUCTS_SELECT)
+      .ilike("product_name", `%${term}%`)
+      .limit(limit),
+  ]);
+  if (wordStart.error) throw wordStart.error;
+  if (contains.error) throw contains.error;
 
-  if (error) {
-    console.error("Supabase error details:", {
-      message: error.message,
-      code: error.code,
-      status: (error as any).status,
-      hint: (error as any).hint,
-      details: (error as any).details,
-    });
-    throw error;
+  const seen = new Set<string>();
+  const merged: Product[] = [];
+  for (const row of [...((wordStart.data as ProductRow[] | null) ?? []), ...((contains.data as ProductRow[] | null) ?? [])]) {
+    if (seen.has(row.id)) continue;
+    seen.add(row.id);
+    merged.push(mapProduct(row));
   }
+  return merged.slice(0, limit);
+}
 
+export type ProductOffer = {
+  retailerId: string;
+  retailerName: string;
+  price: number;
+  storeId: string;
+  address: string | null;
+  isDeal: boolean;
+};
+
+// PostgREST caps responses at 1000 rows and "all markets" can mean ~10k rows,
+// so the first page returns the total count and the rest are fetched in parallel.
+async function fetchPriceRows(productIds: string[], storeIds?: string[]): Promise<OfferPriceRow[]> {
+  const supabase = createClient();
+
+  const pageQuery = (from: number, withCount: boolean) => {
+    let query = supabase
+      .from(CURRENT_PRICES_COLLECTION)
+      .select("product_id, regular_price, discounted_price, store_id", withCount ? { count: "exact" } : undefined)
+      .in("product_id", productIds)
+      .order("product_id")
+      .order("store_id")
+      .range(from, from + PRICE_ROWS_PAGE - 1);
+    if (storeIds && storeIds.length > 0) {
+      query = query.in("store_id", storeIds);
+    }
+    return query;
+  };
+
+  const first = await pageQuery(0, true);
+  if (first.error) throw first.error;
+  const rows: OfferPriceRow[] = [...((first.data as OfferPriceRow[] | null) ?? [])];
+
+  const total = first.count ?? rows.length;
+  const rest = await Promise.all(
+    Array.from({ length: Math.ceil(total / PRICE_ROWS_PAGE) - 1 }, (_, i) =>
+      pageQuery((i + 1) * PRICE_ROWS_PAGE, false)
+    )
+  );
+  for (const page of rest) {
+    if (page.error) throw page.error;
+    rows.push(...((page.data as OfferPriceRow[] | null) ?? []));
+  }
+  return rows;
+}
+
+// Cheapest effective price per product; products without a price in scope are omitted.
+export async function fetchLowestPrices(
+  productIds: string[],
+  storeIds?: string[]
+): Promise<Record<string, number>> {
+  if (productIds.length === 0) return {};
   const lowest: Record<string, number> = {};
-  for (const row of (data as LowestPriceRow[] | null) ?? []) {
-    const effective = row.discounted_price ?? row.regular_price;
-    const current = lowest[row.product_id];
-    if (current === undefined || effective < current) {
-      lowest[row.product_id] = effective;
+  for (const row of await fetchPriceRows(productIds, storeIds)) {
+    const price = row.discounted_price ?? row.regular_price;
+    if (lowest[row.product_id] === undefined || price < lowest[row.product_id]) {
+      lowest[row.product_id] = price;
     }
   }
   return lowest;
+}
+
+// Every requested id gets an entry; [] means "no price in scope", so callers can tell it apart from "not fetched yet".
+export async function fetchProductOffers(
+  productIds: string[],
+  storeIds?: string[]
+): Promise<Record<string, ProductOffer[]>> {
+  if (productIds.length === 0) return {};
+
+  const rows = await fetchPriceRows(productIds, storeIds);
+
+  // current_prices has no PostgREST FK to stores, so embedded joins fail; fetch separately.
+  const stores = await fetchStoresByIds([...new Set(rows.map((r) => r.store_id))]);
+
+  const offers: Record<string, ProductOffer[]> = Object.fromEntries(
+    productIds.map((id) => [id, []])
+  );
+  for (const row of rows) {
+    const store = stores.get(row.store_id);
+    offers[row.product_id].push({
+      retailerId: store?.retailerId ?? row.store_id,
+      retailerName: store?.retailerName ?? "",
+      price: row.discounted_price ?? row.regular_price,
+      storeId: row.store_id,
+      address: store?.address ?? null,
+      isDeal: row.discounted_price !== null,
+    });
+  }
+
+  for (const productOffers of Object.values(offers)) {
+    productOffers.sort((a, b) => a.price - b.price);
+  }
+
+  return offers;
 }

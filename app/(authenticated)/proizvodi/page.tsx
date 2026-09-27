@@ -1,113 +1,199 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { getUserStoreIds } from "@/lib/services/userStores";
-import { searchProducts } from "@/lib/services/products";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { useShoppingList } from "@/contexts/ShoppingListContext";
+import { plural } from "@/lib/formatPrice";
+import { Button } from "@/components/ui/button";
 import { useProductBrowse } from "./hooks/useProductBrowse";
 import { useProductSearch } from "./hooks/useProductSearch";
-import { useProductPrices } from "./hooks/useProductPrices";
-import { SearchBar } from "./components/SearchBar";
+import { useProductOffers } from "./hooks/useProductOffers";
+import { useProductFilters } from "./hooks/useProductFilters";
+import { useSearchDock } from "./hooks/useSearchDock";
+import { useSearchSuggestions } from "./hooks/useSearchSuggestions";
+import { SearchDock, SearchBindings } from "./components/SearchDock";
+import { CompactBandSearch, CompactDockedSearch } from "./components/CompactSearch";
 import { ProductGrid } from "./components/ProductGrid";
+import { FilterBar } from "./components/FilterBar";
+import { FilterDrawer } from "./components/FilterDrawer";
+import { ActiveFilterChips } from "./components/ActiveFilterChips";
+import { SortMenu } from "./components/SortMenu";
 import { ScrollToTopButton } from "./components/ScrollToTopButton";
-import { Container } from "@/components/ui/container";
-import { PRODUCTS_PER_PAGE } from "./config";
 
 function ProizvodiContent() {
-  const { user } = useAuth();
-  const [userStoreIds, setUserStoreIds] = useState<string[]>([]);
-  const [searchError, setSearchError] = useState<string>("");
-  const [hasMore, setHasMore] = useState(false);
+  const { storeIds } = useShoppingList();
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const bandRef = useRef<HTMLElement>(null);
+  const bandFieldRef = useRef<HTMLDivElement>(null);
+  const { slotTop, docked, narrow } = useSearchDock(bandRef, bandFieldRef);
 
   const browse = useProductBrowse();
+  const search = useProductSearch();
+  const filters = useProductFilters();
 
-  const handleSearchChange = useCallback(
-    (products: any[], isSearchMode: boolean) => {
-      if (isSearchMode) {
-        browse.setProducts(products);
-        setHasMore(products.length === PRODUCTS_PER_PAGE);
-      } else {
-        browse.loadInitial();
-        setHasMore(false);
-      }
-    },
-    [browse]
+  const source = search.isSearchMode ? search.results : browse.products;
+  const { offers, isLoadingOffers } = useProductOffers(
+    source,
+    filters.myMarkets ? storeIds : null
   );
+  const { apply } = filters;
+  const visible = useMemo(() => apply(source, offers), [apply, source, offers]);
 
-  const search = useProductSearch(handleSearchChange);
-  const prices = useProductPrices(browse.products, userStoreIds);
-
-  // Load user's favorite stores
+  const { loadInitial } = browse;
   useEffect(() => {
-    const loadUserStores = async () => {
-      if (!user?.id) return;
-      try {
-        const storeIds = await getUserStoreIds(user.id);
-        setUserStoreIds(storeIds);
-      } catch (err) {
-        console.error("Failed to fetch user stores:", err);
-      }
-    };
+    loadInitial();
+  }, [loadInitial]);
 
-    loadUserStores();
-  }, [user?.id]);
+  const suggestions = useSearchSuggestions(search.query, filters.myMarkets ? storeIds : null);
 
-  // Load initial browse on mount
-  useEffect(() => {
-    browse.loadInitial();
-  }, []);
+  const searchBindings: SearchBindings = {
+    value: search.query,
+    onChange: search.setQuery,
+    onCommit: (value) => search.commit(value),
+    suggestions,
+    searching: search.searching,
+  };
 
-  const handleLoadMore = useCallback(async () => {
-    try {
-      setSearchError("");
-      if (search.isSearchMode) {
-        const nextPage = browse.page + 1;
-        const result = await searchProducts(search.searchQuery, nextPage);
-        browse.setProducts((prev) => [...prev, ...result.products]);
-        setHasMore(result.products.length === PRODUCTS_PER_PAGE);
-        prices.clearPrices();
-      } else {
-        await browse.loadMore();
-      }
-    } catch (err) {
-      setSearchError(err instanceof Error ? err.message : "Greška pri učitavanju više proizvoda.");
-    }
-  }, [search.isSearchMode, search.searchQuery, browse.page, browse.setProducts, browse.loadMore, prices.clearPrices]);
+  const sourceLoading = search.isSearchMode ? search.loadingResults : browse.loading;
+  const showSkeleton =
+    search.searching || sourceLoading || (visible.length === 0 && isLoadingOffers);
+  const hasMore = search.isSearchMode ? search.hasMore : true;
+  const loadingMore =
+    (search.isSearchMode ? search.loadingMore : browse.loadingMore) || isLoadingOffers;
 
-  const error = browse.error || search.error || searchError;
+  const live = search.liveQuery;
+  const heading = live ? `Rezultati za „${live}“` : "Proizvodi";
+  const subtitle = live
+    ? search.loadingResults
+      ? ""
+      : `${search.found} ${plural(search.found, "proizvod odgovara", "proizvoda odgovaraju", "proizvoda odgovara")} pretrazi`
+    : filters.myMarkets
+      ? "Cene iz vaših marketa"
+      : "Cene iz svih marketa";
+  const error = browse.error || search.error;
+
+  const filterControls = {
+    myMarkets: filters.myMarkets,
+    onMyMarketsChange: filters.setMyMarkets,
+    priceRange: filters.priceRange,
+    onPriceToggle: filters.togglePriceRange,
+    dealsOnly: filters.dealsOnly,
+    onDealsOnlyChange: filters.setDealsOnly,
+    hasFilters: filters.activeCount > 0,
+    onClear: filters.clearFilters,
+  };
+
+  const resetAll = () => {
+    filters.clearFilters();
+    search.clear();
+    setFiltersOpen(false);
+  };
 
   return (
-    <main className="flex min-h-screen flex-col bg-background">
-      <Container size="full" className="flex flex-col">
-        <div className="sticky top-16 z-30 -mx-4 bg-background px-4 py-6 shadow-sm sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-          <SearchBar
-            value={search.searchQuery}
-            onChange={search.setSearchQuery}
-            onClear={() => search.setSearchQuery("")}
-            searchFound={search.searchFound}
-            isSearchMode={search.isSearchMode}
-          />
+    <>
+      <SearchDock search={searchBindings} slotTop={slotTop} docked={docked} narrow={narrow} />
+      <CompactDockedSearch search={searchBindings} docked={docked} />
+
+      <section
+        ref={bandRef}
+        aria-label="Pretraga"
+        className={`border-b transition-colors duration-180 ${
+          docked ? "border-paper bg-paper" : "border-cream-band-border bg-cream"
+        }`}
+      >
+        <div
+          className="mx-auto flex max-w-[1360px] flex-col items-center gap-[18px] px-4 pb-[26px] pt-7 sm:px-5 sm:pb-[30px] lg:px-8 lg:pb-10 lg:pt-10 2xl:max-w-[1720px] 2xl:px-12"
+          style={{ visibility: docked ? "hidden" : "visible" }}
+        >
+          <div ref={bandFieldRef} aria-hidden="true" className="hidden h-[62px] w-full max-w-[720px] lg:block" />
+          <CompactBandSearch search={searchBindings} />
+
+          <p className="flex flex-wrap items-center justify-center gap-2 text-center text-sm text-ink-warm">
+            <span aria-hidden="true" className="block h-1.5 w-1.5 rounded-full bg-sage" />
+            {filters.myMarkets ? (
+              <span>
+                Pretraga i cene obuhvataju artikle iz{" "}
+                <Link
+                  href="/prodavnice"
+                  className="font-semibold text-sage-dark underline underline-offset-2 hover:text-sage-darker"
+                >
+                  vaših omiljenih marketa
+                </Link>
+              </span>
+            ) : (
+              <span>
+                Prikazane su cene iz svih marketa.{" "}
+                <Button
+                  variant="underline"
+                  size="text"
+                  onClick={() => filters.setMyMarkets(true)}
+                  className="inline font-semibold hover:text-sage-dark"
+                >
+                  Prikaži samo cene iz mojih marketa
+                </Button>
+              </span>
+            )}
+          </p>
+        </div>
+      </section>
+
+      <main className="mx-auto w-full max-w-[1360px] px-4 pb-16 pt-7 sm:px-5 sm:pb-[72px] sm:pt-8 lg:px-8 lg:pb-24 lg:pt-10 2xl:max-w-[1720px] 2xl:px-12 2xl:pb-28">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="m-0 text-[26px] font-semibold tracking-[-0.03em] text-ink lg:text-[34px]">
+              {heading}
+            </h1>
+            <p className="mt-2 min-h-[22px] text-[15px] text-ink-muted">{subtitle}</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2.5">
+            {live && (
+              <Button variant="pill-muted" size="pill" onClick={search.clear}>
+                Očisti pretragu ×
+              </Button>
+            )}
+            <Button variant="pill" size="pill" onClick={() => setFiltersOpen(true)} className="lg:hidden">
+              Filteri
+              {filters.activeCount > 0 && (
+                <span className="inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-[11px] bg-sage-dark px-1.5 text-xs font-semibold text-cream">
+                  {filters.activeCount}
+                </span>
+              )}
+            </Button>
+            <SortMenu value={filters.sort} onChange={filters.setSort} />
+          </div>
         </div>
 
-        <div className="space-y-6 py-6">
-          {error && (
-            <div className="rounded bg-destructive/10 px-4 py-2 text-sm text-destructive">
-              {error}
-            </div>
-          )}
+        <FilterBar {...filterControls} />
+        <ActiveFilterChips chips={filters.activeChips} onClear={filters.clearFilters} />
 
-          <ProductGrid
-            products={browse.products}
-            prices={prices.lowestPrices}
-            loading={browse.loading}
-            hasMore={hasMore || !search.isSearchMode}
-            onLoadMore={handleLoadMore}
-          />
-        </div>
-      </Container>
+        {error && (
+          <div className="mb-6 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
+
+        <ProductGrid
+          products={visible}
+          offers={offers}
+          showSkeleton={showSkeleton}
+          isLoadingMore={loadingMore}
+          hasMore={hasMore}
+          onLoadMore={search.isSearchMode ? search.loadMore : browse.loadMore}
+          endLabel={live ? "To je sve za ovu pretragu." : "To je sve za sada."}
+          onReset={resetAll}
+        />
+      </main>
+
+      <FilterDrawer
+        {...filterControls}
+        open={filtersOpen}
+        onOpenChange={setFiltersOpen}
+        resultCount={visible.length}
+      />
 
       <ScrollToTopButton />
-    </main>
+    </>
   );
 }
 

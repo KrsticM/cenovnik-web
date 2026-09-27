@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { Button } from "@/components/ui/button";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -13,6 +12,7 @@ interface QuantityStepperProps {
   disabled?: boolean;
   size?: "sm" | "md";
   showRemove?: boolean;
+  variant?: "solid" | "soft";
 }
 
 export function QuantityStepper({
@@ -23,59 +23,61 @@ export function QuantityStepper({
   disabled = false,
   size = "md",
   showRemove = false,
+  variant = "solid",
 }: QuantityStepperProps) {
-  const buttonSize = size === "sm" ? "h-8 w-8" : "h-10 w-10";
-  const textSize = size === "sm" ? "text-sm" : "text-base";
+  if (variant === "soft") {
+    return (
+      <span className="inline-flex h-[34px] items-center gap-0.5 rounded-[17px] bg-cream px-[5px]">
+        <Button variant="on-cream" size="icon-xs" onClick={onDecrement} disabled={disabled} aria-label="Smanji" className="text-base leading-none">
+          −
+        </Button>
+        <span className="min-w-[18px] text-center text-[13px] font-semibold text-sage-dark">
+          {quantity}
+        </span>
+        <Button variant="on-cream" size="icon-xs" onClick={onIncrement} disabled={disabled} aria-label="Povećaj" className="text-base leading-none">
+          +
+        </Button>
+      </span>
+    );
+  }
+
+  const iconSize = size === "sm" ? 14 : 16;
+  const buttonClass = cn(
+    "rounded-full p-0 text-white hover:bg-sage-darker hover:text-white",
+    size === "sm" ? "h-8 w-8 [&_svg]:size-3.5" : "h-10 w-10"
+  );
 
   return (
     <div
       className={cn(
-        "flex items-center gap-2 rounded-full bg-[#4f5c42] text-white",
+        "flex items-center gap-2 rounded-full bg-sage-dark text-white",
         size === "sm" ? "px-2 py-1" : "px-3 py-2"
       )}
     >
-      <button
-        onClick={onDecrement}
-        disabled={disabled}
-        className={cn(
-          buttonSize,
-          "inline-flex items-center justify-center rounded-full hover:bg-[#3f4a35] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        )}
-        aria-label="Decrease quantity"
-      >
-        <Minus size={size === "sm" ? 14 : 16} />
-      </button>
+      <Button variant="ghost" onClick={onDecrement} disabled={disabled} aria-label="Decrease quantity" className={buttonClass}>
+        <Minus size={iconSize} />
+      </Button>
 
-      <span className={cn("min-w-[2rem] text-center font-semibold", textSize)}>
+      <span className={cn("min-w-[2rem] text-center font-semibold", size === "sm" ? "text-sm" : "text-base")}>
         {quantity}
       </span>
 
-      <button
-        onClick={onIncrement}
-        disabled={disabled}
-        className={cn(
-          buttonSize,
-          "inline-flex items-center justify-center rounded-full hover:bg-[#3f4a35] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        )}
-        aria-label="Increase quantity"
-      >
-        <Plus size={size === "sm" ? 14 : 16} />
-      </button>
+      <Button variant="ghost" onClick={onIncrement} disabled={disabled} aria-label="Increase quantity" className={buttonClass}>
+        <Plus size={iconSize} />
+      </Button>
 
       {showRemove && onRemove && (
         <>
-          <div className="w-px h-6 bg-white/20" />
-          <button
+          <div className="h-6 w-px bg-white/20" />
+          <Button
+            variant="ghost"
             onClick={onRemove}
             disabled={disabled}
-            className={cn(
-              buttonSize,
-              "inline-flex items-center justify-center rounded-full hover:bg-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            )}
             aria-label="Remove item"
+            className={cn(buttonClass, "hover:bg-red-500")}
           >
-            <Trash2 size={size === "sm" ? 14 : 16} />
-          </button>
+            <Trash2 size={iconSize} />
+          </Button>
         </>
       )}
     </div>

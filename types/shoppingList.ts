@@ -13,6 +13,7 @@ export type ShoppingListItem = {
   productId: string;
   productName: string;
   primaryBarcode: string | null;
+  hasImage: boolean;
   quantity: number;
   price: number | null;
   storeName?: string;

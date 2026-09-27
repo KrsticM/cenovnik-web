@@ -1,11 +1,15 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useAuth } from "./AuthContext";
-import {
-  ShoppingList,
-  ShoppingListItem,
-} from "@/types/shoppingList";
+import { ShoppingList, ShoppingListItem } from "@/types/shoppingList";
 import {
   getOrCreateActiveList,
   fetchListItems,
@@ -13,61 +17,88 @@ import {
   updateItemQuantity as serviceUpdateQuantity,
   removeItem as serviceRemoveItem,
   clearList as serviceClearList,
+  setListShareToken,
+  attachPrices,
 } from "@/lib/services/lists";
+import { getUserStoreIds } from "@/lib/services/userStores";
 import { createClient } from "@/lib/supabase/client";
+
+const UNDO_WINDOW_MS = 5000;
+
+export type RemovedItem = {
+  productId: string;
+  productName: string;
+  quantity: number;
+};
 
 interface ShoppingListContextValue {
   list: ShoppingList | null;
   items: ShoppingListItem[];
   itemCount: number;
   total: number;
+  storeIds: string[];
   loading: boolean;
   error: string | null;
+  lastRemoved: RemovedItem | null;
   addItem: (productId: string, quantity?: number) => Promise<void>;
   updateQuantity: (itemId: string, quantity: number) => Promise<void>;
   removeItem: (itemId: string) => Promise<void>;
+  undoRemove: () => Promise<void>;
   clearList: () => Promise<void>;
+  setSharing: (isPublic: boolean) => Promise<void>;
   getItemByProductId: (productId: string) => ShoppingListItem | undefined;
 }
 
 const ShoppingListContext = createContext<ShoppingListContextValue | null>(null);
 
-export function ShoppingListProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export function ShoppingListProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [list, setList] = useState<ShoppingList | null>(null);
   const [items, setItems] = useState<ShoppingListItem[]>([]);
+  const [storeIds, setStoreIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastRemoved, setLastRemoved] = useState<RemovedItem | null>(null);
+  const storeIdsRef = useRef<string[]>([]);
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Initialize list and items when user logs in
+  const loadItems = useCallback(
+    async (listId: string) => attachPrices(await fetchListItems(listId), storeIdsRef.current),
+    []
+  );
+
   useEffect(() => {
     if (!user?.id) {
       setList(null);
       setItems([]);
+      setStoreIds([]);
       setError(null);
       return;
     }
+
+    let cancelled = false;
+    const supabase = createClient();
+    let channel: ReturnType<typeof supabase.channel> | null = null;
 
     const initializeList = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        // Get or create the user's active list
-        const userList = await getOrCreateActiveList(user.id);
+        const [userList, userStoreIds] = await Promise.all([
+          getOrCreateActiveList(user.id),
+          getUserStoreIds(user.id),
+        ]);
+        if (cancelled) return;
+        storeIdsRef.current = userStoreIds;
+        setStoreIds(userStoreIds);
         setList(userList);
 
-        // Fetch existing items
-        const listItems = await fetchListItems(userList.id);
+        const listItems = await loadItems(userList.id);
+        if (cancelled) return;
         setItems(listItems);
 
-        // Subscribe to realtime updates on shopping_list_items
-        const supabase = createClient();
-        const subscription = supabase
+        channel = supabase
           .channel(`shopping_list:${userList.id}`)
           .on(
             "postgres_changes",
@@ -78,39 +109,37 @@ export function ShoppingListProvider({
               filter: `shopping_list_id=eq.${userList.id}`,
             },
             async () => {
-              // Refetch items on any change
-              const updatedItems = await fetchListItems(userList.id);
-              setItems(updatedItems);
+              const updatedItems = await loadItems(userList.id);
+              if (!cancelled) setItems(updatedItems);
             }
           )
           .subscribe();
-
-        return () => {
-          subscription.unsubscribe();
-        };
       } catch (err) {
         console.error("Failed to initialize shopping list:", err);
-        setError(
-          err instanceof Error ? err.message : "Failed to load shopping list"
-        );
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Failed to load shopping list");
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
-    const cleanup = initializeList();
+    initializeList();
     return () => {
-      cleanup?.then((fn) => fn?.());
+      cancelled = true;
+      channel?.unsubscribe();
     };
-  }, [user?.id]);
+  }, [user?.id, loadItems]);
+
+  useEffect(() => () => {
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+  }, []);
 
   const addItem = async (productId: string, quantity: number = 1) => {
     if (!list) return;
     try {
       await serviceAddItem(list.id, productId, quantity);
-      // Refetch to ensure state is fresh
-      const updatedItems = await fetchListItems(list.id);
-      setItems(updatedItems);
+      setItems(await loadItems(list.id));
     } catch (err) {
       console.error("Failed to add item:", err);
       setError(err instanceof Error ? err.message : "Failed to add item");
@@ -120,11 +149,8 @@ export function ShoppingListProvider({
   const updateQuantity = async (itemId: string, quantity: number) => {
     try {
       await serviceUpdateQuantity(itemId, quantity);
-      // Update local state immediately for better UX
       setItems((prev) =>
-        prev.map((item) =>
-          item.id === itemId ? { ...item, quantity } : item
-        )
+        prev.map((item) => (item.id === itemId ? { ...item, quantity } : item))
       );
     } catch (err) {
       console.error("Failed to update quantity:", err);
@@ -133,14 +159,31 @@ export function ShoppingListProvider({
   };
 
   const removeItem = async (itemId: string) => {
+    const removed = items.find((item) => item.id === itemId);
     try {
       await serviceRemoveItem(itemId);
-      // Update local state immediately
       setItems((prev) => prev.filter((item) => item.id !== itemId));
+      if (removed) {
+        if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+        setLastRemoved({
+          productId: removed.productId,
+          productName: removed.productName,
+          quantity: removed.quantity,
+        });
+        undoTimerRef.current = setTimeout(() => setLastRemoved(null), UNDO_WINDOW_MS);
+      }
     } catch (err) {
       console.error("Failed to remove item:", err);
       setError(err instanceof Error ? err.message : "Failed to remove item");
     }
+  };
+
+  const undoRemove = async () => {
+    if (!lastRemoved) return;
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    const { productId, quantity } = lastRemoved;
+    setLastRemoved(null);
+    await addItem(productId, quantity);
   };
 
   const clearList = async () => {
@@ -154,11 +197,20 @@ export function ShoppingListProvider({
     }
   };
 
-  const getItemByProductId = (productId: string) => {
-    return items.find((item) => item.productId === productId);
+  const setSharing = async (isPublic: boolean) => {
+    if (!list) return;
+    try {
+      const token = isPublic ? list.shareToken ?? crypto.randomUUID() : null;
+      setList(await setListShareToken(list.id, token));
+    } catch (err) {
+      console.error("Failed to update sharing:", err);
+      setError(err instanceof Error ? err.message : "Failed to update sharing");
+    }
   };
 
-  const itemCount = items.length;
+  const getItemByProductId = (productId: string) =>
+    items.find((item) => item.productId === productId);
+
   const total = items.reduce((sum, item) => sum + (item.price || 0) * item.quantity, 0);
 
   return (
@@ -166,14 +218,18 @@ export function ShoppingListProvider({
       value={{
         list,
         items,
-        itemCount,
+        itemCount: items.length,
         total,
+        storeIds,
         loading,
         error,
+        lastRemoved,
         addItem,
         updateQuantity,
         removeItem,
+        undoRemove,
         clearList,
+        setSharing,
         getItemByProductId,
       }}
     >

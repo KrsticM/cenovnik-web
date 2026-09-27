@@ -6,16 +6,15 @@ import { PRODUCTS_PER_PAGE } from "../config";
 export function useProductBrowse() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string>("");
-  const pageRef = useRef(1);
+  const loadingMoreRef = useRef(false);
 
   const loadInitial = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
-      const result = await fetchProducts(PRODUCTS_PER_PAGE);
-      setProducts(result);
-      pageRef.current = 1;
+      setProducts(await fetchProducts(PRODUCTS_PER_PAGE));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Greška pri učitavanju proizvoda.");
     } finally {
@@ -24,9 +23,11 @@ export function useProductBrowse() {
   }, []);
 
   const loadMore = useCallback(async () => {
+    if (loadingMoreRef.current) return;
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
     try {
       setError("");
-      pageRef.current += 1;
       const result = await fetchProducts(PRODUCTS_PER_PAGE);
       setProducts((prev) => {
         const prevIds = new Set(prev.map((p) => p.id));
@@ -34,16 +35,11 @@ export function useProductBrowse() {
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Greška pri učitavanju više proizvoda.");
+    } finally {
+      loadingMoreRef.current = false;
+      setLoadingMore(false);
     }
   }, []);
 
-  return {
-    products,
-    setProducts,
-    loading,
-    error,
-    page: pageRef.current,
-    loadInitial,
-    loadMore,
-  };
+  return { products, loading, loadingMore, error, loadInitial, loadMore };
 }

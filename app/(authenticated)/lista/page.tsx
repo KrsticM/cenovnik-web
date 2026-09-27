@@ -7,16 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Container } from "@/components/ui/container";
 import Link from "next/link";
 
-function formatPrice(price: number): string {
-  return price.toLocaleString("sr-RS", {
-    style: "currency",
-    currency: "RSD",
-    minimumFractionDigits: 0,
-  });
-}
-
 export default function ListaPage() {
-  const { items, itemCount, clearList } = useShoppingList();
+  const { items, itemCount, clearList, updateQuantity, removeItem } = useShoppingList();
 
   const handleClearList = () => {
     if (window.confirm("Zaista želite da obrisete sve stavke iz liste?")) {
@@ -44,9 +36,9 @@ export default function ListaPage() {
                 <p className="mb-6 text-muted-foreground">
                   Počnite da dodajete proizvode iz pregleda.
                 </p>
-                <Link href="/proizvodi">
-                  <Button variant="default">Pregledaj proizvode</Button>
-                </Link>
+                <Button asChild variant="default">
+                  <Link href="/proizvodi">Pregledaj proizvode</Link>
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -69,12 +61,10 @@ export default function ListaPage() {
                   <div className="col-span-2 flex flex-col items-end justify-between gap-2 sm:col-span-1">
                     <QuantityStepper
                       quantity={item.quantity}
-                      onIncrement={() => {
-                        // Will be wired in ProductCard in Step 6
-                      }}
-                      onDecrement={() => {
-                        // Will be wired in ProductCard in Step 6
-                      }}
+                      onIncrement={() => updateQuantity(item.id, item.quantity + 1)}
+                      onDecrement={() =>
+                        item.quantity <= 1 ? removeItem(item.id) : updateQuantity(item.id, item.quantity - 1)
+                      }
                       size="sm"
                     />
                   </div>
@@ -91,11 +81,9 @@ export default function ListaPage() {
               </div>
 
               <div className="flex gap-2">
-                <Link href="/proizvodi" className="flex-1">
-                  <Button variant="default" className="w-full">
-                    Nastavi kupovinu
-                  </Button>
-                </Link>
+                <Button asChild variant="default" className="flex-1">
+                  <Link href="/proizvodi">Nastavi kupovinu</Link>
+                </Button>
                 <Button
                   variant="outline"
                   onClick={handleClearList}

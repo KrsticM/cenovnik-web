@@ -4,18 +4,18 @@ import Link from "next/link";
 
 export function BrandLogo() {
   return (
-    <Link href="/" className="flex shrink-0 items-center gap-3 no-underline">
+    <Link href="/" aria-label="eCenovnik, početna" className="flex shrink-0 items-center gap-2.5 no-underline">
       {/* 3-bar price comparison mark (horizontal, bottom-aligned) */}
-      <div className="flex items-end gap-1">
-        <div className="w-[11px] rounded-[5px] bg-[#DA864D]" style={{ height: "32px" }} />
+      <div aria-hidden="true" className="flex h-8 items-end gap-1">
+        <div className="w-[11px] rounded-[5px] bg-terracotta" style={{ height: "32px" }} />
         <div className="w-[11px] rounded-[5px] bg-[#c4bfb4]" style={{ height: "22px" }} />
-        <div className="w-[11px] rounded-[5px] bg-[#70845F]" style={{ height: "13px" }} />
+        <div className="w-[11px] rounded-[5px] bg-sage" style={{ height: "13px" }} />
       </div>
 
       {/* Wordmark */}
-      <div className="text-xl font-semibold">
-        <span className="text-[#DA864D]">e</span>
-        <span className="text-[#1a1a1a]">Cenovnik</span>
+      <div className="whitespace-nowrap text-lg font-semibold tracking-[-0.025em]">
+        <span className="text-terracotta">e</span>
+        <span className="text-ink">Cenovnik</span>
       </div>
     </Link>
   );

@@ -33,18 +33,17 @@ export function AccountMenu() {
       <DropdownMenuTrigger
         className={cn(
           "flex h-11 w-11 items-center justify-center rounded-full",
-          "bg-[#FFEDD0] text-[#4f5c42] font-semibold text-sm",
-          "hover:bg-[#f0e0c0] transition-colors",
-          "border border-transparent"
+          "bg-cream text-sage-dark font-semibold text-sm",
+          "border border-line transition-colors hover:border-sage"
         )}
         aria-label="Nalog i podešavanja"
       >
         {initials}
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-56">
+      <DropdownMenuContent align="end" sideOffset={8} className="w-[220px] rounded-[14px] border-line p-2 shadow-[0_14px_40px_rgba(26,26,26,0.14)]">
         {/* User info header */}
-        <div className="px-2 py-3 border-b border-border">
+        <div className="border-b border-line-soft px-3 pb-3 pt-2.5">
           <div className="text-sm font-semibold text-foreground truncate">
             {user.user_metadata?.name || "Korisnik"}
           </div>
@@ -54,19 +53,19 @@ export function AccountMenu() {
         </div>
 
         {/* Menu items */}
-        <Link href="/podesavanja">
-          <DropdownMenuItem>Podešavanja</DropdownMenuItem>
-        </Link>
+        <DropdownMenuItem asChild>
+          <Link href="/podesavanja">Podešavanja</Link>
+        </DropdownMenuItem>
 
-        <Link href="/prodavnice">
-          <DropdownMenuItem>Moje prodavnice</DropdownMenuItem>
-        </Link>
+        <DropdownMenuItem asChild>
+          <Link href="/prodavnice">Moje prodavnice</Link>
+        </DropdownMenuItem>
 
         <DropdownMenuSeparator />
 
         <DropdownMenuItem
           onSelect={handleSignOut}
-          className="text-[#A85B2A] hover:bg-red-50 hover:text-red-600"
+          className="text-rust hover:bg-red-50 hover:text-red-600"
         >
           Odjava
         </DropdownMenuItem>

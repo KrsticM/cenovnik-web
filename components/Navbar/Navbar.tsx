@@ -13,12 +13,12 @@ export function Navbar() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background">
-        <nav className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+      <header className="fixed left-0 right-0 top-0 z-40 border-b border-line bg-white/95 backdrop-blur-md">
+        <nav className="mx-auto flex h-[68px] w-full max-w-[1360px] items-center justify-between gap-5 px-4 sm:px-5 lg:px-8 2xl:max-w-[1720px] 2xl:px-12">
           <BrandLogo />
 
           {user && (
-            <div className="flex shrink-0 items-center gap-3">
+            <div className="flex shrink-0 items-center gap-2.5">
               <ListBadge onClick={() => setListPanelOpen(true)} />
               <AccountMenu />
             </div>

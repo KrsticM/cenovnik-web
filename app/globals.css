@@ -17,6 +17,17 @@
   --green-dark: #4f5c42;
   --green-dark-hover: #3f4a35;
 
+  /* Design-only tints (Claude Design palette) */
+  --ink-warm: #6b6355;
+  --sage-tint: #eef1ea;
+  --cream-border: #efe0c4;
+  --cream-band-border: #f0dfc0;
+  --rust-dark: #8f4c22;
+  --sand: #f1eee8;
+  --skeleton: #efece6;
+  --toggle-off: #cfcac0;
+  --cream-stripe: #f7e5c8;
+
   /* Surfaces & backgrounds */
   --paper: #f8f8f8;
   --surface: #f2f2f2;
@@ -73,33 +84,60 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+
+  /* Palette colours: prefer these over raw hex so components follow the design tokens. */
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--muted);
+  --color-ink-warm: var(--ink-warm);
+  --color-ink-soft: var(--muted-2);
+  --color-sage: var(--brand);
+  --color-sage-dark: var(--brand-dark);
+  --color-sage-darker: var(--green-dark-hover);
+  --color-sage-tint: var(--sage-tint);
+  --color-cream: var(--brand-soft);
+  --color-cream-border: var(--cream-border);
+  --color-cream-band-border: var(--cream-band-border);
+  --color-terracotta: var(--accent);
+  --color-rust: var(--rust);
+  --color-rust-dark: var(--rust-dark);
+  --color-line: var(--line);
+  --color-line-soft: var(--surface);
+  --color-paper: var(--paper);
+  --color-sand: var(--sand);
+  --color-skeleton: var(--skeleton);
+  --color-toggle-off: var(--toggle-off);
+  --color-cream-stripe: var(--cream-stripe);
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-* {
-  box-sizing: border-box;
-  border-color: var(--border);
-}
-
-html { background: var(--paper); }
-
+/* Element defaults must stay inside a layer: unlayered rules beat every Tailwind utility. */
 @layer base {
   * {
+    box-sizing: border-box;
+    border-color: var(--border);
     outline-color: color-mix(in oklch, var(--ring) 50%, transparent);
   }
+
+  html { background: var(--paper); }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  button, a { font: inherit; }
 }
 
-body {
-  margin: 0;
-  min-height: 100vh;
-  background: var(--paper);
-  color: var(--ink);
+/* Placeholder for products without a photo (design: diagonal cream stripes). */
+@utility stripes {
+  background: repeating-linear-gradient(135deg, var(--brand-soft) 0 7px, var(--cream-stripe) 7px 14px);
 }
-
-button, a { font: inherit; }
 
 /* Marketing/landing page heading (scoped, not global) */
 .marketing-heading {
@@ -111,4 +149,35 @@ button, a { font: inherit; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; }
+}
+
+@keyframes qtyIn {
+  from { opacity: 0; transform: scale(0.82); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes dropIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes panelIn {
+  from { transform: translateX(24px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
