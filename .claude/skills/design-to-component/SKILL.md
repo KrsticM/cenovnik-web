@@ -46,7 +46,8 @@ After installing a new shadcn component, update the "Installed" list in `referen
 ## 4. Where code goes
 
 - `components/ui/*` stays generic shadcn. Apply design styling from the call site with `className` + `cn()`, or add a cva variant — variants may use palette tokens (e.g. `sage`, `pill` on `Button`), never raw hex. Small opt-in props are fine (see `hideClose` / `overlayClassName` on `components/ui/sheet.tsx`).
-- **No raw `<button>` / `<label>`** in app code: use `Button` (pick a design variant + size from `reference/shadcn-map.md`) and `Label`. Wrap Radix `Close`/`Trigger` parts around `Button` with `asChild`.
+- **Primitives vs composites.** Everything with its own look — button, label, card/box, badge/pill, divider, image, price, section label, skeleton, scroll area, alert/hint, styled link — comes from a primitive in `components/ui/` (shadcn or our own, same conventions: `cn`, cva variants, tokens). Complex components (cards, panels, pages) may only add **layout wrappers** (div/section/ul with flex/grid/gap/padding) and **plain text** (h1–h3, p, span). Raw styled HTML belongs inside primitives only.
+- Links styled as buttons or text links: `Button asChild` around `Link` (also `DropdownMenuItem asChild`); never nest a `Button`/menu item inside a `Link`.
 - Reused across features → `components/<Name>/<Name>.tsx`. Used by one feature → `app/(authenticated)/<feature>/components/`.
 - Components are dumb: props in, callbacks out, no data fetching, no context reads unless the component *is* the context's view (like `ListPanel`). Aim for < ~100 LOC; split when a file does two things.
 - State and effects live in hooks (`use*.ts` next to the feature); data access lives in `lib/services/*` (direct Supabase client).

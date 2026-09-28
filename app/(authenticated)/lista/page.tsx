@@ -3,12 +3,12 @@
 import { useShoppingList } from "@/contexts/ShoppingListContext";
 import { QuantityStepper } from "@/components/QuantityStepper/QuantityStepper";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Container } from "@/components/ui/container";
 import Link from "next/link";
 
 export default function ListaPage() {
-  const { items, itemCount, clearList, updateQuantity, removeItem } = useShoppingList();
+  const { items, itemCount, clearList, setQuantity } = useShoppingList();
 
   const handleClearList = () => {
     if (window.confirm("Zaista želite da obrisete sve stavke iz liste?")) {
@@ -61,10 +61,8 @@ export default function ListaPage() {
                   <div className="col-span-2 flex flex-col items-end justify-between gap-2 sm:col-span-1">
                     <QuantityStepper
                       quantity={item.quantity}
-                      onIncrement={() => updateQuantity(item.id, item.quantity + 1)}
-                      onDecrement={() =>
-                        item.quantity <= 1 ? removeItem(item.id) : updateQuantity(item.id, item.quantity - 1)
-                      }
+                      onIncrement={() => setQuantity(item.productId, item.quantity + 1)}
+                      onDecrement={() => setQuantity(item.productId, item.quantity - 1)}
                       size="sm"
                     />
                   </div>

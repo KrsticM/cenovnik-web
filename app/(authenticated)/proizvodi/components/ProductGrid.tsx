@@ -1,19 +1,17 @@
 "use client";
 
 import { memo, useCallback, useState } from "react";
-import { Product } from "@/types/product";
-import { ProductOffer } from "@/lib/services/products";
-import { useShoppingList } from "@/contexts/ShoppingListContext";
+import type { CatalogItem } from "@/lib/services/products";
 import { ProductCard } from "./ProductCard";
 import { ProductCardSkeleton } from "./ProductCardSkeleton";
 import { InfiniteScrollSentinel } from "./InfiniteScrollSentinel";
 import { GRID_CLASSES } from "../config";
+import { useGridColumns } from "../hooks/useGridColumns";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-
 interface ProductGridProps {
-  products: Product[];
-  offers: Record<string, ProductOffer[]>;
+  items: CatalogItem[];
   showSkeleton: boolean;
   isLoadingMore: boolean;
   hasMore: boolean;
@@ -23,8 +21,7 @@ interface ProductGridProps {
 }
 
 function ProductGridComponent({
-  products,
-  offers,
+  items,
   showSkeleton,
   isLoadingMore,
   hasMore,
@@ -32,8 +29,10 @@ function ProductGridComponent({
   endLabel,
   onReset,
 }: ProductGridProps) {
-  const { getItemByProductId } = useShoppingList();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const columns = useGridColumns();
+  // While more is loading, fill the gaps in the last row and add one full row of placeholders.
+  const placeholderCount = hasMore ? ((columns - (items.length % columns)) % columns) + columns : 0;
 
   const handleExpandedChange = useCallback((productId: string, expanded: boolean) => {
     setExpandedId((current) => (expanded ? productId : current === productId ? null : current));
@@ -49,9 +48,9 @@ function ProductGridComponent({
     );
   }
 
-  if (products.length === 0 && !hasMore) {
+  if (items.length === 0 && !hasMore) {
     return (
-      <div className="rounded-2xl border border-line bg-white px-6 py-[88px] text-center">
+      <Card className="rounded-2xl border-line bg-white px-6 py-[88px] text-center shadow-none">
         <span className="inline-block h-14 w-14 rounded-2xl bg-cream" aria-hidden="true" />
         <p className="mt-[18px] text-[17px] font-medium text-ink">Nema proizvoda za ove filtere.</p>
         <p className="mt-1.5 text-sm text-ink-muted">
@@ -60,22 +59,25 @@ function ProductGridComponent({
         <Button variant="sage" onClick={onReset} className="mt-5 h-auto rounded-[22px] px-5 py-[11px] hover:bg-sage-dark">
           Prikaži sve proizvode
         </Button>
-      </div>
+      </Card>
     );
   }
 
   return (
     <div>
-      <div className={GRID_CLASSES}>
-        {products.map((product) => (
+      <div className={GRID_CLASSES} aria-busy={isLoadingMore}>
+        {items.map(({ product, price, isDeal }) => (
           <ProductCard
             key={product.id}
             product={product}
-            offers={offers[product.id]}
-            quantity={getItemByProductId(product.id)?.quantity ?? 0}
+            price={price}
+            isDeal={isDeal}
             expanded={expandedId === product.id}
             onExpandedChange={(expanded) => handleExpandedChange(product.id, expanded)}
           />
+        ))}
+        {Array.from({ length: placeholderCount }, (_, i) => (
+          <ProductCardSkeleton key={`placeholder-${i}`} />
         ))}
       </div>
 

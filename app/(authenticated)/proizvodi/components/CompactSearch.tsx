@@ -1,9 +1,8 @@
 "use client";
 
+import { DOCK_EASE } from "../config";
 import { SearchField } from "./SearchField";
 import { SearchBindings } from "./SearchDock";
-
-const EASE = "cubic-bezier(0.32,0.72,0,1)";
 
 export function CompactBandSearch({ search }: { search: SearchBindings }) {
   return (
@@ -32,7 +31,7 @@ export function CompactDockedSearch({ search, docked }: { search: SearchBindings
         height: docked ? 68 : 0,
         borderColor: docked ? "var(--line)" : "transparent",
         overflow: docked ? "visible" : "hidden",
-        transition: `height 280ms ${EASE}`,
+        transition: `height 280ms ${DOCK_EASE}`,
       }}
     >
       <div className="mx-auto max-w-[1360px] px-4 pb-3 pt-1">
@@ -41,7 +40,7 @@ export function CompactDockedSearch({ search, docked }: { search: SearchBindings
             opacity: docked ? 1 : 0,
             transform: docked ? "translateY(0)" : "translateY(-18px)",
             visibility: docked ? "visible" : "hidden",
-            transition: `opacity 200ms ease, transform 280ms ${EASE}`,
+            transition: `opacity 200ms ease, transform 280ms ${DOCK_EASE}`,
           }}
         >
           <SearchField

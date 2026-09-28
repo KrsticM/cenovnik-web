@@ -1,13 +1,15 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useRef, useState } from "react";
 import Link from "next/link";
 import { useShoppingList } from "@/contexts/ShoppingListContext";
 import { plural } from "@/lib/formatPrice";
 import { Button } from "@/components/ui/button";
-import { useProductBrowse } from "./hooks/useProductBrowse";
+import { Alert } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { COUNT_CAP } from "@/lib/services/products";
 import { useProductSearch } from "./hooks/useProductSearch";
-import { useProductOffers } from "./hooks/useProductOffers";
+import { useProductCatalog } from "./hooks/useProductCatalog";
 import { useProductFilters } from "./hooks/useProductFilters";
 import { useSearchDock } from "./hooks/useSearchDock";
 import { useSearchSuggestions } from "./hooks/useSearchSuggestions";
@@ -20,58 +22,62 @@ import { ActiveFilterChips } from "./components/ActiveFilterChips";
 import { SortMenu } from "./components/SortMenu";
 import { ScrollToTopButton } from "./components/ScrollToTopButton";
 
+const productWord = (n: number) => plural(n, "proizvod", "proizvoda", "proizvoda");
+
+// "1.000+ proizvoda" above the cap, otherwise the exact number.
+function countLabel(count: number): string {
+  return count > COUNT_CAP
+    ? `${COUNT_CAP.toLocaleString("sr-RS")}+ proizvoda`
+    : `${count.toLocaleString("sr-RS")} ${productWord(count)}`;
+}
+
 function ProizvodiContent() {
-  const { storeIds } = useShoppingList();
+  const { list, error: listError, storeIds } = useShoppingList();
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const bandRef = useRef<HTMLElement>(null);
   const bandFieldRef = useRef<HTMLDivElement>(null);
   const { slotTop, docked, narrow } = useSearchDock(bandRef, bandFieldRef);
 
-  const browse = useProductBrowse();
   const search = useProductSearch();
   const filters = useProductFilters();
+  const scope = filters.myMarkets ? storeIds : null;
 
-  const source = search.isSearchMode ? search.results : browse.products;
-  const { offers, isLoadingOffers } = useProductOffers(
-    source,
-    filters.myMarkets ? storeIds : null
+  // Wait for the user's stores so the first request already has the right market scope.
+  const storesReady = list !== null || !!listError;
+  const catalog = useProductCatalog(
+    {
+      query: search.liveQuery,
+      storeIds: scope,
+      priceMin: filters.priceMin,
+      priceMax: filters.priceMax,
+      dealsOnly: filters.dealsOnly,
+    },
+    filters.sort,
+    storesReady
   );
-  const { apply } = filters;
-  const visible = useMemo(() => apply(source, offers), [apply, source, offers]);
 
-  const { loadInitial } = browse;
-  useEffect(() => {
-    loadInitial();
-  }, [loadInitial]);
-
-  const suggestions = useSearchSuggestions(search.query, filters.myMarkets ? storeIds : null);
+  const suggestions = useSearchSuggestions(search.query, scope);
 
   const searchBindings: SearchBindings = {
     value: search.query,
     onChange: search.setQuery,
-    onCommit: (value) => search.commit(value),
+    onCommit: search.commit,
     suggestions,
     searching: search.searching,
   };
 
-  const sourceLoading = search.isSearchMode ? search.loadingResults : browse.loading;
-  const showSkeleton =
-    search.searching || sourceLoading || (visible.length === 0 && isLoadingOffers);
-  const hasMore = search.isSearchMode ? search.hasMore : true;
-  const loadingMore =
-    (search.isSearchMode ? search.loadingMore : browse.loadingMore) || isLoadingOffers;
+  const showSkeleton = search.searching || catalog.loading;
 
   const live = search.liveQuery;
   const heading = live ? `Rezultati za „${live}“` : "Proizvodi";
-  const subtitle = live
-    ? search.loadingResults
+  const count = catalog.count;
+  const subtitle =
+    count === null || catalog.loading
       ? ""
-      : `${search.found} ${plural(search.found, "proizvod odgovara", "proizvoda odgovaraju", "proizvoda odgovara")} pretrazi`
-    : filters.myMarkets
-      ? "Cene iz vaših marketa"
-      : "Cene iz svih marketa";
-  const error = browse.error || search.error;
+      : live
+        ? `${countLabel(count)} ${count > COUNT_CAP ? "odgovara" : plural(count, "odgovara", "odgovaraju", "odgovara")} pretrazi`
+        : `${countLabel(count)} · cene iz ${filters.myMarkets ? "vaših" : "svih"} marketa`;
 
   const filterControls = {
     myMarkets: filters.myMarkets,
@@ -109,17 +115,17 @@ function ProizvodiContent() {
           <div ref={bandFieldRef} aria-hidden="true" className="hidden h-[62px] w-full max-w-[720px] lg:block" />
           <CompactBandSearch search={searchBindings} />
 
-          <p className="flex flex-wrap items-center justify-center gap-2 text-center text-sm text-ink-warm">
+          <Alert
+            role="note"
+            className="flex w-auto flex-wrap items-center justify-center gap-2 border-0 bg-transparent p-0 text-center text-sm text-ink-warm"
+          >
             <span aria-hidden="true" className="block h-1.5 w-1.5 rounded-full bg-sage" />
             {filters.myMarkets ? (
               <span>
                 Pretraga i cene obuhvataju artikle iz{" "}
-                <Link
-                  href="/prodavnice"
-                  className="font-semibold text-sage-dark underline underline-offset-2 hover:text-sage-darker"
-                >
-                  vaših omiljenih marketa
-                </Link>
+                <Button asChild variant="underline" size="text" className="inline font-semibold hover:text-sage-darker">
+                  <Link href="/prodavnice">vaših omiljenih marketa</Link>
+                </Button>
               </span>
             ) : (
               <span>
@@ -134,7 +140,7 @@ function ProizvodiContent() {
                 </Button>
               </span>
             )}
-          </p>
+          </Alert>
         </div>
       </section>
 
@@ -155,9 +161,7 @@ function ProizvodiContent() {
             <Button variant="pill" size="pill" onClick={() => setFiltersOpen(true)} className="lg:hidden">
               Filteri
               {filters.activeCount > 0 && (
-                <span className="inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-[11px] bg-sage-dark px-1.5 text-xs font-semibold text-cream">
-                  {filters.activeCount}
-                </span>
+                <Badge variant="count-sm">{filters.activeCount}</Badge>
               )}
             </Button>
             <SortMenu value={filters.sort} onChange={filters.setSort} />
@@ -167,19 +171,18 @@ function ProizvodiContent() {
         <FilterBar {...filterControls} />
         <ActiveFilterChips chips={filters.activeChips} onClear={filters.clearFilters} />
 
-        {error && (
-          <div className="mb-6 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
-            {error}
-          </div>
+        {catalog.error && (
+          <Alert variant="destructive" className="mb-6 border-0 bg-destructive/10">
+            {catalog.error}
+          </Alert>
         )}
 
         <ProductGrid
-          products={visible}
-          offers={offers}
+          items={catalog.items}
           showSkeleton={showSkeleton}
-          isLoadingMore={loadingMore}
-          hasMore={hasMore}
-          onLoadMore={search.isSearchMode ? search.loadMore : browse.loadMore}
+          isLoadingMore={catalog.loadingMore}
+          hasMore={catalog.hasMore}
+          onLoadMore={catalog.loadMore}
           endLabel={live ? "To je sve za ovu pretragu." : "To je sve za sada."}
           onReset={resetAll}
         />
@@ -189,7 +192,7 @@ function ProizvodiContent() {
         {...filterControls}
         open={filtersOpen}
         onOpenChange={setFiltersOpen}
-        resultCount={visible.length}
+        resultLabel={count === null ? "proizvode" : countLabel(count)}
       />
 
       <ScrollToTopButton />

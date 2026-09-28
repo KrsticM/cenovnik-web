@@ -1,14 +1,14 @@
 "use client";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { SortKey } from "../hooks/useProductFilters";
+import type { BrowseSort } from "@/lib/services/products";
 
 interface SortMenuProps {
-  value: SortKey;
-  onChange: (sort: SortKey) => void;
+  value: BrowseSort;
+  onChange: (sort: BrowseSort) => void;
 }
 
-const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+const SORT_OPTIONS: { value: BrowseSort; label: string }[] = [
   { value: "relevance", label: "Preporučeno" },
   { value: "price_asc", label: "Cena: niža prvo" },
   { value: "price_desc", label: "Cena: viša prvo" },
@@ -17,7 +17,7 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
 
 export function SortMenu({ value, onChange }: SortMenuProps) {
   return (
-    <Select value={value} onValueChange={(next) => onChange(next as SortKey)}>
+    <Select value={value} onValueChange={(next) => onChange(next as BrowseSort)}>
       <SelectTrigger
         aria-label="Sortiraj"
         icon={

@@ -1,50 +1,24 @@
 import { useShoppingList } from "@/contexts/ShoppingListContext";
+import type { Product } from "@/types/product";
 
-export function useProductListControl(productId: string) {
-  const { getItemByProductId, addItem, updateQuantity, removeItem } =
-    useShoppingList();
+// Quantity of one product on the active list, plus +/−/remove. Changes show immediately;
+// the context saves them in order and surfaces errors.
+export function useProductListControl(product: Product, price: number) {
+  const { getItemByProductId, setQuantity, removeItem } = useShoppingList();
+  const quantity = getItemByProductId(product.id)?.quantity ?? 0;
 
-  const item = getItemByProductId?.(productId);
-  const quantity = item?.quantity ?? 0;
-
-  const increment = async () => {
-    try {
-      await addItem(productId, (quantity || 0) + 1);
-    } catch (err) {
-      console.error("Failed to increment quantity:", err);
-    }
-  };
-
-  const decrement = async () => {
-    if (quantity && quantity > 1 && item?.id) {
-      try {
-        await updateQuantity(item.id, quantity - 1);
-      } catch (err) {
-        console.error("Failed to decrement quantity:", err);
-      }
-    } else if (quantity === 1 && item?.id) {
-      try {
-        await removeItem(item.id);
-      } catch (err) {
-        console.error("Failed to remove item:", err);
-      }
-    }
-  };
-
-  const remove = async () => {
-    if (item?.id) {
-      try {
-        await removeItem(item.id);
-      } catch (err) {
-        console.error("Failed to remove item:", err);
-      }
-    }
-  };
+  const increment = () =>
+    setQuantity(product.id, quantity + 1, {
+      productName: product.productName,
+      primaryBarcode: product.barcodes[0] ?? null,
+      hasImage: product.hasImage,
+      price,
+    });
 
   return {
     quantity,
     increment,
-    decrement,
-    remove,
+    decrement: () => setQuantity(product.id, quantity - 1),
+    remove: () => removeItem(product.id),
   };
 }

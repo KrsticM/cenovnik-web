@@ -13,8 +13,7 @@ import { ShoppingList, ShoppingListItem } from "@/types/shoppingList";
 import {
   getOrCreateActiveList,
   fetchListItems,
-  addItem as serviceAddItem,
-  updateItemQuantity as serviceUpdateQuantity,
+  setItemQuantity as serviceSetQuantity,
   removeItem as serviceRemoveItem,
   clearList as serviceClearList,
   setListShareToken,
@@ -23,13 +22,10 @@ import {
 import { getUserStoreIds } from "@/lib/services/userStores";
 import { createClient } from "@/lib/supabase/client";
 
-const UNDO_WINDOW_MS = 5000;
+export const UNDO_WINDOW_MS = 5000;
 
-export type RemovedItem = {
-  productId: string;
-  productName: string;
-  quantity: number;
-};
+// What a caller already knows about a product, so a newly added item renders right away.
+export type ItemDetails = Partial<Pick<ShoppingListItem, "productName" | "primaryBarcode" | "hasImage" | "price">>;
 
 interface ShoppingListContextValue {
   list: ShoppingList | null;
@@ -39,10 +35,10 @@ interface ShoppingListContextValue {
   storeIds: string[];
   loading: boolean;
   error: string | null;
-  lastRemoved: RemovedItem | null;
-  addItem: (productId: string, quantity?: number) => Promise<void>;
-  updateQuantity: (itemId: string, quantity: number) => Promise<void>;
-  removeItem: (itemId: string) => Promise<void>;
+  lastRemoved: ShoppingListItem | null;
+  // Quantity 0 removes the item. Changes show immediately and are saved in order.
+  setQuantity: (productId: string, quantity: number, details?: ItemDetails) => Promise<void>;
+  removeItem: (productId: string) => Promise<void>;
   undoRemove: () => Promise<void>;
   clearList: () => Promise<void>;
   setSharing: (isPublic: boolean) => Promise<void>;
@@ -58,17 +54,40 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
   const [storeIds, setStoreIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [lastRemoved, setLastRemoved] = useState<RemovedItem | null>(null);
+  const [lastRemoved, setLastRemoved] = useState<ShoppingListItem | null>(null);
   const storeIdsRef = useRef<string[]>([]);
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const listIdRef = useRef<string | null>(null);
+  // Saves run one after another so the database ends in the same state as the screen.
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const pendingSavesRef = useRef(0);
+  const reloadSeqRef = useRef(0);
 
   const loadItems = useCallback(
     async (listId: string) => attachPrices(await fetchListItems(listId), storeIdsRef.current),
     []
   );
 
+  // Reloads can finish out of order (realtime fires once per write). Only the newest one is
+  // applied, and never while local changes are still saving, so the screen can't jump back.
+  const reload = useCallback(
+    async (listId: string) => {
+      const seq = ++reloadSeqRef.current;
+      try {
+        const next = await loadItems(listId);
+        if (seq === reloadSeqRef.current && pendingSavesRef.current === 0 && listIdRef.current === listId) {
+          setItems(next);
+        }
+      } catch (err) {
+        console.error("Failed to reload shopping list:", err);
+      }
+    },
+    [loadItems]
+  );
+
   useEffect(() => {
     if (!user?.id) {
+      listIdRef.current = null;
       setList(null);
       setItems([]);
       setStoreIds([]);
@@ -91,6 +110,7 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
         ]);
         if (cancelled) return;
         storeIdsRef.current = userStoreIds;
+        listIdRef.current = userList.id;
         setStoreIds(userStoreIds);
         setList(userList);
 
@@ -108,9 +128,8 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
               table: "shopping_list_items",
               filter: `shopping_list_id=eq.${userList.id}`,
             },
-            async () => {
-              const updatedItems = await loadItems(userList.id);
-              if (!cancelled) setItems(updatedItems);
+            () => {
+              if (!cancelled) reload(userList.id);
             }
           )
           .subscribe();
@@ -129,53 +148,64 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
       cancelled = true;
       channel?.unsubscribe();
     };
-  }, [user?.id, loadItems]);
+  }, [user?.id, loadItems, reload]);
 
   useEffect(() => () => {
     if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
   }, []);
 
-  const addItem = async (productId: string, quantity: number = 1) => {
+  // Applies a change on screen first, then queues the write. Once the queue is idle, one reload
+  // brings in server data (ids, prices) and undoes anything that failed to save.
+  const save = (listId: string, write: () => Promise<void>, failure: string) => {
+    pendingSavesRef.current += 1;
+    reloadSeqRef.current += 1; // a reload already in flight read the list before this change
+    saveQueueRef.current = saveQueueRef.current
+      .then(write)
+      .catch((err) => {
+        console.error(`${failure}:`, err);
+        setError(err instanceof Error ? err.message : failure);
+      })
+      .finally(() => {
+        pendingSavesRef.current -= 1;
+        if (pendingSavesRef.current === 0) reload(listId);
+      });
+    return saveQueueRef.current;
+  };
+
+  const removeItem = async (productId: string) => {
+    const removed = items.find((item) => item.productId === productId);
+    if (!list || !removed) return;
+    setItems((prev) => prev.filter((item) => item.productId !== productId));
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    setLastRemoved(removed);
+    undoTimerRef.current = setTimeout(() => setLastRemoved(null), UNDO_WINDOW_MS);
+    await save(list.id, () => serviceRemoveItem(list.id, productId), "Failed to remove item");
+  };
+
+  const setQuantity = async (productId: string, quantity: number, details: ItemDetails = {}) => {
     if (!list) return;
-    try {
-      await serviceAddItem(list.id, productId, quantity);
-      setItems(await loadItems(list.id));
-    } catch (err) {
-      console.error("Failed to add item:", err);
-      setError(err instanceof Error ? err.message : "Failed to add item");
-    }
-  };
-
-  const updateQuantity = async (itemId: string, quantity: number) => {
-    try {
-      await serviceUpdateQuantity(itemId, quantity);
-      setItems((prev) =>
-        prev.map((item) => (item.id === itemId ? { ...item, quantity } : item))
-      );
-    } catch (err) {
-      console.error("Failed to update quantity:", err);
-      setError(err instanceof Error ? err.message : "Failed to update quantity");
-    }
-  };
-
-  const removeItem = async (itemId: string) => {
-    const removed = items.find((item) => item.id === itemId);
-    try {
-      await serviceRemoveItem(itemId);
-      setItems((prev) => prev.filter((item) => item.id !== itemId));
-      if (removed) {
-        if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
-        setLastRemoved({
-          productId: removed.productId,
-          productName: removed.productName,
-          quantity: removed.quantity,
-        });
-        undoTimerRef.current = setTimeout(() => setLastRemoved(null), UNDO_WINDOW_MS);
-      }
-    } catch (err) {
-      console.error("Failed to remove item:", err);
-      setError(err instanceof Error ? err.message : "Failed to remove item");
-    }
+    if (quantity <= 0) return removeItem(productId);
+    const listId = list.id;
+    setItems((prev) =>
+      prev.some((item) => item.productId === productId)
+        ? prev.map((item) => (item.productId === productId ? { ...item, quantity } : item))
+        : [
+            ...prev,
+            {
+              // Placeholder until the reload after saving brings the real row.
+              id: `pending:${productId}`,
+              shoppingListId: listId,
+              productId,
+              productName: details.productName ?? "",
+              primaryBarcode: details.primaryBarcode ?? null,
+              hasImage: details.hasImage ?? false,
+              price: details.price ?? null,
+              quantity,
+              createdAt: new Date().toISOString(),
+            },
+          ]
+    );
+    await save(listId, () => serviceSetQuantity(listId, productId, quantity), "Failed to update quantity");
   };
 
   const undoRemove = async () => {
@@ -183,18 +213,14 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
     const { productId, quantity } = lastRemoved;
     setLastRemoved(null);
-    await addItem(productId, quantity);
+    await setQuantity(productId, quantity, lastRemoved);
   };
 
   const clearList = async () => {
     if (!list) return;
-    try {
-      await serviceClearList(list.id);
-      setItems([]);
-    } catch (err) {
-      console.error("Failed to clear list:", err);
-      setError(err instanceof Error ? err.message : "Failed to clear list");
-    }
+    const listId = list.id;
+    setItems([]);
+    await save(listId, () => serviceClearList(listId), "Failed to clear list");
   };
 
   const setSharing = async (isPublic: boolean) => {
@@ -224,8 +250,7 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
         loading,
         error,
         lastRemoved,
-        addItem,
-        updateQuantity,
+        setQuantity,
         removeItem,
         undoRemove,
         clearList,

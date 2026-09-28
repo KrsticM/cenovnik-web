@@ -4,10 +4,9 @@ import { CSSProperties, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { Button } from "@/components/ui/button";
-import { useShoppingList } from "@/contexts/ShoppingListContext";
+import { UNDO_WINDOW_MS, useShoppingList } from "@/contexts/ShoppingListContext";
 
 const TOAST_ID = "removal";
-const UNDO_WINDOW_MS = 5000;
 
 // Wide enough for long product names; the pill itself shrinks to fit and stays centred.
 const TOASTER_STYLE = { "--width": "min(560px, calc(100vw - 32px))" } as CSSProperties;

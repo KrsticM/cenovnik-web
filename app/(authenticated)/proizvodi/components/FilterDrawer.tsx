@@ -1,21 +1,19 @@
 "use client";
 
 import { PillSwitch } from "@/components/PillSwitch/PillSwitch";
+import { SectionLabel } from "@/components/ui/section-label";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
-import { plural } from "@/lib/formatPrice";
 import { FilterControlsProps } from "./FilterBar";
 import { PricePresets } from "./PricePresets";
 
 interface FilterDrawerProps extends FilterControlsProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  resultCount: number;
+  resultLabel: string;
 }
 
-const sectionLabel = "text-xs font-semibold uppercase tracking-[0.07em] text-ink-muted";
-
-export function FilterDrawer({ open, onOpenChange, resultCount, ...props }: FilterDrawerProps) {
+export function FilterDrawer({ open, onOpenChange, resultLabel, ...props }: FilterDrawerProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
@@ -35,22 +33,22 @@ export function FilterDrawer({ open, onOpenChange, resultCount, ...props }: Filt
         </div>
 
         <div className="flex flex-col gap-2.5">
-          <div className={sectionLabel}>Prodavnice</div>
+          <SectionLabel>Prodavnice</SectionLabel>
           <PillSwitch className="self-start" label="Samo moji marketi" checked={props.myMarkets} onCheckedChange={props.onMyMarketsChange} />
         </div>
 
         <div className="flex flex-col gap-2.5">
-          <div className={sectionLabel}>Cena</div>
+          <SectionLabel>Cena</SectionLabel>
           <PricePresets value={props.priceRange} onToggle={props.onPriceToggle} />
         </div>
 
         <div className="flex flex-col gap-2.5">
-          <div className={sectionLabel}>Ponuda</div>
+          <SectionLabel>Ponuda</SectionLabel>
           <PillSwitch className="self-start" label="Samo akcije" checked={props.dealsOnly} onCheckedChange={props.onDealsOnlyChange} />
         </div>
 
         <Button variant="sage" size="pill-lg" onClick={() => onOpenChange(false)} className="mt-auto w-full shrink-0 hover:bg-sage-dark">
-          Prikaži {resultCount} {plural(resultCount, "proizvod", "proizvoda", "proizvoda")}
+          Prikaži {resultLabel}
         </Button>
       </SheetContent>
     </Sheet>

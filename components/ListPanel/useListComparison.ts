@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { fetchProductOffers, ProductOffer } from "@/lib/services/products";
-import { fetchStoresByIds, Store } from "@/lib/services/stores";
+import type { Store } from "@/lib/services/stores";
 import { ShoppingListItem } from "@/types/shoppingList";
 
 export type StoreComparisonRow = {
@@ -38,15 +38,10 @@ export function useListComparison(
 
     (async () => {
       try {
-        const offers = await fetchProductOffers(
+        const { offers, stores } = await fetchProductOffers(
           productKey.split(","),
           scopedStoreIds.length > 0 ? scopedStoreIds : undefined
         );
-        const ids =
-          scopedStoreIds.length > 0
-            ? scopedStoreIds
-            : [...new Set(Object.values(offers).flat().map((o) => o.storeId))];
-        const stores = await fetchStoresByIds(ids);
         if (!cancelled) setData({ key: requestKey, offers, stores });
       } catch (err) {
         console.error("[useListComparison] Failed to load comparison:", err);

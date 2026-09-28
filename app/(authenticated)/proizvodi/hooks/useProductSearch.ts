@@ -1,20 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { searchProducts } from "@/lib/services/products";
-import { Product } from "@/types/product";
 
 const SEARCH_DEBOUNCE_MS = 400;
-
-type SearchResults = {
-  query: string;
-  products: Product[];
-  found: number;
-  hasMore: boolean;
-  page: number;
-  error: string;
-};
-
-const EMPTY_RESULTS: SearchResults = { query: "", products: [], found: 0, hasMore: false, page: 1, error: "" };
 
 function readUrlQuery(): string {
   return new URLSearchParams(window.location.search).get("q") ?? "";
@@ -30,13 +17,13 @@ function syncUrl(value: string, push: boolean) {
   else window.history.replaceState(null, "", url.toString());
 }
 
+// Search input state: what's typed (`query`) vs. what's searched (`liveQuery`, debounced or
+// committed on Enter / suggestion), kept in the URL as ?q= with back/forward support.
 export function useProductSearch() {
   const initialQuery = useSearchParams().get("q") ?? "";
   const [query, setQueryState] = useState(initialQuery);
   const [liveQuery, setLiveQuery] = useState(initialQuery.trim());
   const [searching, setSearching] = useState(false);
-  const [data, setData] = useState<SearchResults>(EMPTY_RESULTS);
-  const [loadingMore, setLoadingMore] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const cancelDebounce = () => {
@@ -77,70 +64,12 @@ export function useProductSearch() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!liveQuery) return;
-    let cancelled = false;
-    searchProducts(liveQuery, 1)
-      .then((result) => {
-        if (!cancelled) setData({ query: liveQuery, ...result, page: 1, error: "" });
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          setData({
-            ...EMPTY_RESULTS,
-            query: liveQuery,
-            error: err instanceof Error ? err.message : "Greška pri pretrazi.",
-          });
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [liveQuery]);
-
-  const current = liveQuery !== "" && data.query === liveQuery ? data : EMPTY_RESULTS;
-
-  const loadMore = useCallback(async () => {
-    if (!current.query || loadingMore || !current.hasMore) return;
-    const { query: forQuery, page } = current;
-    setLoadingMore(true);
-    try {
-      const result = await searchProducts(forQuery, page + 1);
-      setData((prev) => {
-        if (prev.query !== forQuery) return prev;
-        const ids = new Set(prev.products.map((p) => p.id));
-        return {
-          ...prev,
-          products: [...prev.products, ...result.products.filter((p) => !ids.has(p.id))],
-          hasMore: result.hasMore,
-          page: page + 1,
-        };
-      });
-    } catch (err) {
-      setData((prev) =>
-        prev.query === forQuery
-          ? { ...prev, error: err instanceof Error ? err.message : "Greška pri učitavanju više proizvoda." }
-          : prev
-      );
-    } finally {
-      setLoadingMore(false);
-    }
-  }, [current, loadingMore]);
-
   return {
     query,
     liveQuery,
-    isSearchMode: liveQuery.length > 0,
     searching,
-    loadingResults: liveQuery !== "" && data.query !== liveQuery,
-    loadingMore,
-    results: current.products,
-    found: current.found,
-    hasMore: current.hasMore,
-    error: current.error,
     setQuery,
     commit,
     clear: () => commit("", true),
-    loadMore,
   };
 }

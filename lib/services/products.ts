@@ -1,19 +1,9 @@
 import { Product } from "@/types/product";
 import { createClient } from "@/lib/supabase/client";
-import { fetchStoresByIds } from "@/lib/services/stores";
+import { fetchStoresByIds, type Store } from "@/lib/services/stores";
 
-const PRODUCTS_COLLECTION = "products";
 const CURRENT_PRICES_COLLECTION = "current_prices";
-const DEFAULT_PRODUCT_LIMIT = 20;
 const PRICE_ROWS_PAGE = 1000;
-const PRODUCTS_SELECT = "id, product_name, has_image, barcodes ( barcode )";
-
-type ProductRow = {
-  id: string;
-  product_name: string;
-  has_image: boolean;
-  barcodes: { barcode: string }[] | null;
-};
 
 type LowestPriceRow = {
   product_id: string;
@@ -23,151 +13,94 @@ type LowestPriceRow = {
 
 type OfferPriceRow = LowestPriceRow & { store_id: string };
 
-function mapProduct(row: ProductRow): Product {
+// ---- Catalog browse/search (Postgres functions in supabase/browse_products.sql) ----------------
+
+export type BrowseSort = "relevance" | "price_asc" | "price_desc" | "name";
+
+export type BrowseFilters = {
+  query?: string;
+  // null = all markets; otherwise the user's store ids ("Samo moji marketi").
+  storeIds: string[] | null;
+  priceMin?: number | null;
+  priceMax?: number | null;
+  dealsOnly?: boolean;
+};
+
+export type BrowseCursor = { num: number; text: string; id: string };
+
+export type CatalogItem = { product: Product; price: number; isDeal: boolean };
+
+type BrowseRow = {
+  id: string;
+  product_name: string;
+  has_image: boolean;
+  barcodes: string[] | null;
+  min_price: number;
+  is_deal: boolean;
+  sort_num: number;
+  sort_text: string;
+};
+
+// Above this the count is capped; the UI shows "1.000+".
+export const COUNT_CAP = 1000;
+
+function filterParams(filters: BrowseFilters) {
   return {
-    id: row.id,
-    productName: row.product_name,
-    hasImage: row.has_image,
-    barcodes: (row.barcodes ?? []).map((b) => b.barcode),
+    p_query: filters.query?.trim() || null,
+    p_store_ids: filters.storeIds && filters.storeIds.length > 0 ? filters.storeIds : null,
+    p_price_min: filters.priceMin ?? null,
+    p_price_max: filters.priceMax ?? null,
+    p_deals_only: filters.dealsOnly ?? false,
   };
 }
 
-function randomUuid(): string {
-  const hex = "0123456789abcdef";
-  let value = "";
-  for (let i = 0; i < 32; i++) {
-    value += hex[Math.floor(Math.random() * 16)];
-  }
-  return `${value.slice(0, 8)}-${value.slice(8, 12)}-${value.slice(12, 16)}-${value.slice(16, 20)}-${value.slice(20)}`;
-}
-
-export async function fetchProducts(limit = DEFAULT_PRODUCT_LIMIT): Promise<Product[]> {
+// One page of products with the cheapest price in scope, filtered and sorted in the database.
+// Pass the returned cursor to get the next page (keyset pagination, no OFFSET).
+export async function browseProducts(
+  filters: BrowseFilters,
+  options: { sort: BrowseSort; seed: string; limit: number; after?: BrowseCursor | null }
+): Promise<{ items: CatalogItem[]; nextCursor: BrowseCursor | null }> {
   const supabase = createClient();
-  const seed = randomUuid();
-
-  const { data, error } = await supabase
-    .from(PRODUCTS_COLLECTION)
-    .select(PRODUCTS_SELECT)
-    .eq("has_image", true)
-    .gte("id", seed)
-    .order("id")
-    .limit(limit);
-
+  const { data, error } = await supabase.rpc("browse_products", {
+    ...filterParams(filters),
+    p_sort: options.sort,
+    p_seed: options.seed,
+    p_limit: options.limit,
+    p_after_num: options.after?.num ?? null,
+    p_after_text: options.after?.text ?? null,
+    p_after_id: options.after?.id ?? null,
+  });
   if (error) throw error;
 
-  let rows = (data as ProductRow[] | null) ?? [];
+  const rows = (data as BrowseRow[] | null) ?? [];
+  const items = rows.map((row) => ({
+    product: {
+      id: row.id,
+      productName: row.product_name,
+      hasImage: row.has_image,
+      barcodes: row.barcodes ?? [],
+    },
+    price: Number(row.min_price),
+    isDeal: row.is_deal,
+  }));
+  const last = rows[rows.length - 1];
+  const nextCursor =
+    rows.length === options.limit && last
+      ? { num: Number(last.sort_num), text: last.sort_text, id: last.id }
+      : null;
 
-  if (rows.length < limit) {
-    const { data: wrapData, error: wrapError } = await supabase
-      .from(PRODUCTS_COLLECTION)
-      .select(PRODUCTS_SELECT)
-      .eq("has_image", true)
-      .lt("id", seed)
-      .order("id")
-      .limit(limit - rows.length);
-
-    if (wrapError) throw wrapError;
-    rows = [...rows, ...((wrapData as ProductRow[] | null) ?? [])];
-  }
-
-  return rows.map(mapProduct);
+  return { items, nextCursor };
 }
 
-export async function searchProducts(
-  searchQuery: string,
-  page = 1,
-): Promise<{ products: Product[]; hasMore: boolean; found: number }> {
+// Number of matching products, exact up to COUNT_CAP; anything above returns COUNT_CAP + 1.
+export async function countProducts(filters: BrowseFilters): Promise<number> {
   const supabase = createClient();
-  const trimmed = searchQuery.trim();
-
-  if (!trimmed) {
-    return { products: [], hasMore: false, found: 0 };
-  }
-
-  const from = (page - 1) * DEFAULT_PRODUCT_LIMIT;
-  const to = from + DEFAULT_PRODUCT_LIMIT - 1;
-
-  const isBarcode = /^\d{6,}$/.test(trimmed);
-
-  if (isBarcode) {
-    const { data, count, error } = await supabase
-      .from(PRODUCTS_COLLECTION)
-      .select("id, product_name, has_image, barcodes!inner ( barcode )", {
-        count: "exact",
-      })
-      .eq("barcodes.barcode", trimmed)
-      .range(from, to);
-
-    if (error) throw error;
-
-    const products = ((data as ProductRow[] | null) ?? []).map(mapProduct);
-    const found = count ?? 0;
-    const hasMore = from + products.length < found;
-
-    return { products, hasMore, found };
-  }
-
-  const { data, count, error } = await supabase
-    .from(PRODUCTS_COLLECTION)
-    .select(PRODUCTS_SELECT, { count: "exact" })
-    .ilike("product_name", `%${trimmed}%`)
-    .order("product_name")
-    .range(from, to);
-
+  const { data, error } = await supabase.rpc("browse_products_count", filterParams(filters));
   if (error) throw error;
-
-  const products = ((data as ProductRow[] | null) ?? []).map(mapProduct);
-  const found = count ?? 0;
-  const hasMore = from + products.length < found;
-
-  return { products, hasMore, found };
+  return (data as number | null) ?? 0;
 }
 
-// PostgREST filter syntax treats these as operators, and *,% as wildcards.
-const FILTER_UNSAFE = /[,()*%"\\]/g;
-
-// No count and no ORDER BY, so Postgres can stop at the limit instead of scanning every match.
-// Names starting with the query (or with a word that does) rank ahead of plain substring hits.
-export async function fetchSuggestionCandidates(searchQuery: string, limit: number): Promise<Product[]> {
-  const term = searchQuery.trim().replace(FILTER_UNSAFE, " ").replace(/\s+/g, " ").trim();
-  if (!term) return [];
-
-  const supabase = createClient();
-
-  if (/^\d{6,}$/.test(term)) {
-    const { data, error } = await supabase
-      .from(PRODUCTS_COLLECTION)
-      .select("id, product_name, has_image, barcodes!inner ( barcode )")
-      .eq("barcodes.barcode", term)
-      .limit(limit);
-    if (error) throw error;
-    return ((data as ProductRow[] | null) ?? []).map(mapProduct);
-  }
-
-  const [wordStart, contains] = await Promise.all([
-    supabase
-      .from(PRODUCTS_COLLECTION)
-      .select(PRODUCTS_SELECT)
-      .or(`product_name.ilike."${term}*",product_name.ilike."* ${term}*"`)
-      .limit(limit),
-    supabase
-      .from(PRODUCTS_COLLECTION)
-      .select(PRODUCTS_SELECT)
-      .ilike("product_name", `%${term}%`)
-      .limit(limit),
-  ]);
-  if (wordStart.error) throw wordStart.error;
-  if (contains.error) throw contains.error;
-
-  const seen = new Set<string>();
-  const merged: Product[] = [];
-  for (const row of [...((wordStart.data as ProductRow[] | null) ?? []), ...((contains.data as ProductRow[] | null) ?? [])]) {
-    if (seen.has(row.id)) continue;
-    seen.add(row.id);
-    merged.push(mapProduct(row));
-  }
-  return merged.slice(0, limit);
-}
+// ---- Per-store offers (list panel pricing and market comparison) -----------------------------
 
 export type ProductOffer = {
   retailerId: string;
@@ -178,15 +111,15 @@ export type ProductOffer = {
   isDeal: boolean;
 };
 
-// PostgREST caps responses at 1000 rows and "all markets" can mean ~10k rows,
-// so the first page returns the total count and the rest are fetched in parallel.
-async function fetchPriceRows(productIds: string[], storeIds?: string[]): Promise<OfferPriceRow[]> {
+// Pages through one price query until a short page; PostgREST caps each response at 1000 rows.
+async function fetchPriceRowsPaged(productIds: string[], storeIds?: string[]): Promise<OfferPriceRow[]> {
   const supabase = createClient();
+  const rows: OfferPriceRow[] = [];
 
-  const pageQuery = (from: number, withCount: boolean) => {
+  for (let from = 0; ; from += PRICE_ROWS_PAGE) {
     let query = supabase
       .from(CURRENT_PRICES_COLLECTION)
-      .select("product_id, regular_price, discounted_price, store_id", withCount ? { count: "exact" } : undefined)
+      .select("product_id, regular_price, discounted_price, store_id")
       .in("product_id", productIds)
       .order("product_id")
       .order("store_id")
@@ -194,53 +127,40 @@ async function fetchPriceRows(productIds: string[], storeIds?: string[]): Promis
     if (storeIds && storeIds.length > 0) {
       query = query.in("store_id", storeIds);
     }
-    return query;
-  };
 
-  const first = await pageQuery(0, true);
-  if (first.error) throw first.error;
-  const rows: OfferPriceRow[] = [...((first.data as OfferPriceRow[] | null) ?? [])];
-
-  const total = first.count ?? rows.length;
-  const rest = await Promise.all(
-    Array.from({ length: Math.ceil(total / PRICE_ROWS_PAGE) - 1 }, (_, i) =>
-      pageQuery((i + 1) * PRICE_ROWS_PAGE, false)
-    )
-  );
-  for (const page of rest) {
-    if (page.error) throw page.error;
-    rows.push(...((page.data as OfferPriceRow[] | null) ?? []));
+    const { data, error } = await query;
+    if (error) throw error;
+    const page = (data as OfferPriceRow[] | null) ?? [];
+    rows.push(...page);
+    if (page.length < PRICE_ROWS_PAGE) return rows;
   }
-  return rows;
 }
 
-// Cheapest effective price per product; products without a price in scope are omitted.
-export async function fetchLowestPrices(
-  productIds: string[],
-  storeIds?: string[]
-): Promise<Record<string, number>> {
-  if (productIds.length === 0) return {};
-  const lowest: Record<string, number> = {};
-  for (const row of await fetchPriceRows(productIds, storeIds)) {
-    const price = row.discounted_price ?? row.regular_price;
-    if (lowest[row.product_id] === undefined || price < lowest[row.product_id]) {
-      lowest[row.product_id] = price;
-    }
+// Scoped to the user's stores the result is small, so one query suffices. "All markets" can be
+// ~10k rows per 20 products: an exact count plus deep OFFSET pages over that set hit the statement
+// timeout (57014), so fetch per product instead — each is a small index-backed read.
+async function fetchPriceRows(productIds: string[], storeIds?: string[]): Promise<OfferPriceRow[]> {
+  if (storeIds && storeIds.length > 0) {
+    return fetchPriceRowsPaged(productIds, storeIds);
   }
-  return lowest;
+  const perProduct = await Promise.all(productIds.map((id) => fetchPriceRowsPaged([id])));
+  return perProduct.flat();
 }
 
-// Every requested id gets an entry; [] means "no price in scope", so callers can tell it apart from "not fetched yet".
+// Every requested id gets an entry; [] means "no price in scope", so callers can tell it apart from
+// "not fetched yet". `stores` covers the whole scope (or every store with an offer when unscoped).
 export async function fetchProductOffers(
   productIds: string[],
   storeIds?: string[]
-): Promise<Record<string, ProductOffer[]>> {
-  if (productIds.length === 0) return {};
+): Promise<{ offers: Record<string, ProductOffer[]>; stores: Map<string, Store> }> {
+  if (productIds.length === 0) return { offers: {}, stores: new Map() };
 
   const rows = await fetchPriceRows(productIds, storeIds);
 
   // current_prices has no PostgREST FK to stores, so embedded joins fail; fetch separately.
-  const stores = await fetchStoresByIds([...new Set(rows.map((r) => r.store_id))]);
+  const stores = await fetchStoresByIds(
+    storeIds && storeIds.length > 0 ? storeIds : [...new Set(rows.map((r) => r.store_id))]
+  );
 
   const offers: Record<string, ProductOffer[]> = Object.fromEntries(
     productIds.map((id) => [id, []])
@@ -261,5 +181,5 @@ export async function fetchProductOffers(
     productOffers.sort((a, b) => a.price - b.price);
   }
 
-  return offers;
+  return { offers, stores };
 }

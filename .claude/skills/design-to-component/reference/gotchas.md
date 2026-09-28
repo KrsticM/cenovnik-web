@@ -19,6 +19,8 @@ Each of these cost a bug or a debugging session. Check new work against them.
 - **Animate Radix content only while open**: use `data-[state=open]:animate-[…]`. If the animation class stays on in the closed state, Radix Presence waits for an `animationend` that may never come and the closed popover/dialog stays mounted.
 - **cmdk always selects its first item.** To keep "Enter = search the typed text", `SearchField` renders an invisible first `CommandItem` (`sr-only`) that commits the typed value. Close the list on input blur and `preventDefault` on `mousedown` inside the popover so clicking a suggestion still works.
 - **Sonner custom toasts**: the `<li>` shrinks to its content at the toaster's left edge. Pass `toastOptions.className = "pointer-events-none flex w-[var(--width)] justify-center"` and put `pointer-events-auto` on the content. Sonner pauses its timer while the page is hidden; the list context owns the real undo window.
+- **shadcn Alert sets `role="alert"`**, which screen readers announce on load. For static hints pass `role="note"`.
+- **Card/Badge defaults**: `Card` adds `shadow-sm` and `rounded-lg` (16 px here); `Badge` adds a 1 px border. Override (`shadow-none`, exact radius, `border-0`) to match the design.
 - Nested Radix dialogs (share / confirm inside the list Sheet) work; Escape closes only the top one.
 - Give every `DialogContent` / `SheetContent` a `Title` and `Description` (use `sr-only` if the design has none), or Radix logs a11y warnings.
 
@@ -28,9 +30,11 @@ Each of these cost a bug or a debugging session. Check new work against them.
 
 ## Data & performance
 
-- **PostgREST returns max 1000 rows.** "All markets" prices can be ~10k rows per 20 products; `fetchPriceRows` in `lib/services/products.ts` pages in parallel. Reuse it; don't write a fresh unpaged query.
+- **Catalog browse/search/filter/sort/count run in Postgres** (`supabase/browse_products.sql`): `browse_products` (keyset cursor, no OFFSET) and `browse_products_count` (capped at 1001 → "1.000+"), called via `browseProducts` / `countProducts` in `lib/services/products.ts` and `useProductCatalog`. Don't reintroduce client-side filtering or per-page price downloads for the grid. Verify DB changes with `supabase/browse_products_checks.sql` (run blocks one at a time; block 9 = app role + 8 s timeout).
+
+- **PostgREST returns max 1000 rows**, and Supabase has a statement timeout (error `57014`). "All markets" prices can be ~10k rows per 20 products; `count: "exact"` plus deep `OFFSET` pages over that set timed out. `fetchPriceRows` in `lib/services/products.ts` reads per product when unscoped (small index-backed queries, paged only if a product has >1000 prices) and in one query when scoped to the user's stores. Reuse it; avoid `count: "exact"` on `current_prices`.
 - `current_prices` has no FK to `stores` for PostgREST embedding; store/retailer names come from `fetchStoresByIds` (`lib/services/stores.ts`).
-- `count: "exact"` + `ORDER BY` on `products` ilike is ~2 s; suggestion-style lookups should skip both (see `fetchSuggestionCandidates`).
+- `count: "exact"` on large filtered sets is slow; use the capped `browse_products_count`. Suggestions reuse `browseProducts` with `limit: 6`.
 
 ## Verifying in Chrome (automation)
 

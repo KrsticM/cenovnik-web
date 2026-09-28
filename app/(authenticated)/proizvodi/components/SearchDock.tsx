@@ -1,8 +1,7 @@
 "use client";
 
+import { DOCK_EASE } from "../config";
 import { SearchField, SearchFieldProps } from "./SearchField";
-
-const EASE = "cubic-bezier(0.32,0.72,0,1)";
 
 export type SearchBindings = Pick<
   SearchFieldProps,
@@ -27,7 +26,7 @@ export function SearchDock({ search, slotTop, docked, narrow }: SearchDockProps)
         position: docked ? "fixed" : "absolute",
         top: docked ? 12 : slotTop,
         width,
-        transition: `width 220ms ${EASE}`,
+        transition: `width 220ms ${DOCK_EASE}`,
       }}
     >
       <SearchField
@@ -42,18 +41,18 @@ export function SearchDock({ search, slotTop, docked, narrow }: SearchDockProps)
           padding: docked ? "0 62px 0 42px" : "0 76px 0 52px",
           borderRadius: docked ? 22 : 31,
           fontSize: docked ? 15 : 17,
-          transition: `height 220ms ${EASE}, padding 220ms ${EASE}, border-radius 220ms ease, font-size 160ms ease, box-shadow 220ms ease, border-color 180ms ease`,
+          transition: `height 220ms ${DOCK_EASE}, padding 220ms ${DOCK_EASE}, border-radius 220ms ease, font-size 160ms ease, box-shadow 220ms ease, border-color 180ms ease`,
         }}
         iconClassName="border-ink-muted"
         iconStyle={{
           left: iconLeft,
           width: docked ? 13 : 15,
           height: docked ? 13 : 15,
-          transition: `left 220ms ${EASE}, width 220ms ease, height 220ms ease`,
+          transition: `left 220ms ${DOCK_EASE}, width 220ms ease, height 220ms ease`,
         }}
         spinnerClassName="h-[15px] w-[15px] border-line"
-        spinnerStyle={{ right: iconLeft, transition: `right 220ms ${EASE}` }}
-        clearStyle={{ right: docked ? 34 : 44, transition: `right 220ms ${EASE}` }}
+        spinnerStyle={{ right: iconLeft, transition: `right 220ms ${DOCK_EASE}` }}
+        clearStyle={{ right: docked ? 34 : 44, transition: `right 220ms ${DOCK_EASE}` }}
         dropdownClassName="rounded-2xl shadow-[0_18px_48px_rgba(26,26,26,0.16)]"
         rowClassName="px-[18px] py-3"
         rowTextClassName="text-sm"

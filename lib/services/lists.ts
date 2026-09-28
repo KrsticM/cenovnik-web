@@ -35,13 +35,13 @@ function mapListItem(row: ListItemRow): ShoppingListItem {
   };
 }
 
-// Same cheapest-offer source as the product cards, so list and grid prices agree.
+// Cheapest current offer per item in the user's stores (all markets when none are set).
 export async function attachPrices(
   items: ShoppingListItem[],
   storeIds: string[]
 ): Promise<ShoppingListItem[]> {
   if (items.length === 0) return items;
-  const offers = await fetchProductOffers(
+  const { offers } = await fetchProductOffers(
     items.map((i) => i.productId),
     storeIds.length > 0 ? storeIds : undefined
   );
@@ -110,69 +110,44 @@ export async function fetchListItems(listId: string): Promise<ShoppingListItem[]
   return ((data as ListItemRow[] | null) ?? []).map(mapListItem);
 }
 
-export async function addItem(
+// Sets a product's quantity on a list, adding it if missing. Updating in place keeps the row's
+// created_at, so the list order doesn't jump when a quantity changes.
+export async function setItemQuantity(
   listId: string,
   productId: string,
-  quantity: number = 1
-): Promise<ShoppingListItem> {
-  const supabase = createClient();
-
-  // Upsert: insert or update if product already in list
-  const { data, error } = await supabase
-    .from(SHOPPING_LIST_ITEMS_TABLE)
-    .upsert(
-      {
-        shopping_list_id: listId,
-        product_id: productId,
-        quantity,
-        created_at: new Date().toISOString(),
-      },
-      {
-        onConflict: "shopping_list_id,product_id",
-      }
-    )
-    .select(
-      `
-      id,
-      shopping_list_id,
-      product_id,
-      quantity,
-      created_at,
-      products (
-        product_name,
-        has_image,
-        barcodes (barcode)
-      )
-    `
-    )
-    .single();
-
-  if (error) throw error;
-
-  return mapListItem(data as unknown as ListItemRow);
-}
-
-export async function updateItemQuantity(
-  itemId: string,
   quantity: number
 ): Promise<void> {
   const supabase = createClient();
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from(SHOPPING_LIST_ITEMS_TABLE)
     .update({ quantity })
-    .eq("id", itemId);
-
+    .eq("shopping_list_id", listId)
+    .eq("product_id", productId)
+    .select("id");
   if (error) throw error;
+  if (data && data.length > 0) return;
+
+  const { error: insertError } = await supabase.from(SHOPPING_LIST_ITEMS_TABLE).upsert(
+    {
+      shopping_list_id: listId,
+      product_id: productId,
+      quantity,
+      created_at: new Date().toISOString(),
+    },
+    { onConflict: "shopping_list_id,product_id" }
+  );
+  if (insertError) throw insertError;
 }
 
-export async function removeItem(itemId: string): Promise<void> {
+export async function removeItem(listId: string, productId: string): Promise<void> {
   const supabase = createClient();
 
   const { error } = await supabase
     .from(SHOPPING_LIST_ITEMS_TABLE)
     .delete()
-    .eq("id", itemId);
+    .eq("shopping_list_id", listId)
+    .eq("product_id", productId);
 
   if (error) throw error;
 }
@@ -188,7 +163,16 @@ export async function clearList(listId: string): Promise<void> {
   if (error) throw error;
 }
 
-function mapShoppingList(row: any): ShoppingList {
+type ShoppingListRow = {
+  id: string;
+  user_id: string;
+  name: string;
+  share_token: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+function mapShoppingList(row: ShoppingListRow): ShoppingList {
   return {
     id: row.id,
     userId: row.user_id,

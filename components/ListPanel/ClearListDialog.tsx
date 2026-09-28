@@ -29,7 +29,7 @@ export function ClearListDialog({ open, onOpenChange, itemCount, listName, onCon
         className="z-[80] block w-[calc(100%-32px)] max-w-[400px] data-[state=open]:animate-[qtyIn_180ms_ease_both] rounded-[18px] border-0 bg-white p-6 shadow-[0_24px_64px_rgba(26,26,26,0.24)] sm:rounded-[18px]"
       >
         <AlertDialogTitle className="text-lg font-semibold tracking-[-0.01em] text-ink">
-          Želite da obrišete listu?
+          Želite da ispraznite listu?
         </AlertDialogTitle>
         <AlertDialogDescription className="mt-2 text-sm leading-[1.55] text-ink-muted">
           Uklonićete {itemCount} {plural(itemCount, "artikal", "artikla", "artikala")} sa liste „{listName}“.
@@ -40,7 +40,7 @@ export function ClearListDialog({ open, onOpenChange, itemCount, listName, onCon
             Otkaži
           </AlertDialogCancel>
           <AlertDialogAction onClick={onConfirm} className={`${buttonBase} bg-rust text-white hover:bg-rust-dark`}>
-            Obriši listu
+            Isprazni listu
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

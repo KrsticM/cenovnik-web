@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -68,7 +69,7 @@ export function QuantityStepper({
 
       {showRemove && onRemove && (
         <>
-          <div className="h-6 w-px bg-white/20" />
+          <Separator orientation="vertical" className="h-6 bg-white/20" />
           <Button
             variant="ghost"
             onClick={onRemove}

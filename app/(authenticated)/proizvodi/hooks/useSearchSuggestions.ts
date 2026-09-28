@@ -1,12 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { fetchLowestPrices, fetchSuggestionCandidates } from "@/lib/services/products";
+import { browseProducts } from "@/lib/services/products";
 import { formatPrice } from "@/lib/formatPrice";
 import type { SearchSuggestion } from "../components/SearchField";
 
 const SUGGESTION_DEBOUNCE_MS = 150;
 const SUGGESTION_LIMIT = 6;
-// Over-fetch so products without a price in the current scope can be dropped and still fill the list.
-const CANDIDATE_LIMIT = 12;
 
 // storeIds: null means "all markets".
 export function useSearchSuggestions(query: string, storeIds: string[] | null) {
@@ -27,13 +25,16 @@ export function useSearchSuggestions(query: string, storeIds: string[] | null) {
         return;
       }
       try {
-        const candidates = await fetchSuggestionCandidates(term, CANDIDATE_LIMIT);
-        const scope = storeIds && storeIds.length > 0 ? storeIds : undefined;
-        const prices = await fetchLowestPrices(candidates.map((p) => p.id), scope);
-        const items = candidates
-          .filter((p) => prices[p.id] !== undefined)
-          .slice(0, SUGGESTION_LIMIT)
-          .map((p) => ({ id: p.id, name: p.productName, hint: formatPrice(prices[p.id]) }));
+        // Same ranking and market scope as the results grid; only products priced in scope.
+        const { items: found } = await browseProducts(
+          { query: term, storeIds },
+          { sort: "relevance", seed: "", limit: SUGGESTION_LIMIT }
+        );
+        const items = found.map(({ product, price }) => ({
+          id: product.id,
+          name: product.productName,
+          hint: formatPrice(price),
+        }));
         cacheRef.current.set(key, items);
         if (!cancelled) setShown({ scope: scopeKey, items });
       } catch (err) {

@@ -1,8 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { Product } from "@/types/product";
-import { ProductOffer } from "@/lib/services/products";
-
-export type SortKey = "relevance" | "price_asc" | "price_desc" | "name";
+import type { BrowseSort } from "@/lib/services/products";
 
 export const PRICE_PRESETS = [
   { min: 0, max: 200, label: "do 200 RSD" },
@@ -17,7 +14,7 @@ export function useProductFilters() {
   const [myMarkets, setMyMarkets] = useState(true);
   const [priceRange, setPriceRange] = useState<number | null>(null);
   const [dealsOnly, setDealsOnly] = useState(false);
-  const [sort, setSort] = useState<SortKey>("relevance");
+  const [sort, setSort] = useState<BrowseSort>("relevance");
 
   const clearFilters = useCallback(() => {
     setMyMarkets(true);
@@ -44,26 +41,7 @@ export function useProductFilters() {
     return chips;
   }, [myMarkets, priceRange, dealsOnly]);
 
-  // Products whose offers haven't arrived yet are held back so they don't flash in unpriced.
-  const apply = useCallback(
-    (products: Product[], offers: Record<string, ProductOffer[]>) => {
-      const range = priceRange === null ? null : PRICE_PRESETS[priceRange];
-      const visible = products.filter((product) => {
-        const best = offers[product.id]?.[0];
-        if (!best) return false;
-        if (range && (best.price < range.min || best.price >= range.max)) return false;
-        if (dealsOnly && !best.isDeal) return false;
-        return true;
-      });
-
-      const price = (p: Product) => offers[p.id][0].price;
-      if (sort === "price_asc") visible.sort((a, b) => price(a) - price(b));
-      else if (sort === "price_desc") visible.sort((a, b) => price(b) - price(a));
-      else if (sort === "name") visible.sort((a, b) => a.productName.localeCompare(b.productName, "sr"));
-      return visible;
-    },
-    [priceRange, dealsOnly, sort]
-  );
+  const range = priceRange === null ? null : PRICE_PRESETS[priceRange];
 
   return {
     myMarkets,
@@ -77,6 +55,7 @@ export function useProductFilters() {
     activeChips,
     activeCount: activeChips.length,
     clearFilters,
-    apply,
+    priceMin: range ? range.min : null,
+    priceMax: range && Number.isFinite(range.max) ? range.max : null,
   };
 }

@@ -2,6 +2,8 @@
 
 import { PillSwitch } from "@/components/PillSwitch/PillSwitch";
 import { PricePresets } from "./PricePresets";
+import { Card } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 
 export interface FilterControlsProps {
@@ -15,13 +17,13 @@ export interface FilterControlsProps {
   onClear: () => void;
 }
 
-const Divider = () => <span aria-hidden="true" className="block h-6 w-px bg-line" />;
+const Divider = () => <Separator orientation="vertical" className="h-6 bg-line" />;
 
 export function FilterBar(props: FilterControlsProps) {
   return (
-    <div
+    <Card
       aria-label="Filteri"
-      className="-mt-2 mb-6 hidden flex-wrap items-center gap-3 rounded-2xl border border-line bg-white p-2.5 lg:flex"
+      className="-mt-2 mb-6 hidden flex-wrap items-center gap-3 rounded-2xl border-line bg-white p-2.5 shadow-none lg:flex"
     >
       <PillSwitch label="Samo moji marketi" checked={props.myMarkets} onCheckedChange={props.onMyMarketsChange} />
       <Divider />
@@ -34,6 +36,6 @@ export function FilterBar(props: FilterControlsProps) {
           Očisti filtere
         </Button>
       )}
-    </div>
+    </Card>
   );
 }

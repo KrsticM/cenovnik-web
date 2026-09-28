@@ -11,10 +11,12 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { formatPrice, plural } from "@/lib/formatPrice";
-import { getProductImageUrl } from "@/lib/productImageUrl";
-import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Price } from "@/components/ui/price";
+import { ProductThumb } from "@/components/ui/product-thumb";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { ShoppingListItem } from "@/types/shoppingList";
 import { ListCompare } from "./ListCompare";
 import { ShareIcon, ShareListDialog } from "./ShareListDialog";
@@ -34,7 +36,7 @@ const TABS: [Tab, string][] = [
 ];
 
 export function ListPanel({ open, onOpenChange }: ListPanelProps) {
-  const { list, items, total, storeIds, clearList, updateQuantity, removeItem, setSharing } =
+  const { list, items, total, storeIds, clearList, setQuantity, removeItem, setSharing } =
     useShoppingList();
   const [tab, setTab] = useState<Tab>("items");
   const [shareOpen, setShareOpen] = useState(false);
@@ -44,11 +46,6 @@ export function ListPanel({ open, onOpenChange }: ListPanelProps) {
   const hasItems = items.length > 0;
   const listName = list?.name ?? "Vaša lista";
   const close = () => onOpenChange(false);
-
-  const setQuantity = (item: ShoppingListItem, quantity: number) => {
-    if (quantity <= 0) removeItem(item.id);
-    else updateQuantity(item.id, quantity);
-  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -70,14 +67,12 @@ export function ListPanel({ open, onOpenChange }: ListPanelProps) {
               </SheetTitle>
               <SheetDescription className="sr-only">Proizvodi na vašoj listi za kupovinu</SheetDescription>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center rounded-2xl border border-line bg-paper px-3 py-1.5 text-[13px] font-medium text-ink">
-                  {listName}
-                </span>
+                <Badge variant="list">{listName}</Badge>
                 {list?.shareToken && (
-                  <span className="inline-flex items-center gap-1.5 rounded-[12px] bg-sage-tint px-2.5 py-1 text-xs font-semibold text-sage-dark">
+                  <Badge variant="public">
                     <span aria-hidden="true" className="block h-1.5 w-1.5 rounded-full bg-sage" />
                     Javna
-                  </span>
+                  </Badge>
                 )}
               </div>
             </div>
@@ -125,29 +120,37 @@ export function ListPanel({ open, onOpenChange }: ListPanelProps) {
               </TabsList>
             </div>
 
-            <TabsContent value="items" className="mt-0 flex-1 overflow-y-auto px-5 py-2">
-              {items.map((item) => (
-                <ListPanelRow
-                  key={item.id}
-                  item={item}
-                  onIncrement={() => setQuantity(item, item.quantity + 1)}
-                  onDecrement={() => setQuantity(item, item.quantity - 1)}
-                  onRemove={() => removeItem(item.id)}
-                />
-              ))}
+            <TabsContent value="items" className="mt-0 min-h-0 flex-1">
+              <ScrollArea className="h-full">
+                <div className="px-5 py-2">
+                  {items.map((item) => (
+                    <ListPanelRow
+                      key={item.id}
+                      item={item}
+                      onIncrement={() => setQuantity(item.productId, item.quantity + 1)}
+                      onDecrement={() => setQuantity(item.productId, item.quantity - 1)}
+                      onRemove={() => removeItem(item.productId)}
+                    />
+                  ))}
+                </div>
+              </ScrollArea>
             </TabsContent>
-            <TabsContent value="compare" className="mt-0 flex-1 overflow-y-auto px-5 py-2">
-              <ListCompare
-                comparison={comparison}
-                loading={comparison.loading}
-                itemCount={items.length}
-                listTotal={total}
-              />
+            <TabsContent value="compare" className="mt-0 min-h-0 flex-1">
+              <ScrollArea className="h-full">
+                <div className="px-5 py-2">
+                  <ListCompare
+                    comparison={comparison}
+                    loading={comparison.loading}
+                    itemCount={items.length}
+                    listTotal={total}
+                  />
+                </div>
+              </ScrollArea>
             </TabsContent>
           </Tabs>
         ) : (
-          <div className="flex-1 overflow-y-auto px-5 py-2">
-            <div className="px-4 py-[72px] text-center">
+          <ScrollArea className="min-h-0 flex-1">
+            <div className="px-9 py-[80px] text-center">
               <span aria-hidden="true" className="inline-block h-14 w-14 rounded-2xl bg-cream" />
               <p className="mt-[18px] text-base font-medium text-ink">Vaša lista je prazna.</p>
               <p className="mt-1.5 text-sm text-ink-muted">Počnite da dodajete proizvode.</p>
@@ -155,7 +158,7 @@ export function ListPanel({ open, onOpenChange }: ListPanelProps) {
                 Pregledaj proizvode
               </Button>
             </div>
-          </div>
+          </ScrollArea>
         )}
 
         <div className="border-t border-line bg-white px-5 pb-[22px] pt-[18px]">
@@ -163,9 +166,7 @@ export function ListPanel({ open, onOpenChange }: ListPanelProps) {
             <span className="text-sm text-ink-muted">
               Ukupno · {items.length} {plural(items.length, "artikal", "artikla", "artikala")}
             </span>
-            <span className="text-2xl font-semibold tracking-[-0.02em] text-ink">
-              {formatPrice(total)}
-            </span>
+            <Price value={total} size="total" tone="ink" />
           </div>
           <div className="mt-4 flex gap-2.5">
             <Button variant="sage" size="pill-lg" onClick={close} className="flex-1">
@@ -204,24 +205,11 @@ interface ListPanelRowProps {
 }
 
 function ListPanelRow({ item, onIncrement, onDecrement, onRemove }: ListPanelRowProps) {
-  const showImage = item.hasImage && item.primaryBarcode;
   const available = item.price !== null;
 
   return (
     <div className="grid grid-cols-[56px_1fr_auto] items-start gap-3.5 border-b border-line-soft py-4">
-      <span className={cn("block h-14 overflow-hidden rounded-[10px]", showImage ? "bg-white" : "stripes")}>
-        {showImage && (
-          <img
-            src={getProductImageUrl(item.primaryBarcode!, "thumb")}
-            alt=""
-            loading="lazy"
-            className="h-full w-full object-contain"
-            onError={(e) => {
-              e.currentTarget.style.display = "none";
-            }}
-          />
-        )}
-      </span>
+      <ProductThumb barcode={item.primaryBarcode} hasImage={item.hasImage} alt="" className="h-14 rounded-[10px]" />
 
       <span className="block min-w-0">
         <span className="block text-sm font-medium leading-[1.3] text-ink">{item.productName}</span>
@@ -246,9 +234,7 @@ function ListPanelRow({ item, onIncrement, onDecrement, onRemove }: ListPanelRow
       </span>
 
       <span className="block text-right">
-        <span className="block whitespace-nowrap text-[15px] font-semibold text-rust">
-          {available ? formatPrice(item.price! * item.quantity) : "—"}
-        </span>
+        <Price value={available ? item.price! * item.quantity : null} size="row" className="block" />
         <Button
           variant="ghost-muted"
           onClick={onRemove}
