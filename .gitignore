@@ -38,5 +38,4 @@ next-env.d.ts
 /dist/
 
 # Local AI context & planning docs (not committed to git)
-CLAUDE.md
 PHASES.md

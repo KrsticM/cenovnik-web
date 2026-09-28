@@ -15,6 +15,13 @@ const badgeVariants = cva(
         destructive:
           "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
         outline: "text-foreground",
+        // Design (Claude Design) variants — palette tokens only.
+        deal: "rounded-[8px] border-0 bg-rust px-2.5 py-[5px] text-[11px] uppercase tracking-[0.04em] text-white",
+        best: "rounded-[7px] border-0 bg-sage-dark px-[9px] py-[3px] text-[11px] uppercase tracking-[0.04em] text-cream",
+        public: "gap-1.5 rounded-[12px] border-0 bg-sage-tint px-2.5 py-1 text-xs text-sage-dark",
+        count: "h-[26px] min-w-[26px] justify-center border-0 bg-sage-dark px-2 text-sm text-cream",
+        "count-sm": "h-[22px] min-w-[22px] justify-center border-0 bg-sage-dark px-1.5 text-xs text-cream",
+        list: "rounded-2xl border-line bg-paper px-3 py-1.5 text-[13px] font-medium text-ink",
       },
     },
     defaultVariants: {
@@ -24,12 +31,12 @@ const badgeVariants = cva(
 )
 
 export interface BadgeProps
-  extends React.HTMLAttributes<HTMLDivElement>,
+  extends React.HTMLAttributes<HTMLSpanElement>,
     VariantProps<typeof badgeVariants> {}
 
 function Badge({ className, variant, ...props }: BadgeProps) {
   return (
-    <div className={cn(badgeVariants({ variant }), className)} {...props} />
+    <span className={cn(badgeVariants({ variant }), className)} {...props} />
   )
 }
 

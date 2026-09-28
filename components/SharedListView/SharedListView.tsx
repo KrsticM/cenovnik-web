@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useShoppingListData, useCheckedItems } from "@/hooks";
 import { getProductImageUrl } from "@/lib/productImageUrl";
 import { Container } from "../Container/Container";
-import { ListNavbar } from "../ListNavbar/ListNavbar";
+import { Navbar } from "../Navbar/Navbar";
 import { ListHeader } from "../ListHeader/ListHeader";
 import { ListCard } from "../ListCard/ListCard";
 import { ListItem } from "../ListItem/ListItem";
@@ -48,7 +48,7 @@ export function SharedListView({ token }: SharedListViewProps) {
 
   return (
     <>
-      <ListNavbar />
+      <Navbar />
       <Container as="main" size="sm" className={styles.shell}>
         <ListHeader />
         <ListCard title={list.name} itemCount={list.items.length}>

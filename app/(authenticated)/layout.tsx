@@ -1,6 +1,8 @@
 "use client";
 
-import { ListNavbar } from "@/components/ListNavbar/ListNavbar";
+import { Navbar } from "@/components/Navbar/Navbar";
+import { ShoppingListProvider } from "@/contexts/ShoppingListContext";
+import { RemovalToast } from "@/components/RemovalToast/RemovalToast";
 import styles from "./layout.module.css";
 
 export default function AuthenticatedLayout({
@@ -9,9 +11,12 @@ export default function AuthenticatedLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className={styles.root}>
-      <ListNavbar />
-      {children}
-    </div>
+    <ShoppingListProvider>
+      <div className={styles.root}>
+        <Navbar />
+        {children}
+        <RemovalToast />
+      </div>
+    </ShoppingListProvider>
   );
 }

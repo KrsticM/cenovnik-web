@@ -1,28 +1,41 @@
-@import url("https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700;800&display=swap");
 @import "tailwindcss";
 
 :root {
-  /* Primary text colors (from mobile, converted to OKLCH) */
-  --ink: oklch(0.3403 0.0070 95.27);
-  --muted: oklch(0.5666 0.0137 67.55);
-  --muted-2: oklch(0.6381 0.0113 81.79);
+  /* Primary text colors */
+  --ink: #1a1a1a;
+  --muted: #666;
+  --muted-2: #8a7f6a;
 
-  /* Brand colors (from mobile, converted to OKLCH) */
-  --brand: oklch(0.5136 0.0877 37.00);
-  --brand-dark: oklch(0.5089 0.0647 45.77);
-  --accent: oklch(0.5785 0.0897 40.47);
+  /* Brand colors (sage/cream/terracotta palette) */
+  --brand: #70845F;
+  --brand-dark: #4f5c42;
+  --brand-soft: #FFEDD0;
+  --accent: #DA864D;
 
-  /* Surfaces & backgrounds (converted to OKLCH) */
-  --paper: oklch(0.9653 0.0102 81.80);
-  --surface: oklch(0.9516 0.0086 67.72);
-  --card: oklch(0.9945 0.0057 84.57);
-  --line: oklch(0.9078 0.0178 73.07);
+  /* Additional accent colors */
+  --rust: #A85B2A;
+  --green-dark: #4f5c42;
+  --green-dark-hover: #3f4a35;
+
+  /* Design-only tints (Claude Design palette) */
+  --ink-warm: #6b6355;
+  --sage-tint: #eef1ea;
+  --cream-border: #efe0c4;
+  --cream-band-border: #f0dfc0;
+  --rust-dark: #8f4c22;
+  --sand: #f1eee8;
+  --skeleton: #efece6;
+  --toggle-off: #cfcac0;
+  --cream-stripe: #f7e5c8;
+
+  /* Surfaces & backgrounds */
+  --paper: #f8f8f8;
+  --surface: #f2f2f2;
+  --card: #fff;
+  --line: #e0e0e0;
 
   /* Shadows */
   --shadow-fab: 0 6px 16px rgba(0, 0, 0, 0.2);
-
-  /* Legacy brand-soft (web-only, for marketing shell, converted to OKLCH) */
-  --brand-soft: oklch(0.8941 0.0242 51.14);
 
   /* Transition tokens */
   --transition-fast: 0.18s ease;
@@ -33,13 +46,13 @@
   --background: var(--paper);
   --foreground: var(--ink);
   --primary: var(--brand);
-  --primary-foreground: oklch(1 0 0);
+  --primary-foreground: #fff;
   --secondary: var(--brand-soft);
   --secondary-foreground: var(--brand-dark);
   --muted-fg: var(--muted);
-  --accent-fg: var(--brand-dark);
-  --destructive: oklch(0.5433 0.1740 29.70);
-  --destructive-foreground: oklch(1 0 0);
+  --accent-fg: var(--rust);
+  --destructive: #dc2626;
+  --destructive-foreground: #fff;
   --border: var(--line);
   --input: var(--line);
   --ring: var(--brand);
@@ -47,7 +60,8 @@
 }
 
 @theme {
-  --font-sans: "Work Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-sans: Geist, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --breakpoint-2xl: 1600px;
 }
 
 @theme inline {
@@ -70,36 +84,63 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+
+  /* Palette colours: prefer these over raw hex so components follow the design tokens. */
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--muted);
+  --color-ink-warm: var(--ink-warm);
+  --color-ink-soft: var(--muted-2);
+  --color-sage: var(--brand);
+  --color-sage-dark: var(--brand-dark);
+  --color-sage-darker: var(--green-dark-hover);
+  --color-sage-tint: var(--sage-tint);
+  --color-cream: var(--brand-soft);
+  --color-cream-border: var(--cream-border);
+  --color-cream-band-border: var(--cream-band-border);
+  --color-terracotta: var(--accent);
+  --color-rust: var(--rust);
+  --color-rust-dark: var(--rust-dark);
+  --color-line: var(--line);
+  --color-line-soft: var(--surface);
+  --color-paper: var(--paper);
+  --color-sand: var(--sand);
+  --color-skeleton: var(--skeleton);
+  --color-toggle-off: var(--toggle-off);
+  --color-cream-stripe: var(--cream-stripe);
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-* {
-  box-sizing: border-box;
-  border-color: var(--border);
-}
-
-html { background: var(--paper); }
-
+/* Element defaults must stay inside a layer: unlayered rules beat every Tailwind utility. */
 @layer base {
   * {
+    box-sizing: border-box;
+    border-color: var(--border);
     outline-color: color-mix(in oklch, var(--ring) 50%, transparent);
   }
+
+  html { background: var(--paper); }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  button, a { font: inherit; }
 }
 
-body {
-  margin: 0;
-  min-height: 100vh;
-  background: var(--paper);
-  color: var(--ink);
-  font-family: "Work Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+/* Placeholder for products without a photo (design: diagonal cream stripes). */
+@utility stripes {
+  background: repeating-linear-gradient(135deg, var(--brand-soft) 0 7px, var(--cream-stripe) 7px 14px);
 }
 
-button, a { font: inherit; }
-
-h1 {
+/* Marketing/landing page heading (scoped, not global) */
+.marketing-heading {
   margin: 0;
   max-width: 650px;
   font: 600 clamp(38px, 8vw, 62px)/1.02 Georgia, "Times New Roman", serif;
@@ -108,4 +149,35 @@ h1 {
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; }
+}
+
+@keyframes qtyIn {
+  from { opacity: 0; transform: scale(0.82); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes dropIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes panelIn {
+  from { transform: translateX(24px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
