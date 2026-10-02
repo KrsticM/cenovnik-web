@@ -35,6 +35,7 @@ yarn-error.log*
 
 # typescript
 next-env.d.ts
+*.tsbuildinfo
 /dist/
 
 # Local AI context & planning docs (not committed to git)
