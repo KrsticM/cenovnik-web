@@ -24,6 +24,14 @@
   --cream-band-border: #f0dfc0;
   --rust-dark: #8f4c22;
   --sand: #f1eee8;
+  --sand-dark: #eae5db;
+  --paper-warm: #fbfaf7;
+  --tile-muted: #ecebe8;
+  --stone: #c4bfb4;
+  --bar-idle: #e6e2da;
+  --sage-mist: #dfe5d8;
+  --cream-bar: #e2cfae;
+  --ink-faint: #9a958c;
   --skeleton: #efece6;
   --toggle-off: #cfcac0;
   --cream-stripe: #f7e5c8;
@@ -104,6 +112,14 @@
   --color-line-soft: var(--surface);
   --color-paper: var(--paper);
   --color-sand: var(--sand);
+  --color-sand-dark: var(--sand-dark);
+  --color-paper-warm: var(--paper-warm);
+  --color-tile-muted: var(--tile-muted);
+  --color-stone: var(--stone);
+  --color-bar-idle: var(--bar-idle);
+  --color-sage-mist: var(--sage-mist);
+  --color-cream-bar: var(--cream-bar);
+  --color-ink-faint: var(--ink-faint);
   --color-skeleton: var(--skeleton);
   --color-toggle-off: var(--toggle-off);
   --color-cream-stripe: var(--cream-stripe);
@@ -180,4 +196,10 @@
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+@keyframes livePulse {
+  0% { box-shadow: 0 0 0 0 rgba(112, 132, 95, 0.45); }
+  70% { box-shadow: 0 0 0 7px rgba(112, 132, 95, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(112, 132, 95, 0); }
 }

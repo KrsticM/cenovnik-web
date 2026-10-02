@@ -16,6 +16,7 @@ import {
   setItemQuantity as serviceSetQuantity,
   removeItem as serviceRemoveItem,
   clearList as serviceClearList,
+  clearCheckedItems as serviceClearChecked,
   setListShareToken,
   attachPrices,
 } from "@/lib/services/lists";
@@ -41,6 +42,8 @@ interface ShoppingListContextValue {
   removeItem: (productId: string) => Promise<void>;
   undoRemove: () => Promise<void>;
   clearList: () => Promise<void>;
+  // Unticks everything bought on the shared list.
+  clearChecked: () => Promise<void>;
   setSharing: (isPublic: boolean) => Promise<void>;
   getItemByProductId: (productId: string) => ShoppingListItem | undefined;
 }
@@ -201,6 +204,7 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
               hasImage: details.hasImage ?? false,
               price: details.price ?? null,
               quantity,
+              checkedAt: null,
               createdAt: new Date().toISOString(),
             },
           ]
@@ -221,6 +225,13 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     const listId = list.id;
     setItems([]);
     await save(listId, () => serviceClearList(listId), "Failed to clear list");
+  };
+
+  const clearChecked = async () => {
+    if (!list) return;
+    const listId = list.id;
+    setItems((prev) => prev.map((item) => (item.checkedAt ? { ...item, checkedAt: null } : item)));
+    await save(listId, () => serviceClearChecked(listId), "Failed to clear bought items");
   };
 
   const setSharing = async (isPublic: boolean) => {
@@ -254,6 +265,7 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
         removeItem,
         undoRemove,
         clearList,
+        clearChecked,
         setSharing,
         getItemByProductId,
       }}

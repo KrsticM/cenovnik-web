@@ -25,6 +25,14 @@ Defined in `app/globals.css`: raw values on `:root`, exposed to Tailwind as `--c
 | `line-soft` | #f2f2f2 | row dividers inside cards and panels |
 | `paper` | #f8f8f8 | page background, hover rows |
 | `sand` | #f1eee8 | tabs track, subtle hover fill |
+| `sand-dark` | #eae5db | hover of `sand` chips (Moji marketi) |
+| `paper-warm` | #fbfaf7 | shared-list row hover, "Kupljeno" section |
+| `tile-muted` | #ecebe8 | initials tile of stores without the product |
+| `stone` | #c4bfb4 | middle logo bar, outline/dashed bars in state illustrations |
+| `bar-idle` | #e6e2da | inactive bars in state illustrations, offline banner border |
+| `sage-mist` | #dfe5d8 | flat bars of the empty-list illustration |
+| `cream-bar` | #e2cfae | bars on the cream 404 tile |
+| `ink-faint` | #9a958c | paused live-indicator ring (offline) |
 | `skeleton` | #efece6 | skeleton blocks |
 | `toggle-off` | #cfcac0 | switch track when off, dashed "Kombinovano" border |
 
@@ -40,7 +48,7 @@ Rule of thumb: inside `components/ui/*` keep the semantic names so shadcn behave
 
 ## Not tokenised on purpose
 
-One-off neutrals that appear once in the design (`#f6f6f6` dropdown dividers, `#b8b8b8` suggestion ring, `#c4bfb4` logo bar, `#eadfc8` band spinner track) may stay as arbitrary values. If a value shows up a second time, promote it to a token here and in `globals.css`.
+One-off neutrals that appear once in the design (`#f6f6f6` dropdown dividers, `#b8b8b8` suggestion ring, `#eadfc8` band spinner track) may stay as arbitrary values. If a value shows up a second time, promote it to a token here and in `globals.css`.
 
 ## Migrating old code
 

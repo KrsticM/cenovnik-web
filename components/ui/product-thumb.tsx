@@ -8,11 +8,13 @@ interface ProductThumbProps extends React.HTMLAttributes<HTMLDivElement> {
   hasImage: boolean
   alt: string
   imgClassName?: string
+  // "full" (750 px) falls back to the thumb (340 px) when the large photo is missing.
+  size?: "thumb" | "full"
 }
 
 // Product photo with the design's striped placeholder when there is no image.
 const ProductThumb = React.forwardRef<HTMLDivElement, ProductThumbProps>(
-  ({ barcode, hasImage, alt, className, imgClassName, children, ...props }, ref) => {
+  ({ barcode, hasImage, alt, className, imgClassName, size = "thumb", children, ...props }, ref) => {
     const showImage = hasImage && !!barcode
     return (
       <div
@@ -23,12 +25,14 @@ const ProductThumb = React.forwardRef<HTMLDivElement, ProductThumbProps>(
         {showImage && (
           // eslint-disable-next-line @next/next/no-img-element -- CDN thumbs are already sized; next/image would need a loader.
           <img
-            src={getProductImageUrl(barcode!, "thumb")}
+            src={getProductImageUrl(barcode!, size)}
             alt={alt}
-            loading="lazy"
+            loading={size === "full" ? "eager" : "lazy"}
             className={cn("h-full w-full object-contain", imgClassName)}
             onError={(e) => {
-              e.currentTarget.style.display = "none"
+              const thumb = getProductImageUrl(barcode!, "thumb")
+              if (size === "full" && !e.currentTarget.src.endsWith(thumb)) e.currentTarget.src = thumb
+              else e.currentTarget.style.display = "none"
             }}
           />
         )}
