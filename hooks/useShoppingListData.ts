@@ -1,30 +1,27 @@
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import type { SharedList, SharedListItem } from "@/lib/services/sharedList";
 
-export type Item = {
-  productId: string;
-  productName: string;
-  primaryBarcode: string;
-  quantity: number;
-};
-
-export type ShoppingList = {
-  id: string;
-  name: string;
-  items: Item[];
-};
+export type Item = SharedListItem;
+export type ShoppingList = SharedList;
 
 interface UseShoppingListDataReturn {
   list: ShoppingList | null;
   loading: boolean;
   error: string;
+  // The link stopped working (list deleted or sharing turned off), possibly while open.
+  notFound: boolean;
   refresh: (background?: boolean) => Promise<void>;
+  // Applies a confirmed tick locally without waiting for the realtime reload.
+  setItemChecked: (productId: string, checkedAt: string | null) => void;
 }
 
-export function useShoppingListData(token: string): UseShoppingListDataReturn {
-  const [list, setList] = useState<ShoppingList | null>(null);
+// `initial` is the server-rendered list; without it (server error) the hook loads on mount.
+export function useShoppingListData(token: string, initial: ShoppingList | null): UseShoppingListDataReturn {
+  const [list, setList] = useState<ShoppingList | null>(initial);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+  const [loading, setLoading] = useState(initial === null);
 
   const load = useCallback(
     async (background = false) => {
@@ -34,6 +31,10 @@ export function useShoppingListData(token: string): UseShoppingListDataReturn {
           cache: "no-store",
         });
         const data = await response.json();
+        if (response.status === 404) {
+          setNotFound(true);
+          return;
+        }
         if (!response.ok) {
           throw new Error(data.error || "Lista trenutno nije dostupna.");
         }
@@ -50,10 +51,10 @@ export function useShoppingListData(token: string): UseShoppingListDataReturn {
     [token]
   );
 
-  // Load list on mount
+  // Load on mount only when the server couldn't render the list
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (initial === null) void load();
+  }, [initial, load]);
 
   // Setup real-time subscription
   useEffect(() => {
@@ -90,5 +91,14 @@ export function useShoppingListData(token: string): UseShoppingListDataReturn {
     };
   }, [list?.id, load]);
 
-  return { list, loading, error, refresh: load };
+  const setItemChecked = useCallback((productId: string, checkedAt: string | null) => {
+    setList((current) =>
+      current && {
+        ...current,
+        items: current.items.map((item) => (item.productId === productId ? { ...item, checkedAt } : item)),
+      }
+    );
+  }, []);
+
+  return { list, loading, error, notFound, refresh: load, setItemChecked };
 }

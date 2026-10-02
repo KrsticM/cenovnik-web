@@ -64,6 +64,39 @@ npm run dev  # test production build locally
 
 **Responsive Layout**: Industry-standard `Container` primitive (`components/ui/container.tsx`) — Tailwind-native with adaptive horizontal gutters across all breakpoints. Ensures consistent page-level spacing from mobile (320px, `px-4`) through ultra-wide (3xl+, `lg:px-8`). Used by all authenticated pages for alignment consistency.
 
+## System States (Stanja)
+
+States from the Claude Design files `Stanja.dc.html` (system states) and `Proizvodi.dc.html` (in-page empty states). Full-page messages are built from `components/StatePage/`; every illustration is a `StateIllustration` variant (`components/ui/state-illustration.tsx`).
+
+Status: ✅ built · ⏳ not built yet
+
+### Full-page states
+
+| State | Status | Shown when | Route / component |
+|-------|--------|------------|-------------------|
+| **404 – "Ova stranica ne postoji"** | ✅ | The URL matches no route. Keeps the app header and offers product search. | `app/not-found.tsx` → `NotFoundScreen` |
+| **Greška 500 – "Nešto nije u redu"** (in app) | ✅ | A page under `(authenticated)` throws while rendering. Keeps the app header; "Pokušaj ponovo" re-renders, and a server error shows its digest code for support. | `app/(authenticated)/error.tsx` → `ErrorScreen` |
+| **Greška 500 – "Nešto nije u redu"** (outside app) | ✅ | A page outside the app shell throws (sign-in, shared list). Shows only the logo header. | `app/error.tsx` → `ErrorScreen` + `LogoHeader` |
+| **Bez marketa – "Izaberi svoje markete"** | ⏳ | A new user hasn't picked any favorite markets yet. Actions: "Izaberi markete" (→ `/prodavnice`) and "Prikaži cene iz svih marketa". Deferred until `/prodavnice` supports picking stores (it is still a placeholder). The `no-markets` illustration already exists. | — |
+
+### Shared list (`/lista/[token]`)
+
+| State | Status | Shown when | Route / component |
+|-------|--------|------------|-------------------|
+| **Učitavanje liste** | ✅ | The server couldn't load the list and the client is retrying. A skeleton shaped like the real list, no spinner. | `SharedListView` → `SharedListSkeleton` |
+| **Link nije aktivan – "Ovaj link više nije aktivan"** | ✅ | Malformed token, deleted list, or sharing turned off. Every case shows the same screen, so the link never reveals which one it was. Responds with a real 404. | `app/lista/[token]/not-found.tsx` → `SharedListNotFound` |
+| **Lista nedostupna – "Lista trenutno nije dostupna"** | ✅ | Server or network error before anything was shown. "Pokušaj ponovo" shows the skeleton again. | `SharedListView` → `SharedListError` |
+| **Bez konekcije** | ✅ | The list already loaded, then the connection dropped. The last version stays on screen with a quiet banner, ticking still works, the header shows "Osvežavanje pauzirano", and the list refreshes when the connection returns. A banner, not a full page. | `SharedListView` + `SharedHeader status="paused"` |
+
+### In-page empty states (Proizvodi)
+
+| State | Status | Shown when | Component |
+|-------|--------|------------|-----------|
+| **Nema rezultata – "Nema proizvoda za ove filtere."** | ✅ | The product grid has no results for the current search or filters. "Prikaži sve proizvode" resets the filters. | `ProductGrid` (`no-results`) |
+| **Prazna lista – "Tvoja lista je prazna."** | ✅ | The shopping list panel has no items. "Pregledaj proizvode" closes the panel. | `ListPanel` (`empty-list`) |
+| **Nije u tvojim marketima – "Proizvod nije dostupan u tvojim marketima."** | ✅ | Product details, when none of the user's markets sells the product. | `StoreOffers` (`not-in-markets`) |
+| **Loading** | ✅ | Product grid while search or catalog loads; store prices in product details while they load. | `ProductCardSkeleton`, `StoreOffers` |
+
 ## Development
 
 ### Conventions

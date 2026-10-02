@@ -13,6 +13,7 @@ import { useProductCatalog } from "./hooks/useProductCatalog";
 import { useProductFilters } from "./hooks/useProductFilters";
 import { useSearchDock } from "./hooks/useSearchDock";
 import { useSearchSuggestions } from "./hooks/useSearchSuggestions";
+import { useProductDetailParam } from "./hooks/useProductDetailParam";
 import { SearchDock, SearchBindings } from "./components/SearchDock";
 import { CompactBandSearch, CompactDockedSearch } from "./components/CompactSearch";
 import { ProductGrid } from "./components/ProductGrid";
@@ -21,6 +22,7 @@ import { FilterDrawer } from "./components/FilterDrawer";
 import { ActiveFilterChips } from "./components/ActiveFilterChips";
 import { SortMenu } from "./components/SortMenu";
 import { ScrollToTopButton } from "./components/ScrollToTopButton";
+import { ProductDetailDialog } from "./components/detail/ProductDetailDialog";
 
 const productWord = (n: number) => plural(n, "proizvod", "proizvoda", "proizvoda");
 
@@ -58,6 +60,8 @@ function ProizvodiContent() {
   );
 
   const suggestions = useSearchSuggestions(search.query, scope);
+  const detail = useProductDetailParam();
+  const knownProduct = catalog.items.find((item) => item.product.id === detail.productId)?.product ?? null;
 
   const searchBindings: SearchBindings = {
     value: search.query,
@@ -77,7 +81,7 @@ function ProizvodiContent() {
       ? ""
       : live
         ? `${countLabel(count)} ${count > COUNT_CAP ? "odgovara" : plural(count, "odgovara", "odgovaraju", "odgovara")} pretrazi`
-        : `${countLabel(count)} · cene iz ${filters.myMarkets ? "vaših" : "svih"} marketa`;
+        : `${countLabel(count)} · cene iz ${filters.myMarkets ? "tvojih" : "svih"} marketa`;
 
   const filterControls = {
     myMarkets: filters.myMarkets,
@@ -124,7 +128,7 @@ function ProizvodiContent() {
               <span>
                 Pretraga i cene obuhvataju artikle iz{" "}
                 <Button asChild variant="underline" size="text" className="inline font-semibold hover:text-sage-darker">
-                  <Link href="/prodavnice">vaših omiljenih marketa</Link>
+                  <Link href="/prodavnice">tvojih omiljenih marketa</Link>
                 </Button>
               </span>
             ) : (
@@ -185,6 +189,7 @@ function ProizvodiContent() {
           onLoadMore={catalog.loadMore}
           endLabel={live ? "To je sve za ovu pretragu." : "To je sve za sada."}
           onReset={resetAll}
+          onOpenProduct={detail.open}
         />
       </main>
 
@@ -196,6 +201,13 @@ function ProizvodiContent() {
       />
 
       <ScrollToTopButton />
+
+      <ProductDetailDialog
+        productId={detail.productId}
+        known={knownProduct}
+        onClose={detail.close}
+        onRestoreFocus={detail.restoreFocus}
+      />
     </>
   );
 }

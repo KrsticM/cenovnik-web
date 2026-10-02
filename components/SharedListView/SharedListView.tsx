@@ -1,86 +1,74 @@
 "use client";
 
-import { useState } from "react";
-import { useShoppingListData, useCheckedItems } from "@/hooks";
-import { getProductImageUrl } from "@/lib/productImageUrl";
-import { Container } from "../Container/Container";
-import { Navbar } from "../Navbar/Navbar";
-import { ListHeader } from "../ListHeader/ListHeader";
-import { ListCard } from "../ListCard/ListCard";
-import { ListItem } from "../ListItem/ListItem";
-import { ImageModal } from "../ImageModal/ImageModal";
-import { LoadingState } from "../StateShells/LoadingState";
-import { ErrorState } from "../StateShells/ErrorState";
-import { EmptyState } from "../StateShells/EmptyState";
-import styles from "./SharedListView.module.css";
+import { useEffect, useRef } from "react";
+import { useShoppingListData, useSharedChecks, type ShoppingList } from "@/hooks";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { Alert } from "@/components/ui/alert";
+import { SharedHeader } from "../StatePage/SharedHeader";
+import { SharedListCard } from "./SharedListCard";
+import { SharedListError, SharedListNotFound } from "./SharedListMessages";
+import { SharedListSkeleton } from "./SharedListSkeleton";
 
 interface SharedListViewProps {
   token: string;
+  // Server-rendered list; null when the server couldn't load it (the client then retries).
+  initial: ShoppingList | null;
 }
 
-export function SharedListView({ token }: SharedListViewProps) {
-  const { list, loading, error, refresh } = useShoppingListData(token);
-  const { checkedItems, toggleItem } = useCheckedItems(token);
-  const [preview, setPreview] = useState<{ title: string; imageUrl: string; fallbackUrl: string } | null>(null);
+const NO_ITEMS: ShoppingList["items"] = [];
 
-  const handleImagePreview = (barcode: string, name: string) => {
-    setPreview({
-      title: name,
-      imageUrl: getProductImageUrl(barcode, "full"),
-      fallbackUrl: getProductImageUrl(barcode, "thumb"),
-    });
-  };
+const listPadding = "mx-auto max-w-[760px] px-[clamp(16px,4vw,24px)] pb-16 pt-[clamp(20px,4vw,40px)]";
 
-  // Loading state
-  if (loading && !list) {
-    return <LoadingState />;
-  }
+// Public list (/lista/[token]): live updates from the owner and shared "bought" ticks.
+// Offline keeps the last version on screen; a full error page only appears when nothing loaded.
+export function SharedListView({ token, initial }: SharedListViewProps) {
+  const { list, loading, notFound, refresh, setItemChecked } = useShoppingListData(token, initial);
+  const online = useOnlineStatus();
+  const { checkedItems, toggleItem } = useSharedChecks(token, list?.items ?? NO_ITEMS, online, setItemChecked);
 
-  // Error state
-  if (error && !list) {
-    return <ErrorState error={error} onRetry={() => void refresh()} />;
-  }
+  // Catch up on changes missed while offline.
+  const wasOnline = useRef(online);
+  useEffect(() => {
+    if (online && !wasOnline.current && list) void refresh(true);
+    wasOnline.current = online;
+  }, [online, list, refresh]);
 
-  // No list found
-  if (!list) {
-    return null;
+  // Refresh indicator only while there is (or will be) a list to refresh.
+  const hasNothingToRefresh = notFound || (!list && !loading);
+  const headerStatus = hasNothingToRefresh ? "none" : online ? "live" : "paused";
+
+  let content;
+  if (notFound) {
+    content = <SharedListNotFound />;
+  } else if (list) {
+    content = (
+      <div className={listPadding}>
+        {!online && (
+          <Alert
+            role="status"
+            className="mb-3.5 flex animate-[fadeIn_200ms_ease_both] items-start gap-2.5 rounded-[12px] border-bar-idle bg-sand px-3.5 py-3 text-sm leading-[1.45] text-ink"
+          >
+            <span aria-hidden="true" className="mt-1.5 block h-2 w-2 shrink-0 rounded-full border-[1.5px] border-ink-faint" />
+            Internet konekcija je izgubljena - prikazana je poslednja verzija liste. Osvežiće se kad se konekcija vrati.
+          </Alert>
+        )}
+        <SharedListCard name={list.name} items={list.items} checkedItems={checkedItems} onToggle={toggleItem} />
+      </div>
+    );
+  } else if (loading) {
+    content = (
+      <div className={listPadding}>
+        <SharedListSkeleton />
+      </div>
+    );
+  } else {
+    content = <SharedListError onRetry={() => void refresh()} />;
   }
 
   return (
-    <>
-      <Navbar />
-      <Container as="main" size="sm" className={styles.shell}>
-        <ListHeader />
-        <ListCard title={list.name} itemCount={list.items.length}>
-          {list.items.length > 0 ? (
-            <ul className={styles.items}>
-              {list.items.map((item) => (
-                <ListItem
-                  key={item.productId}
-                  productId={item.productId}
-                  productName={item.productName}
-                  barcode={item.primaryBarcode}
-                  quantity={item.quantity}
-                  checked={checkedItems.has(item.productId)}
-                  onToggle={() => toggleItem(item.productId)}
-                  onImagePreview={handleImagePreview}
-                />
-              ))}
-            </ul>
-          ) : (
-            <EmptyState />
-          )}
-        </ListCard>
-      </Container>
-      {preview && (
-        <ImageModal
-          open={preview !== null}
-          title={preview.title}
-          imageUrl={preview.imageUrl}
-          fallbackUrl={preview.fallbackUrl}
-          onClose={() => setPreview(null)}
-        />
-      )}
-    </>
+    <div className="min-h-screen bg-paper text-ink antialiased">
+      <SharedHeader status={headerStatus} />
+      <main>{content}</main>
+    </div>
   );
 }

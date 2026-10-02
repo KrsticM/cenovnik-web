@@ -17,6 +17,7 @@ type ListItemRow = {
   product_id: string;
   quantity: number;
   created_at: string;
+  checked_at?: string | null;
   products: ListItemProduct | ListItemProduct[] | null;
 };
 
@@ -31,6 +32,7 @@ function mapListItem(row: ListItemRow): ShoppingListItem {
     hasImage: product?.has_image ?? false,
     quantity: row.quantity,
     price: null,
+    checkedAt: row.checked_at ?? null,
     createdAt: row.created_at,
   };
 }
@@ -85,26 +87,29 @@ export async function getOrCreateActiveList(userId: string): Promise<ShoppingLis
 
 export async function fetchListItems(listId: string): Promise<ShoppingListItem[]> {
   const supabase = createClient();
-
-  const { data, error } = await supabase
-    .from(SHOPPING_LIST_ITEMS_TABLE)
-    .select(
-      `
+  const query = (checked: string) =>
+    supabase
+      .from(SHOPPING_LIST_ITEMS_TABLE)
+      .select(
+        `
       id,
       shopping_list_id,
       product_id,
       quantity,
-      created_at,
+      created_at,${checked}
       products (
         product_name,
         has_image,
         barcodes (barcode)
       )
     `
-    )
-    .eq("shopping_list_id", listId)
-    .order("created_at", { ascending: true });
+      )
+      .eq("shopping_list_id", listId)
+      .order("created_at", { ascending: true });
 
+  let { data, error } = await query("\n      checked_at,");
+  // 42703 = column missing: supabase/shared_list_checks.sql hasn't been run yet.
+  if (error?.code === "42703") ({ data, error } = await query(""));
   if (error) throw error;
 
   return ((data as ListItemRow[] | null) ?? []).map(mapListItem);
@@ -148,6 +153,19 @@ export async function removeItem(listId: string, productId: string): Promise<voi
     .delete()
     .eq("shopping_list_id", listId)
     .eq("product_id", productId);
+
+  if (error) throw error;
+}
+
+// Unticks every bought item (the owner's "Očisti kupljeno").
+export async function clearCheckedItems(listId: string): Promise<void> {
+  const supabase = createClient();
+
+  const { error } = await supabase
+    .from(SHOPPING_LIST_ITEMS_TABLE)
+    .update({ checked_at: null })
+    .eq("shopping_list_id", listId)
+    .not("checked_at", "is", null);
 
   if (error) throw error;
 }

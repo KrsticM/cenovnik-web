@@ -29,10 +29,10 @@ export function ClearListDialog({ open, onOpenChange, itemCount, listName, onCon
         className="z-[80] block w-[calc(100%-32px)] max-w-[400px] data-[state=open]:animate-[qtyIn_180ms_ease_both] rounded-[18px] border-0 bg-white p-6 shadow-[0_24px_64px_rgba(26,26,26,0.24)] sm:rounded-[18px]"
       >
         <AlertDialogTitle className="text-lg font-semibold tracking-[-0.01em] text-ink">
-          Želite da ispraznite listu?
+          Želiš da isprazniš listu?
         </AlertDialogTitle>
         <AlertDialogDescription className="mt-2 text-sm leading-[1.55] text-ink-muted">
-          Uklonićete {itemCount} {plural(itemCount, "artikal", "artikla", "artikala")} sa liste „{listName}“.
+          Uklonićeš {itemCount} {plural(itemCount, "artikal", "artikla", "artikala")} sa liste „{listName}“.
           Ova akcija se ne može poništiti.
         </AlertDialogDescription>
         <AlertDialogFooter className="mt-6 flex-row flex-wrap justify-end gap-2.5 sm:space-x-0">

@@ -36,15 +36,15 @@ function translateAuthError(error: unknown): string {
   if (code === "over_email_send_rate_limit" || /only request this after/i.test(message)) {
     const match = message.match(/(\d+)\s*seconds?/i);
     return match
-      ? `Iz bezbednosnih razloga, novi kod možete zatražiti za ${match[1]} sekundi.`
-      : "Iz bezbednosnih razloga, sačekajte malo pre nego što zatražite novi kod.";
+      ? `Iz bezbednosnih razloga, novi kod možeš zatražiti za ${match[1]} sekundi.`
+      : "Iz bezbednosnih razloga, sačekaj malo pre nego što zatražiš novi kod.";
   }
 
   if (code === "email_address_invalid" || /invalid email/i.test(message)) {
-    return "Unesite ispravnu e-mail adresu.";
+    return "Unesi ispravnu e-mail adresu.";
   }
 
-  return "Došlo je do greške. Pokušajte ponovo.";
+  return "Došlo je do greške. Pokušaj ponovo.";
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {

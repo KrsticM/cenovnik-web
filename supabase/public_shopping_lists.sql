@@ -1,12 +1,14 @@
 -- Run once in the Supabase SQL editor for the eCenovnik project.
 -- Anonymous visitors can only read lists whose share_token is enabled,
--- plus the products and barcodes referenced by those lists.
+-- plus the products and barcodes referenced by those lists, and public cheapest prices.
 
 grant usage on schema public to anon;
 grant select on table public.shopping_lists to anon;
 grant select on table public.shopping_list_items to anon;
 grant select on table public.products to anon;
 grant select on table public.barcodes to anon;
+-- Cheapest current price per product (supabase/browse_products.sql): public prices, no user data.
+grant select on public.product_price_summary to anon;
 
 alter table public.shopping_lists enable row level security;
 alter table public.shopping_list_items enable row level security;

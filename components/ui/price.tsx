@@ -15,6 +15,8 @@ const priceVariants = cva("whitespace-nowrap font-semibold", {
     tone: {
       rust: "text-rust",
       ink: "text-ink",
+      // Pre-discount price next to a deal: small, grey, struck through.
+      muted: "text-[13px] font-normal text-ink-muted line-through",
     },
   },
   defaultVariants: { size: "card", tone: "rust" },
