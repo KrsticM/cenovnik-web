@@ -17,5 +17,7 @@ export type ShoppingListItem = {
   quantity: number;
   price: number | null;
   storeName?: string;
+  // When it was ticked as bought on the shared list; null = not bought.
+  checkedAt: string | null;
   createdAt: string;
 };

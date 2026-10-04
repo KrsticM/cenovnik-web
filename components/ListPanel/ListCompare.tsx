@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import { formatPrice, plural } from "@/lib/formatPrice";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Chevron } from "@/components/ui/chevron";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Price } from "@/components/ui/price";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,7 +22,6 @@ interface ListCompareProps {
 const articles = (n: number) => plural(n, "artikal", "artikla", "artikala");
 
 export function ListCompare({ comparison, loading, itemCount, listTotal }: ListCompareProps) {
-  const [openMissing, setOpenMissing] = useState<Record<string, boolean>>({});
   const { rows, cheapestComplete, usedStoreCount, unavailableCount } = comparison;
 
   if (loading && rows.length === 0) {
@@ -56,7 +56,6 @@ export function ListCompare({ comparison, loading, itemCount, listTotal }: ListC
     <div className="flex flex-col gap-3 pb-4 pt-3">
       {rows.map((row, index) => {
         const complete = row.missing.length === 0;
-        const isOpen = !!openMissing[row.store.id];
         return (
           <Card
             key={row.store.id}
@@ -88,24 +87,18 @@ export function ListCompare({ comparison, loading, itemCount, listTotal }: ListC
               {complete ? (
                 <span className="text-[13px] font-medium text-sage-dark">Svi artikli dostupni</span>
               ) : (
-                <>
-                  <Button
-                    variant="ghost"
-                    aria-expanded={isOpen}
-                    onClick={() => setOpenMissing((m) => ({ ...m, [row.store.id]: !m[row.store.id] }))}
-                    className="h-auto p-0 py-1 text-[13px] text-rust hover:bg-transparent hover:text-rust"
-                  >
-                    Nedostaje {row.missing.length} {articles(row.missing.length)}
-                    <span
-                      aria-hidden="true"
-                      className={cn(
-                        "block h-1.5 w-1.5 border-b-[1.5px] border-r-[1.5px] border-rust transition-transform duration-150",
-                        isOpen ? "-translate-y-px -rotate-[135deg]" : "-translate-y-[3px] rotate-45"
-                      )}
-                    />
-                  </Button>
-                  {isOpen && (
-                    <ul className="mt-1.5 flex animate-[dropIn_150ms_ease_both] flex-col gap-1">
+                <Collapsible>
+                  <CollapsibleTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="group/trigger h-auto p-0 py-1 text-[13px] text-rust hover:bg-transparent hover:text-rust"
+                    >
+                      Nedostaje {row.missing.length} {articles(row.missing.length)}
+                      <Chevron />
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent asChild>
+                    <ul className="mt-1.5 flex flex-col gap-1 data-[state=open]:animate-[dropIn_150ms_ease_both]">
                       {row.missing.map((item) => (
                         <li key={item.id} className="flex items-baseline gap-2 text-[13px] leading-[1.4] text-ink">
                           <span aria-hidden="true" className="block h-[5px] w-[5px] shrink-0 -translate-y-0.5 rounded-full bg-rust" />
@@ -113,8 +106,8 @@ export function ListCompare({ comparison, loading, itemCount, listTotal }: ListC
                         </li>
                       ))}
                     </ul>
-                  )}
-                </>
+                  </CollapsibleContent>
+                </Collapsible>
               )}
             </div>
           </Card>

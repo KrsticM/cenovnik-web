@@ -3,7 +3,7 @@ import type { Product } from "@/types/product";
 
 // Quantity of one product on the active list, plus +/−/remove. Changes show immediately;
 // the context saves them in order and surfaces errors.
-export function useProductListControl(product: Product, price: number) {
+export function useProductListControl(product: Product, price: number | null) {
   const { getItemByProductId, setQuantity, removeItem } = useShoppingList();
   const quantity = getItemByProductId(product.id)?.quantity ?? 0;
 

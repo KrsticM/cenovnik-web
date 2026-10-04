@@ -35,7 +35,7 @@ function EmailOtpContent() {
 
   const handleSendCode = useCallback(async () => {
     if (!email) {
-      setError("Unesite e-mail adresu.");
+      setError("Unesi e-mail adresu.");
       return;
     }
     setSendLoading(true);
@@ -79,9 +79,9 @@ function EmailOtpContent() {
         {step === "email" ? (
           <>
             <div className="space-y-2 text-center">
-              <h1 className="font-sans text-2xl font-semibold text-foreground">Unesite e-mail</h1>
+              <h1 className="font-sans text-2xl font-semibold text-foreground">Unesi e-mail</h1>
               <p className="text-sm text-muted-foreground">
-                Poslaćemo vam kod za prijavu
+                Poslaćemo ti kod za prijavu
               </p>
             </div>
 
@@ -98,7 +98,7 @@ function EmailOtpContent() {
                   id="email"
                   type="email"
                   autoFocus
-                  placeholder="vas@email.com"
+                  placeholder="ime@email.com"
                   value={email}
                   onChange={(e) => {
                     setEmail(e.target.value);
@@ -120,7 +120,7 @@ function EmailOtpContent() {
         ) : (
           <>
             <div className="space-y-2 text-center">
-              <h1 className="font-sans text-2xl font-semibold text-foreground">Unesite kod</h1>
+              <h1 className="font-sans text-2xl font-semibold text-foreground">Unesi kod</h1>
               <p className="text-sm text-muted-foreground">
                 Kod je poslat na <span className="font-medium">{email}</span>
               </p>

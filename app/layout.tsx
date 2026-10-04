@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     default: "eCenovnik",
     template: "%s | eCenovnik",
   },
-  description: "Pregledajte listu za kupovinu podeljenu iz eCenovnik aplikacije.",
+  description: "Pregledaj listu za kupovinu podeljenu iz eCenovnik aplikacije.",
   icons: { icon: "/icon.png", shortcut: "/icon.png", apple: "/icon.png" },
   openGraph: {
     type: "website",

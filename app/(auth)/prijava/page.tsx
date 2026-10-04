@@ -53,7 +53,7 @@ function PrijavaContent() {
 
         {error === "auth_failed" && (
           <div className="rounded bg-destructive/10 px-4 py-2 text-sm text-destructive">
-            Prijava nije uspela. Pokušajte ponovo.
+            Prijava nije uspela. Pokušaj ponovo.
           </div>
         )}
 
