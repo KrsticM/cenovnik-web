@@ -1,6 +1,7 @@
 import { ShoppingList, ShoppingListItem } from "@/types/shoppingList";
 import { createClient } from "@/lib/supabase/client";
 import { fetchProductOffers } from "@/lib/services/products";
+import { FALLBACK_PRODUCT_NAME, primaryBarcode } from "@/lib/services/listItemRow";
 
 const SHOPPING_LISTS_TABLE = "shopping_lists";
 const SHOPPING_LIST_ITEMS_TABLE = "shopping_list_items";
@@ -17,6 +18,7 @@ type ListItemRow = {
   product_id: string;
   quantity: number;
   created_at: string;
+  checked_at: string | null;
   products: ListItemProduct | ListItemProduct[] | null;
 };
 
@@ -26,11 +28,12 @@ function mapListItem(row: ListItemRow): ShoppingListItem {
     id: row.id,
     shoppingListId: row.shopping_list_id,
     productId: row.product_id,
-    productName: product?.product_name || "Unknown",
-    primaryBarcode: product?.barcodes?.[0]?.barcode || null,
+    productName: product?.product_name || FALLBACK_PRODUCT_NAME,
+    primaryBarcode: primaryBarcode(product?.barcodes),
     hasImage: product?.has_image ?? false,
     quantity: row.quantity,
     price: null,
+    checkedAt: row.checked_at,
     createdAt: row.created_at,
   };
 }
@@ -85,7 +88,6 @@ export async function getOrCreateActiveList(userId: string): Promise<ShoppingLis
 
 export async function fetchListItems(listId: string): Promise<ShoppingListItem[]> {
   const supabase = createClient();
-
   const { data, error } = await supabase
     .from(SHOPPING_LIST_ITEMS_TABLE)
     .select(
@@ -95,6 +97,7 @@ export async function fetchListItems(listId: string): Promise<ShoppingListItem[]
       product_id,
       quantity,
       created_at,
+      checked_at,
       products (
         product_name,
         has_image,
@@ -104,7 +107,6 @@ export async function fetchListItems(listId: string): Promise<ShoppingListItem[]
     )
     .eq("shopping_list_id", listId)
     .order("created_at", { ascending: true });
-
   if (error) throw error;
 
   return ((data as ListItemRow[] | null) ?? []).map(mapListItem);

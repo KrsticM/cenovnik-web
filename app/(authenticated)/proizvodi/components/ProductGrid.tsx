@@ -7,8 +7,8 @@ import { ProductCardSkeleton } from "./ProductCardSkeleton";
 import { InfiniteScrollSentinel } from "./InfiniteScrollSentinel";
 import { GRID_CLASSES } from "../config";
 import { useGridColumns } from "../hooks/useGridColumns";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface ProductGridProps {
   items: CatalogItem[];
@@ -18,6 +18,7 @@ interface ProductGridProps {
   onLoadMore: () => void;
   endLabel: string;
   onReset: () => void;
+  onOpenProduct: (productId: string, trigger: HTMLElement) => void;
 }
 
 function ProductGridComponent({
@@ -28,6 +29,7 @@ function ProductGridComponent({
   onLoadMore,
   endLabel,
   onReset,
+  onOpenProduct,
 }: ProductGridProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const columns = useGridColumns();
@@ -50,30 +52,33 @@ function ProductGridComponent({
 
   if (items.length === 0 && !hasMore) {
     return (
-      <Card className="rounded-2xl border-line bg-white px-6 py-[88px] text-center shadow-none">
-        <span className="inline-block h-14 w-14 rounded-2xl bg-cream" aria-hidden="true" />
-        <p className="mt-[18px] text-[17px] font-medium text-ink">Nema proizvoda za ove filtere.</p>
-        <p className="mt-1.5 text-sm text-ink-muted">
-          Probajte širi cenovni opseg ili prikažite cene iz svih marketa.
-        </p>
-        <Button variant="sage" onClick={onReset} className="mt-5 h-auto rounded-[22px] px-5 py-[11px] hover:bg-sage-dark">
-          Prikaži sve proizvode
-        </Button>
-      </Card>
+      <EmptyState
+        variant="card"
+        illustration="no-results"
+        title="Nema proizvoda za ove filtere."
+        description="Probaj širi cenovni opseg ili prikaži cene iz svih marketa."
+        action={
+          <Button variant="sage" size="pill-md" onClick={onReset} className="hover:bg-sage-dark">
+            Prikaži sve proizvode
+          </Button>
+        }
+      />
     );
   }
 
   return (
     <div>
       <div className={GRID_CLASSES} aria-busy={isLoadingMore}>
-        {items.map(({ product, price, isDeal }) => (
+        {items.map(({ product, price, regularPrice, isDeal }) => (
           <ProductCard
             key={product.id}
             product={product}
             price={price}
+            regularPrice={regularPrice}
             isDeal={isDeal}
             expanded={expandedId === product.id}
             onExpandedChange={(expanded) => handleExpandedChange(product.id, expanded)}
+            onOpen={onOpenProduct}
           />
         ))}
         {Array.from({ length: placeholderCount }, (_, i) => (

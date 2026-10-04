@@ -81,8 +81,8 @@ export function ShareListDialog({
       <Drawer open={open} onOpenChange={onOpenChange} shouldScaleBackground={false}>
         <DrawerContent
           hideHandle
-          overlayClassName="z-[85] data-[state=open]:animate-[fadeIn_160ms_ease_both] bg-[rgba(26,26,26,0.4)]"
-          className="z-[85] mt-0 rounded-t-[20px] border-0 bg-white p-6 shadow-[0_24px_64px_rgba(26,26,26,0.24)] outline-none"
+          overlayClassName="z-[85] data-[state=open]:animate-[fadeIn_160ms_ease_both] bg-scrim"
+          className="z-[85] mt-0 rounded-t-[20px] border-0 bg-white p-6 shadow-modal outline-none"
         >
           <ShareBody parts={{ Title: DrawerTitle, Description: DrawerDescription, Close: DrawerClose }} {...bodyProps} />
         </DrawerContent>
@@ -93,9 +93,9 @@ export function ShareListDialog({
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-[85] data-[state=open]:animate-[fadeIn_160ms_ease_both] bg-[rgba(26,26,26,0.4)]" />
+        <DialogPrimitive.Overlay className="fixed inset-0 z-[85] data-[state=open]:animate-[fadeIn_160ms_ease_both] bg-scrim" />
         <div className="pointer-events-none fixed inset-0 z-[85] flex items-center justify-center p-4">
-          <DialogPrimitive.Content className="pointer-events-auto relative w-full max-w-[440px] data-[state=open]:animate-[qtyIn_180ms_ease_both] rounded-[18px] bg-white p-6 shadow-[0_24px_64px_rgba(26,26,26,0.24)] outline-none">
+          <DialogPrimitive.Content className="pointer-events-auto relative w-full max-w-[440px] data-[state=open]:animate-[qtyIn_180ms_ease_both] rounded-[18px] bg-white p-6 shadow-modal outline-none">
             <ShareBody
               parts={{ Title: DialogPrimitive.Title, Description: DialogPrimitive.Description, Close: DialogPrimitive.Close }}
               {...bodyProps}

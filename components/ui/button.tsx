@@ -39,7 +39,9 @@ const buttonVariants = cva(
         // Design sizes: pills are fully rounded, icons are circles.
         "pill-sm": "h-9 rounded-full px-3.5 text-[13px]",
         pill: "h-[42px] rounded-full px-4",
+        "pill-md": "h-11 rounded-full px-5",
         "pill-lg": "h-12 rounded-full px-[18px] text-[15px]",
+        "pill-xl": "h-[52px] rounded-full px-7 text-base",
         text: "h-auto p-0",
         "icon-xs": "h-[26px] w-[26px] rounded-full p-0",
         "icon-sm": "h-7 w-7 rounded-full p-0",

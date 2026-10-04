@@ -4,9 +4,13 @@ Seeded from the design's own "shadcn/ui mapping" table (`MAP_ROWS` in `Proizvodi
 
 ## Primitives in `components/ui/`
 
-shadcn (classic new-york): alert · alert-dialog (+ `overlayClassName`) · badge (renders `<span>`) · button · card · checkbox · command · dialog · drawer (+ `overlayClassName`, `hideHandle`) · dropdown-menu · input · label · popover · scroll-area · select (+ `icon`) · separator · sheet (+ `hideClose`, `overlayClassName`) · skeleton · sonner (no next-themes) · switch (+ `thumbClassName`) · tabs · toggle · toggle-group
+shadcn (classic new-york): alert · alert-dialog (+ `overlayClassName`) · badge (renders `<span>`) · button · card · checkbox · collapsible · command · dialog (+ `hideClose`, `overlayClassName`) · drawer (+ `overlayClassName`, `hideHandle`) · dropdown-menu · input · label · popover · scroll-area · select (+ `icon`) · separator · sheet (+ `hideClose`, `overlayClassName`) · skeleton · sonner (no next-themes) · switch (+ `thumbClassName`) · tabs · toggle · toggle-group
 
-Project primitives (same folder, same conventions): container · `product-thumb` (lazy image + stripes fallback, children as overlays) · `price` (`size`: row 15 / compare 18 / card 19 / total 24, `tone`: rust / ink) · `section-label` (uppercase filter headings)
+Project primitives (same folder, same conventions): container · `product-thumb` (lazy image + stripes fallback, children as overlays, `size="full"` with thumb fallback) · `price` (`size`: row 15 / compare 18 / card 19 / total 24, `tone`: rust / ink / muted = struck-through regular price) · `section-label` (uppercase filter headings) · `chevron` (border chevron that flips on `group/trigger` `data-state=open`; pair with `CollapsibleTrigger`) · `initials-tile` (chain initials, md 44 / sm 36) · `check-row` (a whole row as one Radix checkbox, shared list) · `progress-bar` (decorative 6 px bar) · `state-illustration` (the logo-bar illustrations for empty/error/system states; variants match `Stanja.dc.html` and the Proizvodi empty states)
+
+System states (`Stanja.dc.html`): `components/StatePage/` holds `StateMessage` (centered 480 px message), `StateActions` (primary pill + secondary link), `NotFoundScreen`, `ErrorScreen` (takes the boundary's `error`), `SimpleHeader` (logo-only header, `width` app/narrow, right-side slot) and `LiveStatus`. In-page empty states use `components/ui/empty-state.tsx`. Routes: `app/not-found.tsx`, `app/error.tsx`, `app/(authenticated)/error.tsx`, `app/lista/[token]/not-found.tsx`. Support contact lives in `lib/support.ts`.
+
+Expanders: use `Collapsible` + `CollapsibleTrigger asChild` around a ghost `Button` with `group/trigger` + `Chevron`, and `CollapsibleContent` with `data-[state=open]:animate-[dropIn_150ms_ease_both]` (ListCompare, product detail locations, shared-list "Kupljeno").
 
 Not used: shadcn AspectRatio can't express the design's "square but max 340 px tall" image — `ProductThumb` uses `aspect-square max-h-[340px]` instead.
 
@@ -36,7 +40,7 @@ Sizes: `pill-sm` (36), `pill` (42), `pill-lg` (48), `text` (no box), `icon-xs` (
 
 ## Badge variants (design)
 
-`deal` (Akcija) · `best` (Najpovoljnije) · `public` (Javna) · `count` (26 px, Lista) · `count-sm` (22 px, Filteri) · `list` (list-name chip). Borderless variants set `border-0` — shadcn's base badge has a 1 px border that otherwise adds 2 px.
+`deal` (Akcija) · `best` (Najpovoljnije) · `public` (Javna) · `count` (26 px, Lista) · `count-sm` (22 px, Filteri) · `list` (list-name chip) · `tag` (Najniža cena) · `discount` (−N%) · `qty` (× N cream pill) · `code` (selectable error code). Borderless variants set `border-0` — shadcn's base badge has a 1 px border that otherwise adds 2 px.
 
 ## Mapping
 

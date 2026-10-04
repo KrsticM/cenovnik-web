@@ -11,7 +11,7 @@ Read `reference/checklist.md` before you start and tick it off before you report
 
 ## 1. Read the design source
 
-The designs live in the Claude Design project **"Scope questions for page build"** (`1ef004e3-716f-4633-ad74-da3958972740`). Current pages: `Proizvodi.dc.html` (products page, navbar, list panel, dialogs).
+The designs live in the Claude Design project **"Scope questions for page build"** (`1ef004e3-716f-4633-ad74-da3958972740`). Current pages: `Proizvodi.dc.html` (products page, navbar, list panel, dialogs, product detail), `Podeljena lista.dc.html` (public shared list), `Stanja.dc.html` (loading/404/error/offline system states). Copy uses the informal "ti" form.
 
 1. `mcp__claude-design__list_files` — compare the file's `etag` with the last sync noted in memory; if unchanged, reuse your earlier decoded copy.
 2. `mcp__claude-design__read_file`. Files are ~100 KB and overflow the tool result; it is saved to disk. Decode it once into the scratchpad:
@@ -58,7 +58,7 @@ After installing a new shadcn component, update the "Installed" list in `referen
 - **Sizes: exact px** from the design via arbitrary values (`h-[62px]`, `rounded-[21px]`, `text-[13px]`, `shadow-[0_4px_18px_rgba(…)]`).
 - **Breakpoints** (design names → Tailwind): mobile `<640` (base), tablet `sm`, desktop `lg`, narrow desktop `lg` without `xl` (<1280), wide `2xl` (1600). Build mobile-first.
 - **States**: copy `style-hover` / `style-focus` / selected / disabled values; don't invent hover colours.
-- **Motion**: design keyframes (`qtyIn`, `dropIn`, `panelIn`, `fadeIn`, `pulse`, `spin`) exist in `globals.css`; use `animate-[name_200ms_ease_both]`.
+- **Motion**: design keyframes (`qtyIn`, `dropIn`, `panelIn`, `fadeIn`, `pulse`, `spin`, `livePulse`) exist in `globals.css`; use `animate-[name_200ms_ease_both]`.
 - **Accessibility**: labels in Serbian as in the design, 44 px touch targets where the design allows, Escape closes overlays, focus returns to the trigger.
 - Before styling, skim `reference/gotchas.md` — it lists the Tailwind v4 / Radix traps already hit in this repo.
 

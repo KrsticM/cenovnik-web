@@ -2,17 +2,16 @@
 
 import { Suspense, useRef, useState } from "react";
 import Link from "next/link";
-import { useShoppingList } from "@/contexts/ShoppingListContext";
-import { plural } from "@/lib/formatPrice";
+import { useFavouriteStores } from "@/contexts/ShoppingListContext";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { COUNT_CAP } from "@/lib/services/products";
 import { useProductSearch } from "./hooks/useProductSearch";
 import { useProductCatalog } from "./hooks/useProductCatalog";
 import { useProductFilters } from "./hooks/useProductFilters";
 import { useSearchDock } from "./hooks/useSearchDock";
 import { useSearchSuggestions } from "./hooks/useSearchSuggestions";
+import { useProductDetailParam } from "./hooks/useProductDetailParam";
 import { SearchDock, SearchBindings } from "./components/SearchDock";
 import { CompactBandSearch, CompactDockedSearch } from "./components/CompactSearch";
 import { ProductGrid } from "./components/ProductGrid";
@@ -21,18 +20,11 @@ import { FilterDrawer } from "./components/FilterDrawer";
 import { ActiveFilterChips } from "./components/ActiveFilterChips";
 import { SortMenu } from "./components/SortMenu";
 import { ScrollToTopButton } from "./components/ScrollToTopButton";
-
-const productWord = (n: number) => plural(n, "proizvod", "proizvoda", "proizvoda");
-
-// "1.000+ proizvoda" above the cap, otherwise the exact number.
-function countLabel(count: number): string {
-  return count > COUNT_CAP
-    ? `${COUNT_CAP.toLocaleString("sr-RS")}+ proizvoda`
-    : `${count.toLocaleString("sr-RS")} ${productWord(count)}`;
-}
+import { ProductDetailDialog } from "./components/detail/ProductDetailDialog";
+import { catalogHeading, catalogSubtitle, countLabel } from "./catalogLabels";
 
 function ProizvodiContent() {
-  const { list, error: listError, storeIds } = useShoppingList();
+  const { storeIds, ready: storesReady } = useFavouriteStores();
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const bandRef = useRef<HTMLElement>(null);
@@ -44,7 +36,6 @@ function ProizvodiContent() {
   const scope = filters.myMarkets ? storeIds : null;
 
   // Wait for the user's stores so the first request already has the right market scope.
-  const storesReady = list !== null || !!listError;
   const catalog = useProductCatalog(
     {
       query: search.liveQuery,
@@ -58,6 +49,7 @@ function ProizvodiContent() {
   );
 
   const suggestions = useSearchSuggestions(search.query, scope);
+  const detail = useProductDetailParam(catalog.items);
 
   const searchBindings: SearchBindings = {
     value: search.query,
@@ -70,14 +62,9 @@ function ProizvodiContent() {
   const showSkeleton = search.searching || catalog.loading;
 
   const live = search.liveQuery;
-  const heading = live ? `Rezultati za „${live}“` : "Proizvodi";
   const count = catalog.count;
-  const subtitle =
-    count === null || catalog.loading
-      ? ""
-      : live
-        ? `${countLabel(count)} ${count > COUNT_CAP ? "odgovara" : plural(count, "odgovara", "odgovaraju", "odgovara")} pretrazi`
-        : `${countLabel(count)} · cene iz ${filters.myMarkets ? "vaših" : "svih"} marketa`;
+  const heading = catalogHeading(live);
+  const subtitle = catalogSubtitle({ count, loading: catalog.loading, liveQuery: live, myMarkets: filters.myMarkets });
 
   const filterControls = {
     myMarkets: filters.myMarkets,
@@ -124,7 +111,7 @@ function ProizvodiContent() {
               <span>
                 Pretraga i cene obuhvataju artikle iz{" "}
                 <Button asChild variant="underline" size="text" className="inline font-semibold hover:text-sage-darker">
-                  <Link href="/prodavnice">vaših omiljenih marketa</Link>
+                  <Link href="/prodavnice">tvojih omiljenih marketa</Link>
                 </Button>
               </span>
             ) : (
@@ -185,6 +172,7 @@ function ProizvodiContent() {
           onLoadMore={catalog.loadMore}
           endLabel={live ? "To je sve za ovu pretragu." : "To je sve za sada."}
           onReset={resetAll}
+          onOpenProduct={detail.open}
         />
       </main>
 
@@ -196,6 +184,13 @@ function ProizvodiContent() {
       />
 
       <ScrollToTopButton />
+
+      <ProductDetailDialog
+        productId={detail.productId}
+        known={detail.knownProduct}
+        onClose={detail.close}
+        onRestoreFocus={detail.restoreFocus}
+      />
     </>
   );
 }

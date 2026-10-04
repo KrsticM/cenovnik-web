@@ -23,6 +23,7 @@ import { getUserStoreIds } from "@/lib/services/userStores";
 import { createClient } from "@/lib/supabase/client";
 
 export const UNDO_WINDOW_MS = 5000;
+const RELOAD_DEBOUNCE_MS = 200;
 
 // What a caller already knows about a product, so a newly added item renders right away.
 export type ItemDetails = Partial<Pick<ShoppingListItem, "productName" | "primaryBarcode" | "hasImage" | "price">>;
@@ -62,6 +63,10 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const pendingSavesRef = useRef(0);
   const reloadSeqRef = useRef(0);
+  const itemsRef = useRef<ShoppingListItem[]>([]);
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
 
   const loadItems = useCallback(
     async (listId: string) => attachPrices(await fetchListItems(listId), storeIdsRef.current),
@@ -98,6 +103,7 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     let cancelled = false;
     const supabase = createClient();
     let channel: ReturnType<typeof supabase.channel> | null = null;
+    let reloadTimer: ReturnType<typeof setTimeout> | undefined;
 
     const initializeList = async () => {
       try {
@@ -128,8 +134,18 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
               table: "shopping_list_items",
               filter: `shopping_list_id=eq.${userList.id}`,
             },
-            () => {
-              if (!cancelled) reload(userList.id);
+            (payload) => {
+              if (cancelled) return;
+              // Same quantity = only a shared-list tick, which the owner list doesn't show.
+              if (payload.eventType === "UPDATE") {
+                const row = payload.new as { id?: string; quantity?: number };
+                const shown = itemsRef.current.find((item) => item.id === row.id);
+                if (shown && shown.quantity === row.quantity) return;
+              }
+              clearTimeout(reloadTimer);
+              reloadTimer = setTimeout(() => {
+                if (!cancelled) void reload(userList.id);
+              }, RELOAD_DEBOUNCE_MS);
             }
           )
           .subscribe();
@@ -146,6 +162,7 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     initializeList();
     return () => {
       cancelled = true;
+      clearTimeout(reloadTimer);
       channel?.unsubscribe();
     };
   }, [user?.id, loadItems, reload]);
@@ -201,6 +218,7 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
               hasImage: details.hasImage ?? false,
               price: details.price ?? null,
               quantity,
+              checkedAt: null,
               createdAt: new Date().toISOString(),
             },
           ]
@@ -269,4 +287,10 @@ export function useShoppingList(): ShoppingListContextValue {
     throw new Error("useShoppingList must be used within ShoppingListProvider");
   }
   return context;
+}
+
+export function useFavouriteStores(): { storeIds: string[]; ready: boolean; failed: boolean } {
+  const { list, error, storeIds } = useShoppingList();
+  const failed = list === null && error !== null;
+  return { storeIds, ready: list !== null || failed, failed };
 }

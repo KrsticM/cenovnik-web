@@ -54,11 +54,25 @@ create index if not exists barcodes_product_id_idx
 
 -- 3. Cheapest price across all markets (refreshed after each import) -------------------------
 
+-- Earlier versions had no regular_price; a materialized view can't gain a column, so rebuild it.
+do $$
+begin
+  if not exists (
+    select 1 from pg_catalog.pg_attribute
+    where attrelid = 'public.product_price_summary'::regclass
+      and attname = 'regular_price' and not attisdropped
+  ) then
+    drop materialized view public.product_price_summary;
+  end if;
+exception when undefined_table then null;
+end $$;
+
 -- Building this sorts all current_prices rows once; expect it to take a while on first run.
 create materialized view if not exists public.product_price_summary as
 select distinct on (cp.product_id)
   cp.product_id,
   coalesce(cp.discounted_price, cp.regular_price) as min_price,
+  cp.regular_price,
   cp.discounted_price is not null as is_deal
 from public.current_prices cp
 order by
@@ -96,6 +110,10 @@ grant execute on function public.refresh_product_price_summary() to service_role
 -- Keyset pagination: pass the last row's sort_num / sort_text / id as p_after_*.
 -- Only products with at least one price in scope are returned.
 
+-- The return types gained regular_price; CREATE OR REPLACE can't change a return type.
+drop function if exists public.browse_products(text, text[], numeric, numeric, boolean, text, text, integer, numeric, text, uuid);
+drop function if exists public.browse_products_matches(text, text[], numeric, numeric, boolean);
+
 -- Shared filter step: products with a price in scope that match the query and filters.
 create or replace function public.browse_products_matches(
   p_query        text     default null,
@@ -111,6 +129,7 @@ returns table (
   norm_name     text,
   q             text,
   min_price     numeric,
+  regular_price numeric,
   is_deal       boolean
 )
 language sql
@@ -137,11 +156,14 @@ as $$
     from normalized n
   ),
   scoped_prices as (
-    -- Hash aggregate (no sort): cheapest price, and whether that cheapest price is a discount.
+    -- Ordered like product_price_summary, so scoped and unscoped results agree.
     select
       cp.product_id,
       min(coalesce(cp.discounted_price, cp.regular_price)) as min_price,
-      min(cp.discounted_price) as min_deal_price
+      min(cp.discounted_price) as min_deal_price,
+      (array_agg(cp.regular_price order by
+        coalesce(cp.discounted_price, cp.regular_price), (cp.discounted_price is not null) desc))[1]
+        as regular_price
     from public.current_prices cp, params
     where params.scoped and cp.store_id = any (p_store_ids)
     group by cp.product_id
@@ -150,10 +172,11 @@ as $$
     select
       product_id,
       min_price,
+      regular_price,
       coalesce(min_deal_price <= min_price, false) as is_deal
     from scoped_prices
     union all
-    select s.product_id, s.min_price, s.is_deal
+    select s.product_id, s.min_price, s.regular_price, s.is_deal
     from public.product_price_summary s, params
     where not params.scoped
   )
@@ -164,6 +187,7 @@ as $$
     p.search_name as norm_name,
     params.q,
     pr.min_price,
+    pr.regular_price,
     pr.is_deal
   from public.products p
   join prices pr on pr.product_id = p.id
@@ -204,6 +228,7 @@ returns table (
   has_image     boolean,
   barcodes      text[],
   min_price     numeric,
+  regular_price numeric,
   is_deal       boolean,
   sort_num      numeric,
   sort_text     text
@@ -247,6 +272,7 @@ as $$
       '{}'
     ) as barcodes,
     k.min_price,
+    k.regular_price,
     k.is_deal,
     k.k_num as sort_num,
     k.k_text as sort_text

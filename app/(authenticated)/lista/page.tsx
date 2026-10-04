@@ -11,7 +11,7 @@ export default function ListaPage() {
   const { items, itemCount, clearList, setQuantity } = useShoppingList();
 
   const handleClearList = () => {
-    if (window.confirm("Zaista želite da obrisete sve stavke iz liste?")) {
+    if (window.confirm("Zaista želiš da obrišeš sve stavke iz liste?")) {
       clearList();
     }
   };
@@ -20,7 +20,7 @@ export default function ListaPage() {
     <main className="min-h-screen bg-background py-8">
       <Container size="sm">
         <div className="mb-8">
-          <h1 className="text-4xl font-semibold text-foreground">Vaša lista</h1>
+          <h1 className="text-4xl font-semibold text-foreground">Tvoja lista</h1>
           <p className="mt-2 text-muted-foreground">
             Lista za kupovinu sa {itemCount} {itemCount === 1 ? "artiklom" : "artikala"}
           </p>
@@ -31,10 +31,10 @@ export default function ListaPage() {
             <CardContent className="flex flex-col items-center justify-center py-12">
               <div className="text-center">
                 <h2 className="mb-2 text-xl font-semibold text-foreground">
-                  Vaša lista je prazna.
+                  Tvoja lista je prazna.
                 </h2>
                 <p className="mb-6 text-muted-foreground">
-                  Počnite da dodajete proizvode iz pregleda.
+                  Počni da dodaješ proizvode iz pregleda.
                 </p>
                 <Button asChild variant="default">
                   <Link href="/proizvodi">Pregledaj proizvode</Link>

@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { formatPrice, plural } from "@/lib/formatPrice";
-import { cn } from "@/lib/utils";
+import { articles, formatPrice, plural } from "@/lib/formatPrice";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Chevron } from "@/components/ui/chevron";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Price } from "@/components/ui/price";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StoreCard } from "@/components/StoreCard/StoreCard";
 import { ListComparison, StoreComparisonRow } from "./useListComparison";
 
 interface ListCompareProps {
@@ -18,17 +19,14 @@ interface ListCompareProps {
   listTotal: number;
 }
 
-const articles = (n: number) => plural(n, "artikal", "artikla", "artikala");
-
 export function ListCompare({ comparison, loading, itemCount, listTotal }: ListCompareProps) {
-  const [openMissing, setOpenMissing] = useState<Record<string, boolean>>({});
   const { rows, cheapestComplete, usedStoreCount, unavailableCount } = comparison;
 
   if (loading && rows.length === 0) {
     return (
       <div className="flex flex-col gap-3 pb-4 pt-3" aria-busy="true">
         {[0, 1, 2].map((i) => (
-          <Skeleton key={i} className="h-[118px] animate-[pulse_1.4s_ease-in-out_infinite] rounded-[14px] bg-skeleton" />
+          <Skeleton key={i} className="h-[118px] rounded-[14px]" />
         ))}
       </div>
     );
@@ -56,56 +54,38 @@ export function ListCompare({ comparison, loading, itemCount, listTotal }: ListC
     <div className="flex flex-col gap-3 pb-4 pt-3">
       {rows.map((row, index) => {
         const complete = row.missing.length === 0;
-        const isOpen = !!openMissing[row.store.id];
         return (
-          <Card
+          <StoreCard
             key={row.store.id}
-            className={cn(
-              "rounded-[14px] bg-white p-4 shadow-none",
-              index === 0 ? "border-sage" : "border-line"
-            )}
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                {index === 0 && (
-                  <Badge variant="best" className="mb-2">
-                    {complete ? "Najpovoljnije" : "Najviše artikala"}
-                  </Badge>
-                )}
-                <div className="text-[15px] font-semibold text-ink">{row.store.retailerName}</div>
-                {row.store.address && (
-                  <div className="mt-[3px] text-xs text-ink-muted">{row.store.address}</div>
-                )}
-              </div>
+            retailerName={row.store.retailerName}
+            highlight={index === 0}
+            eyebrow={index === 0 && <Badge variant="best">{complete ? "Najpovoljnije" : "Najviše artikala"}</Badge>}
+            subtitle={row.store.address && <div className="mt-[3px] text-xs text-ink-muted">{row.store.address}</div>}
+            aside={
               <div className="shrink-0 text-right">
                 <Price value={row.total} size="compare" tone="ink" className="block" />
                 <div className="mt-[3px] whitespace-nowrap text-xs text-ink-muted">{deltaLabel(row)}</div>
               </div>
-            </div>
+            }
+          >
 
             <Separator className="my-3 bg-line-soft" />
             <div>
               {complete ? (
                 <span className="text-[13px] font-medium text-sage-dark">Svi artikli dostupni</span>
               ) : (
-                <>
-                  <Button
-                    variant="ghost"
-                    aria-expanded={isOpen}
-                    onClick={() => setOpenMissing((m) => ({ ...m, [row.store.id]: !m[row.store.id] }))}
-                    className="h-auto p-0 py-1 text-[13px] text-rust hover:bg-transparent hover:text-rust"
-                  >
-                    Nedostaje {row.missing.length} {articles(row.missing.length)}
-                    <span
-                      aria-hidden="true"
-                      className={cn(
-                        "block h-1.5 w-1.5 border-b-[1.5px] border-r-[1.5px] border-rust transition-transform duration-150",
-                        isOpen ? "-translate-y-px -rotate-[135deg]" : "-translate-y-[3px] rotate-45"
-                      )}
-                    />
-                  </Button>
-                  {isOpen && (
-                    <ul className="mt-1.5 flex animate-[dropIn_150ms_ease_both] flex-col gap-1">
+                <Collapsible>
+                  <CollapsibleTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="group/trigger h-auto p-0 py-1 text-[13px] text-rust hover:bg-transparent hover:text-rust"
+                    >
+                      Nedostaje {row.missing.length} {articles(row.missing.length)}
+                      <Chevron />
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent asChild>
+                    <ul className="mt-1.5 flex flex-col gap-1 data-[state=open]:animate-[dropIn_150ms_ease_both]">
                       {row.missing.map((item) => (
                         <li key={item.id} className="flex items-baseline gap-2 text-[13px] leading-[1.4] text-ink">
                           <span aria-hidden="true" className="block h-[5px] w-[5px] shrink-0 -translate-y-0.5 rounded-full bg-rust" />
@@ -113,11 +93,11 @@ export function ListCompare({ comparison, loading, itemCount, listTotal }: ListC
                         </li>
                       ))}
                     </ul>
-                  )}
-                </>
+                  </CollapsibleContent>
+                </Collapsible>
               )}
             </div>
-          </Card>
+          </StoreCard>
         );
       })}
 

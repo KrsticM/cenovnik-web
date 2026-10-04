@@ -28,7 +28,7 @@ export type BrowseFilters = {
 
 export type BrowseCursor = { num: number; text: string; id: string };
 
-export type CatalogItem = { product: Product; price: number; isDeal: boolean };
+export type CatalogItem = { product: Product; price: number; regularPrice: number; isDeal: boolean };
 
 type BrowseRow = {
   id: string;
@@ -36,6 +36,7 @@ type BrowseRow = {
   has_image: boolean;
   barcodes: string[] | null;
   min_price: number;
+  regular_price: number;
   is_deal: boolean;
   sort_num: number;
   sort_text: string;
@@ -81,6 +82,7 @@ export async function browseProducts(
       barcodes: row.barcodes ?? [],
     },
     price: Number(row.min_price),
+    regularPrice: Number(row.regular_price),
     isDeal: row.is_deal,
   }));
   const last = rows[rows.length - 1];
@@ -106,6 +108,7 @@ export type ProductOffer = {
   retailerId: string;
   retailerName: string;
   price: number;
+  regularPrice: number;
   storeId: string;
   address: string | null;
   isDeal: boolean;
@@ -171,6 +174,7 @@ export async function fetchProductOffers(
       retailerId: store?.retailerId ?? row.store_id,
       retailerName: store?.retailerName ?? "",
       price: row.discounted_price ?? row.regular_price,
+      regularPrice: row.regular_price,
       storeId: row.store_id,
       address: store?.address ?? null,
       isDeal: row.discounted_price !== null,
@@ -182,4 +186,30 @@ export async function fetchProductOffers(
   }
 
   return { offers, stores };
+}
+
+
+type ProductRow = {
+  id: string;
+  product_name: string;
+  has_image: boolean;
+  barcodes: { barcode: string }[] | null;
+};
+
+export async function fetchProduct(productId: string): Promise<Product | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("products")
+    .select("id, product_name, has_image, barcodes(barcode)")
+    .eq("id", productId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  const row = data as ProductRow;
+  return {
+    id: row.id,
+    productName: row.product_name,
+    hasImage: row.has_image,
+    barcodes: (row.barcodes ?? []).map((b) => b.barcode).sort(),
+  };
 }

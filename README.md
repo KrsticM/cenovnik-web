@@ -1,107 +1,155 @@
 # eCenovnik Web
 
-Web version of the eCenovnik grocery price-comparison platform with feature parity to the mobile app. Users can browse products, create and manage shopping lists, share lists, and compare prices across retailers in real-time.
+Web app for eCenovnik, the Serbian grocery price-comparison platform. It mirrors the mobile app: browse and search products with today's prices, compare markets, keep a shopping list and share it with anyone through a link.
 
-**Live**: `https://web.ecenovnik.app` (production)
+**Live**: `https://web.ecenovnik.app`
 
-## Quick Start
+## Features
 
-### Prerequisites
-- Node.js 18+ / npm
-- Supabase account with project configured
+- **Sign-in**: email one-time code; Google and Apple OAuth are wired but need provider setup in Supabase.
+- **Products** (`/proizvodi`):
+  - search (diacritics-insensitive, words in any order, barcodes);
+  - filters (my markets, price ranges, deals only), sort, and infinite scroll;
+  - search and the grid run in Postgres.
+- **Product detail**: a dialog with a shareable URL (`?proizvod=<id>`). Browser Back closes it.
+  - prices in the user's favourite markets, grouped by chain and price;
+  - deals show the old price struck through and the discount;
+  - lists the favourite stores that don't carry the product.
+- **Shopping list panel**: quantities with undo, a market comparison for the whole list, sharing and clearing. Changes save in order and sync live across devices.
+- **Shared list** (`/lista/[token]`): a public, no-account page.
+  - live updates from the owner;
+  - "bought" ticks shared by everyone with the link, with progress and the remaining total;
+  - offline: ticks queue on the device and sync on reconnect;
+  - never shows owner details and is not indexed by search engines.
+- **System states**: 404, error pages, loading skeletons, empty states and an offline banner. All are listed under [System states](#system-states).
+- **Not built yet**: store selection (`/prodavnice`) and settings (`/podesavanja`) are placeholders.
 
-### Setup
+UI copy is Serbian (Latin), in the informal "ti" form.
 
-1. **Clone and install**:
+## Tech stack
+
+- Next.js 16 (App Router), React 19, TypeScript (strict)
+- Tailwind CSS v4 with design tokens in `app/globals.css`; shadcn/ui on Radix primitives
+- Supabase: Postgres, Auth, Realtime (`@supabase/ssr`, `@supabase/supabase-js`)
+- Vercel (deploys on push to `main`, previews for branches)
+
+## Getting started
+
 ```bash
-git clone <repo>
-cd cenovnik-web
 npm install
+npm run dev        # http://localhost:3000
+npm run build      # production build
+npm run lint
+npx tsc --noEmit   # type check
 ```
 
-2. **Environment variables** (`.env.local`, not committed):
+`.env.local` (not committed):
+
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=xxx
 ```
 
-3. **Run locally**:
-```bash
-npm run dev
-```
-Open `http://localhost:3000` → login at `/prijava` (email OTP or OAuth).
-
-### Build
-```bash
-npm run build
-npm run dev  # test production build locally
-```
-
-## Tech Stack
-
-- **Framework**: Next.js 16 (App Router) + React 19
-- **Language**: TypeScript (strict mode)
-- **Styling**: Tailwind CSS v4 + shadcn/ui components
-- **Database**: Supabase (PostgreSQL + Auth + Realtime)
-- **State**: React Context (Auth, future: TanStack Query)
-- **Deployment**: Vercel (auto-deploy on push to `main`)
-
-## Key Libraries
-
-- `@supabase/ssr` (0.12.4+) — Supabase SSR client for auth + RLS
-- `@supabase/supabase-js` (2.110.8+) — Supabase JS client
-- `@radix-ui/*` + `shadcn/ui` — Accessible, unstyled component primitives
-- `class-variance-authority` — Type-safe component variants
-- `tailwind-merge` + `clsx` — Tailwind class composition
+The database also needs the scripts under [Database](#database).
 
 ## Architecture
 
-**Auth**: Direct Supabase client (no API layer) with Row-Level Security policies. Session via cookie (Supabase SSR pattern).
+### Routes
 
-**Routing**: Next.js App Router with middleware (`proxy.ts`). Unauthenticated → `/prijava`, authenticated → `/proizvodi`.
+| Route | Access | What it is |
+|---|---|---|
+| `/` | all | Redirects to `/proizvodi` (signed in) or `/prijava` |
+| `/prijava`, `/prijava/email` | public | Sign-in (OAuth, email code) |
+| `/auth/callback` | public | OAuth / magic-link callback |
+| `/proizvodi` | signed in | Product catalog and detail dialog |
+| `/lista` | signed in | Older full-page list (the panel is the main list UI) |
+| `/prodavnice`, `/podesavanja` | signed in | Placeholders |
+| `/lista/[token]` | public | Shared list (server-rendered, real 404 for dead links) |
+| `/api/lista/[token]` | public | Shared list JSON for client refreshes |
 
-**Data**: Supabase PostgreSQL. Real-time syncing via Realtime subscriptions (WebSocket, `postgres_changes`).
+`proxy.ts` refreshes the Supabase session and redirects signed-out users away from protected routes.
 
-**Responsive Layout**: Industry-standard `Container` primitive (`components/ui/container.tsx`) — Tailwind-native with adaptive horizontal gutters across all breakpoints. Ensures consistent page-level spacing from mobile (320px, `px-4`) through ultra-wide (3xl+, `lg:px-8`). Used by all authenticated pages for alignment consistency.
+### Code layout
 
-## Development
+```
+app/                      routes; (auth) and (authenticated) route groups, error/not-found pages
+components/ui/            primitives: shadcn files plus our own (price, deal-price, check-row,
+                          state-illustration, empty-state, …); kebab-case file names like shadcn
+components/<Name>/        app components: AppShell, Navbar, ListPanel, SharedListView, StatePage,
+                          StoreCard, QuantityStepper, …
+contexts/                 AuthContext (session, sign-in), ShoppingListContext (owner's list, stores)
+hooks/                    shared-list hooks (data, ticks, connectivity) and small utilities
+lib/services/             all data access (Supabase client calls, RPCs)
+lib/                      helpers: price formatting, local storage store, uuid check, support contact
+supabase/                 SQL for functions, triggers and access rules (see Database)
+types/                    shared types (list, list items, product)
+```
 
-### Conventions
-- **Components**: Tailwind + shadcn primitives (no CSS Modules for new work)
-- **Responsive**: Mobile-first (320px–1920px via `clamp()`, `min()`, media queries)
-- **Commits**: Descriptive, no "AI assistant" credits in messages
-- **Error handling**: All Supabase errors translated to Serbian for users
+Conventions:
+- Components are dumb: props in, callbacks out.
+- State and effects live in hooks, data access in `lib/services`.
+- Colours come from palette tokens, never raw hex.
+- Styled raw HTML lives only in `components/ui` primitives.
 
-### Key Files
-- `contexts/AuthContext.tsx` — Auth state, sign-in methods
-- `app/(auth)/prijava/` — Login flows (welcome + OTP)
-- `app/(authenticated)/` — Protected routes (navbar present)
-- `lib/supabase/` — Client setup (browser, server, middleware)
+`.claude/skills/design-to-component/` documents the design workflow (Claude Design project "Scope questions for page build") and these rules.
 
-## Features
+### Data and sync
 
-✅ **Email OTP sign-in** — Full end-to-end, tested  
-✅ **OAuth wiring** — Google & Apple, awaiting provider config in Supabase dashboard  
-✅ **Shared lists** — Real-time sync via Supabase subscriptions  
-✅ **Responsive design** — 320px–1920px (3xl breakpoint for 8-column grid at 1920px+)  
-✅ **Product browsing** — Phase 2 Step 2 (production-ready: search, filtering, infinite scroll, mobile-parity UI)  
-✅ **Responsive Container system** — Tailwind-native with adaptive gutters (16px → 24px → 32px)  
-⏳ **Product details** — Phase 2 (planned: /proizvodi/[id], clickable cards)  
-⏳ **Store selection** — Phase 2 (planned: /prodavnice)  
-⏳ **Shopping lists** — Phase 3 (planned)
+- **Signed-in users** talk to Supabase directly from the browser; Row-Level Security limits them to their own lists.
+- **Catalog**: Postgres functions `browse_products` / `browse_products_count` do search, filters, sort, keyset pagination and a capped count. The cheapest price per product comes from the materialized view `product_price_summary`, refreshed daily by pg_cron.
+- **Owner's list**: `ShoppingListContext` applies changes optimistically and saves them one after another. Realtime `postgres_changes` keeps other devices in sync, with reloads debounced and shared-list ticks ignored.
+- **Shared list**:
+  - **Reads:** anonymous visitors have no table access at all. They read through `get_shared_list(token)` and tick through `set_shared_item_checked(token, …)`, both security-definer functions checked against the token.
+  - **Live updates:** database triggers send data-free Realtime Broadcast pings on a topic hashed from the token. The page then re-reads the list.
+  - **Offline:** ticks are optimistic, queued in localStorage while offline, replayed on reconnect and retried every 10 s on errors. The last tap wins.
 
-## Roadmap & Details
+## Database
 
-See [`docs/CLAUDE.md`](docs/CLAUDE.md) for:
-- 6-phase roadmap (auth, products, lists, sharing, search, refinement)
-- Architecture decisions and rationale
-- Detailed status and blockers
-- Development preferences
+Scripts in `supabase/`, run in the Supabase SQL Editor. All are safe to re-run.
+
+| Script | Provides |
+|---|---|
+| `authenticated_shopping_lists.sql` | RLS: owners read and edit only their own lists and items |
+| `browse_products.sql` | Catalog search functions, `product_price_summary` view, refresh function, pg_cron note |
+| `browse_products_checks.sql` | Read-only checks for the catalog functions (run block by block) |
+| `shared_list_checks.sql` | `checked_at` on list items, `set_shared_item_checked` |
+| `shared_list_realtime.sql` | Broadcast triggers and `shared_list_topic` for live shared lists |
+| `get_shared_list.sql` | `get_shared_list(token)`: name, topic, items, cheapest prices |
+| `public_shopping_lists.sql` | Removes all direct table access for anonymous visitors |
+
+Order for a new database:
+1. `authenticated_shopping_lists.sql`
+2. `browse_products.sql`
+3. `shared_list_checks.sql`
+4. `shared_list_realtime.sql`
+5. `get_shared_list.sql`
+6. Deploy the web app.
+7. `public_shopping_lists.sql`, last: app versions older than the `get_shared_list` reader stop working once it runs.
+
+## System states
+
+Designs come from `Stanja.dc.html` (system states) and `Proizvodi.dc.html` (in-page empty states).
+- Full-page messages use `components/StatePage/`.
+- In-page messages use `EmptyState`.
+- Every illustration is a `StateIllustration` variant.
+
+| State | Where | Component |
+|---|---|---|
+| 404 "Ova stranica ne postoji" | Unknown URL; app header for signed-in users, product search | `app/not-found.tsx` → `NotFoundScreen` |
+| 500 "Nešto nije u redu" | Render error; retry, support contact, error code | `app/error.tsx`, `app/(authenticated)/error.tsx` → `ErrorScreen` |
+| Shared list loading | Server couldn't render the list, client retries | `SharedListSkeleton` |
+| "Ovaj link više nije aktivan" | Bad token, deleted or unshared list (same screen, real 404) | `app/lista/[token]/not-found.tsx` |
+| "Lista trenutno nije dostupna" | Shared list failed before anything showed | `SharedListError` |
+| Offline banner | Shared list loaded, connection lost; header shows "pauzirano" | `OfflineNotice`, `LiveStatus` |
+| Unsaved ticks banner | A tick couldn't be saved yet; retries every 10 s | `UnsavedNotice` |
+| "Nema proizvoda za ove filtere." | Empty product grid | `ProductGrid` |
+| "Tvoja lista je prazna." | Empty list panel | `ListPanel` |
+| "Proizvod nije dostupan u tvojim marketima." / "Izaberi svoje markete" | Product detail with no offers / no favourite markets | `StoreOffers` |
+| Loading skeletons | Grid, detail prices, list panel | `ProductCardSkeleton`, `StoreOffers`, `ListPanelSkeleton` |
+| Full-page "Bez marketa" | Not built yet: waits for store selection in `/prodavnice` | — |
 
 ## Deployment
 
-Deployed automatically to Vercel on every push to `main`. Preview URLs generated for feature branches.
+Vercel deploys `main` automatically and builds previews for branches. Database scripts are run by hand (see [Database](#database)); run any new script before deploying the code that uses it.
 
-## License
-
-[License info here, if applicable]
+More background (roadmap, decisions) is in [`docs/CLAUDE.md`](docs/CLAUDE.md).
