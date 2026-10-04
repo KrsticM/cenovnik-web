@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CONTACT_URL, SUPPORT_EMAIL } from "@/lib/support";
 import { Badge } from "@/components/ui/badge";
@@ -9,15 +9,18 @@ import { StateMessage } from "./StateMessage";
 import { PrimaryAction, SecondaryLink } from "./StateActions";
 
 interface ErrorScreenProps {
-  // Next's error.digest (server errors); shown so users can quote it to support.
-  code?: string;
+  error: Error & { digest?: string };
   reset: () => void;
 }
 
-// App-wide error (500): our fault, nothing lost, retry first.
-export function ErrorScreen({ code, reset }: ErrorScreenProps) {
+export function ErrorScreen({ error, reset }: ErrorScreenProps) {
   const router = useRouter();
   const [retrying, startRetry] = useTransition();
+  const code = error.digest;
+
+  useEffect(() => {
+    console.error(error);
+  }, [error]);
 
   const retry = () =>
     startRetry(() => {
@@ -28,6 +31,8 @@ export function ErrorScreen({ code, reset }: ErrorScreenProps) {
   const mailto = `mailto:${SUPPORT_EMAIL}${code ? `?subject=${encodeURIComponent(`Greška ${code}`)}` : ""}`;
 
   return (
+    <>
+    <title>Greška | eCenovnik</title>
     <StateMessage
       role="alert"
       illustration="error"
@@ -53,5 +58,6 @@ export function ErrorScreen({ code, reset }: ErrorScreenProps) {
         </>
       }
     />
+    </>
   );
 }

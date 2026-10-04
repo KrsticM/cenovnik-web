@@ -7,9 +7,8 @@ import { ProductCardSkeleton } from "./ProductCardSkeleton";
 import { InfiniteScrollSentinel } from "./InfiniteScrollSentinel";
 import { GRID_CLASSES } from "../config";
 import { useGridColumns } from "../hooks/useGridColumns";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { StateIllustration } from "@/components/ui/state-illustration";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface ProductGridProps {
   items: CatalogItem[];
@@ -53,16 +52,17 @@ function ProductGridComponent({
 
   if (items.length === 0 && !hasMore) {
     return (
-      <Card className="rounded-2xl border-line bg-white px-6 py-[88px] text-center shadow-none">
-        <StateIllustration variant="no-results" />
-        <p className="mt-[22px] text-[17px] font-medium text-ink">Nema proizvoda za ove filtere.</p>
-        <p className="mt-1.5 text-sm text-ink-muted">
-          Probaj širi cenovni opseg ili prikaži cene iz svih marketa.
-        </p>
-        <Button variant="sage" onClick={onReset} className="mt-5 h-auto rounded-[22px] px-5 py-[11px] hover:bg-sage-dark">
-          Prikaži sve proizvode
-        </Button>
-      </Card>
+      <EmptyState
+        variant="card"
+        illustration="no-results"
+        title="Nema proizvoda za ove filtere."
+        description="Probaj širi cenovni opseg ili prikaži cene iz svih marketa."
+        action={
+          <Button variant="sage" size="pill-md" onClick={onReset} className="hover:bg-sage-dark">
+            Prikaži sve proizvode
+          </Button>
+        }
+      />
     );
   }
 

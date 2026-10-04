@@ -70,6 +70,13 @@
 @theme {
   --font-sans: Geist, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --breakpoint-2xl: 1600px;
+
+  --color-scrim: rgba(26, 26, 26, 0.4);
+  --color-scrim-soft: rgba(26, 26, 26, 0.28);
+  --shadow-modal: 0 24px 64px rgba(26, 26, 26, 0.24);
+  --shadow-panel: -20px 0 60px rgba(26, 26, 26, 0.18);
+
+  --animate-skeleton: pulse 1.4s ease-in-out infinite;
 }
 
 @theme inline {
@@ -148,6 +155,19 @@
   }
 
   button, a { font: inherit; }
+}
+
+@utility container-narrow {
+  margin-inline: auto;
+  max-width: 760px;
+  padding-inline: clamp(16px, 4vw, 24px);
+}
+
+@utility px-card {
+  padding-inline: clamp(20px, 4vw, 28px);
+}
+@utility p-card {
+  padding: clamp(20px, 4vw, 28px);
 }
 
 /* Placeholder for products without a photo (design: diagonal cream stripes). */

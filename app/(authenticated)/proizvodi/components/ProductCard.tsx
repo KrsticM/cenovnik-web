@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Product } from "@/types/product";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Price } from "@/components/ui/price";
+import { DealPrice } from "@/components/ui/deal-price";
 import { ProductThumb } from "@/components/ui/product-thumb";
 import { useProductListControl } from "../hooks/useProductListControl";
 import { useClickOutside } from "@/hooks/useClickOutside";
@@ -18,7 +18,6 @@ interface ProductCardProps {
   isDeal: boolean;
   expanded: boolean;
   onExpandedChange: (expanded: boolean) => void;
-  // Opens the product detail dialog; the links keep a real href for new-tab clicks.
   onOpen: (productId: string, trigger: HTMLElement) => void;
 }
 
@@ -89,11 +88,8 @@ function ProductCardComponent({
             {product.productName}
           </Link>
         </h3>
-        <div className="mt-3 flex flex-col gap-[3px]">
-          <span className="flex flex-wrap items-baseline gap-2">
-            <Price value={price} size="card" />
-            {isDeal && regularPrice > price && <Price value={regularPrice} size="row" tone="muted" />}
-          </span>
+        <div className="mt-3">
+          <DealPrice price={price} regularPrice={isDeal ? regularPrice : null} size="card" />
         </div>
       </div>
 
@@ -111,8 +107,7 @@ function ProductCardComponent({
   );
 }
 
-// onExpandedChange is a fresh closure per render but always targets the same product id;
-// onOpen is stable (useCallback in the page).
+// onExpandedChange is a new closure each render but always targets the same product.
 export const ProductCard = memo(
   ProductCardComponent,
   (prev, next) =>

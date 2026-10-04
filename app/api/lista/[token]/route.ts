@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { fetchSharedList } from "@/lib/services/sharedList";
 
-// Client refreshes of the shared list (initial render, realtime updates, retry).
 export async function GET(_request: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const result = await fetchSharedList(token);

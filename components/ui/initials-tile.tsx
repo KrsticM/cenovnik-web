@@ -3,7 +3,6 @@ import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
 
-// Square tile with a chain's initials, standing in for a retailer logo.
 const initialsTileVariants = cva(
   "flex shrink-0 items-center justify-center font-semibold",
   {
@@ -21,13 +20,28 @@ const initialsTileVariants = cva(
   }
 )
 
-function InitialsTile({
-  size,
-  tone,
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLSpanElement> & VariantProps<typeof initialsTileVariants>) {
-  return <span aria-hidden="true" className={cn(initialsTileVariants({ size, tone }), className)} {...props} />
+function initials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase()
+}
+
+interface InitialsTileProps
+  extends Omit<React.HTMLAttributes<HTMLSpanElement>, "children">,
+    VariantProps<typeof initialsTileVariants> {
+  name: string
+}
+
+function InitialsTile({ name, size, tone, className, ...props }: InitialsTileProps) {
+  return (
+    <span aria-hidden="true" className={cn(initialsTileVariants({ size, tone }), className)} {...props}>
+      {initials(name)}
+    </span>
+  )
 }
 
 export { InitialsTile, initialsTileVariants }

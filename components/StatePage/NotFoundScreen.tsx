@@ -2,7 +2,6 @@ import { Input } from "@/components/ui/input";
 import { StateMessage } from "./StateMessage";
 import { SecondaryLink } from "./StateActions";
 
-// App-wide 404: search is the main way back, the code is only a small label.
 export function NotFoundScreen() {
   return (
     <StateMessage

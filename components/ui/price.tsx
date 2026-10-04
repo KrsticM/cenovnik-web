@@ -15,7 +15,6 @@ const priceVariants = cva("whitespace-nowrap font-semibold", {
     tone: {
       rust: "text-rust",
       ink: "text-ink",
-      // Pre-discount price next to a deal: small, grey, struck through.
       muted: "text-[13px] font-normal text-ink-muted line-through",
     },
   },
@@ -26,12 +25,15 @@ interface PriceProps
   extends Omit<React.HTMLAttributes<HTMLSpanElement>, "children">,
     VariantProps<typeof priceVariants> {
   value: number | null | undefined
+  // Screen readers don't announce strike-through, so name the price instead.
+  label?: string
 }
 
 // Formatted RSD amount in the design's price styles; renders "—" when there is no price.
-function Price({ value, size, tone, className, ...props }: PriceProps) {
+function Price({ value, size, tone, label, className, ...props }: PriceProps) {
   return (
     <span className={cn(priceVariants({ size, tone }), className)} {...props}>
+      {label && <span className="sr-only">{label}: </span>}
       {formatPrice(value)}
     </span>
   )

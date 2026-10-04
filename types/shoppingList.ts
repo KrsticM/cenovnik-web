@@ -7,17 +7,19 @@ export type ShoppingList = {
   updatedAt: string;
 };
 
-export type ShoppingListItem = {
-  id: string;
-  shoppingListId: string;
+export type ListItemBase = {
   productId: string;
   productName: string;
   primaryBarcode: string | null;
   hasImage: boolean;
   quantity: number;
   price: number | null;
-  storeName?: string;
-  // When it was ticked as bought on the shared list; null = not bought.
   checkedAt: string | null;
+};
+
+export type ShoppingListItem = ListItemBase & {
+  id: string;
+  shoppingListId: string;
+  storeName?: string;
   createdAt: string;
 };

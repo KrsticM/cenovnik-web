@@ -13,3 +13,6 @@ export function plural(n: number, one: string, few: string, many: string): strin
   if (m10 >= 2 && m10 <= 4) return few;
   return many;
 }
+
+export const articles = (n: number) => plural(n, "artikal", "artikla", "artikala");
+export const articleCount = (n: number) => `${n} ${articles(n)}`;

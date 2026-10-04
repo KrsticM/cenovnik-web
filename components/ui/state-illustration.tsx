@@ -2,8 +2,7 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-// Empty/error/system-state illustrations, all built from the logo's three descending bars.
-type Variant =
+type StateIllustrationVariant =
   | "link-inactive"
   | "unavailable"
   | "error"
@@ -16,7 +15,7 @@ type Variant =
 const DASHED = "border-2 border-dashed border-stone"
 const OUTLINE = "border-2 border-stone"
 
-const BARS: Record<Exclude<Variant, "not-found">, { heights: number[]; fills: string[]; small?: boolean }> = {
+const BARS: Record<Exclude<StateIllustrationVariant, "not-found">, { heights: number[]; fills: string[]; small?: boolean }> = {
   "link-inactive": { heights: [44, 30, 18], fills: [DASHED, DASHED, DASHED] },
   unavailable: { heights: [44, 30, 18], fills: ["bg-bar-idle", "bg-rust", "bg-bar-idle"] },
   error: { heights: [44, 30, 18], fills: ["bg-bar-idle", "bg-bar-idle", "bg-rust"] },
@@ -27,7 +26,7 @@ const BARS: Record<Exclude<Variant, "not-found">, { heights: number[]; fills: st
 }
 
 interface StateIllustrationProps extends React.HTMLAttributes<HTMLSpanElement> {
-  variant: Variant
+  variant: StateIllustrationVariant
 }
 
 function StateIllustration({ variant, className, ...props }: StateIllustrationProps) {
@@ -71,4 +70,4 @@ function StateIllustration({ variant, className, ...props }: StateIllustrationPr
   )
 }
 
-export { StateIllustration }
+export { StateIllustration, type StateIllustrationVariant }

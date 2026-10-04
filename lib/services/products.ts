@@ -28,7 +28,6 @@ export type BrowseFilters = {
 
 export type BrowseCursor = { num: number; text: string; id: string };
 
-// price is what the shopper pays; regularPrice is the same offer before any discount.
 export type CatalogItem = { product: Product; price: number; regularPrice: number; isDeal: boolean };
 
 type BrowseRow = {
@@ -189,7 +188,6 @@ export async function fetchProductOffers(
   return { offers, stores };
 }
 
-// ---- Single product (detail dialog opened from a shared ?proizvod= link) ------------------------
 
 type ProductRow = {
   id: string;

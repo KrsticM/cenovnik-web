@@ -22,11 +22,9 @@ const badgeVariants = cva(
         count: "h-[26px] min-w-[26px] justify-center border-0 bg-sage-dark px-2 text-sm text-cream",
         "count-sm": "h-[22px] min-w-[22px] justify-center border-0 bg-sage-dark px-1.5 text-xs text-cream",
         list: "rounded-2xl border-line bg-paper px-3 py-1.5 text-[13px] font-medium text-ink",
-        // Small sentence-case tags in the product detail store rows.
         tag: "rounded-[6px] border-0 bg-sage-dark px-2 py-0.5 text-[11px] tracking-[0.03em] text-cream",
         discount: "rounded-[6px] border-0 bg-rust px-1.5 py-0.5 text-[11px] text-white",
         qty: "whitespace-nowrap rounded-[9px] border-0 bg-cream px-2.5 py-1 text-[13px] text-sage-dark",
-        // Error code users can select and quote to support.
         code: "select-all rounded-[5px] border-0 bg-sand px-1.5 py-0.5 font-mono text-xs font-normal text-ink",
       },
     },

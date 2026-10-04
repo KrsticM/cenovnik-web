@@ -1,21 +1,22 @@
-import type { Item } from "@/hooks";
+import type { Ref } from "react";
+import type { SharedListItem } from "@/lib/services/sharedList";
 import { Badge } from "@/components/ui/badge";
 import { CheckRow } from "@/components/ui/check-row";
 import { Price } from "@/components/ui/price";
 import { ProductThumb } from "@/components/ui/product-thumb";
 
 interface SharedListRowProps {
-  item: Item;
+  item: SharedListItem;
   checked: boolean;
   showPrice: boolean;
   onToggle: () => void;
+  ref?: Ref<HTMLButtonElement>;
 }
 
-// To buy: photo, barcode, quantity pill and line total. Bought: compact, muted name and quantity.
-export function SharedListRow({ item, checked, showPrice, onToggle }: SharedListRowProps) {
+export function SharedListRow({ item, checked, showPrice, onToggle, ref }: SharedListRowProps) {
   if (checked) {
     return (
-      <CheckRow checked onCheckedChange={onToggle}>
+      <CheckRow ref={ref} checked onCheckedChange={onToggle}>
         <span className="min-w-0 flex-1 text-pretty text-[15px] leading-[1.35] text-ink-muted">
           {item.productName}
         </span>
@@ -25,7 +26,7 @@ export function SharedListRow({ item, checked, showPrice, onToggle }: SharedList
   }
 
   return (
-    <CheckRow checked={false} onCheckedChange={onToggle}>
+    <CheckRow ref={ref} checked={false} onCheckedChange={onToggle}>
       <ProductThumb
         barcode={item.primaryBarcode}
         hasImage={item.hasImage}

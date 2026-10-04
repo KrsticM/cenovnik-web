@@ -3,7 +3,6 @@ import { InlineLink } from "../StatePage/InlineLink";
 import { StateMessage } from "../StatePage/StateMessage";
 import { PrimaryAction, PrimaryLink, SecondaryLink } from "../StatePage/StateActions";
 
-// Same screen for a deleted list and disabled sharing, so the link never reveals which.
 export function SharedListNotFound() {
   return (
     <StateMessage
@@ -15,7 +14,6 @@ export function SharedListNotFound() {
   );
 }
 
-// Nothing could be shown (server or network). Retrying shows the skeleton again.
 export function SharedListError({ onRetry }: { onRetry: () => void }) {
   return (
     <StateMessage

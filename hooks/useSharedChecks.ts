@@ -1,85 +1,76 @@
-import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { createLocalStore } from "@/lib/localStore";
 import type { SharedListItem } from "@/lib/services/sharedList";
 
-// productId → when it was ticked, so bought items can be shown newest first.
 export type CheckedItems = Record<string, number>;
 
-// Taps not yet confirmed by the server: productId → tap time (ticked) or 0 (unticked).
 type Pending = Record<string, number>;
 
+type SendResult = { status: "saved"; checkedAt: string | null } | { status: "failed" } | { status: "gone" };
+type ReplayOutcome = { failed: boolean; dropped: boolean };
+
 const EMPTY: Pending = {};
+const RETRY_MS = 10_000;
+const NOT_FOUND = "P0002";
+
 const pendingKey = (token: string) => `ecenovnik-list-pending:${token}`;
-// Ticks used to live only on the device; they're dropped rather than published to everyone.
 const legacyKey = (token: string) => `ecenovnik-list:${token}`;
 
-// --- Pending taps in localStorage (survive reloads and offline periods) --------------------------
+const pendingStore = createLocalStore<Pending>({
+  parse: (value) => (value && typeof value === "object" && !Array.isArray(value) ? (value as Pending) : null),
+  empty: EMPTY,
+});
 
-const memory = new Map<string, string>();
-const listeners = new Set<() => void>();
+function removeTap(key: string, productId: string, tappedAt: number) {
+  const now = pendingStore.read(key);
+  // A newer tap on the same item stays queued.
+  if (now[productId] !== tappedAt) return;
+  const rest = { ...now };
+  delete rest[productId];
+  pendingStore.write(key, Object.keys(rest).length > 0 ? rest : null);
+}
 
-function readRaw(key: string): string | null {
-  if (memory.has(key)) return memory.get(key)!;
-  try {
-    return window.localStorage.getItem(key);
-  } catch {
-    return null;
+export async function replayTaps(
+  key: string,
+  send: (productId: string, checked: boolean) => Promise<SendResult>,
+  onSaved: (productId: string, checkedAt: string | null) => void
+): Promise<ReplayOutcome> {
+  let dropped = false;
+  for (const [productId, tappedAt] of Object.entries(pendingStore.read(key))) {
+    const result = await send(productId, tappedAt > 0);
+    if (result.status === "failed") return { failed: true, dropped };
+    removeTap(key, productId, tappedAt);
+    if (result.status === "gone") dropped = true;
+    else onSaved(productId, result.checkedAt);
   }
+  return { failed: false, dropped };
 }
 
-function writePending(key: string, pending: Pending) {
-  const raw = Object.keys(pending).length > 0 ? JSON.stringify(pending) : null;
-  try {
-    if (raw) window.localStorage.setItem(key, raw);
-    else window.localStorage.removeItem(key);
-  } catch {
-    // Blocked or full storage: queue for this visit only.
-    if (raw) memory.set(key, raw);
-    else memory.delete(key);
-  }
-  listeners.forEach((notify) => notify());
+async function sendTap(token: string, productId: string, checked: boolean): Promise<SendResult> {
+  const { data, error } = await createClient().rpc("set_shared_item_checked", {
+    p_token: token,
+    p_product_id: productId,
+    p_checked: checked,
+  });
+  if (!error) return { status: "saved", checkedAt: (data as string | null) ?? null };
+  if (error.code === NOT_FOUND) return { status: "gone" };
+  console.error("[useSharedChecks] Tick not saved:", error);
+  return { status: "failed" };
 }
 
-function subscribe(onChange: () => void) {
-  listeners.add(onChange);
-  window.addEventListener("storage", onChange);
-  return () => {
-    listeners.delete(onChange);
-    window.removeEventListener("storage", onChange);
-  };
+interface UseSharedChecksOptions {
+  token: string;
+  items: SharedListItem[];
+  online: boolean;
+  onSaved: (productId: string, checkedAt: string | null) => void;
+  onLinkLost: () => void;
 }
 
-// Parsed snapshot cached by raw value, so React sees the same object until storage changes.
-let cache: { raw: string | null; value: Pending } = { raw: null, value: EMPTY };
-function readPending(key: string): Pending {
-  const raw = readRaw(key);
-  if (raw !== cache.raw) {
-    let value = EMPTY;
-    try {
-      const parsed: unknown = raw ? JSON.parse(raw) : null;
-      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) value = parsed as Pending;
-    } catch {
-      // Corrupt entry: start over.
-    }
-    cache = { raw, value };
-  }
-  return cache.value;
-}
-
-// --- Hook --------------------------------------------------------------------------------------
-
-// Shared "bought" ticks: saved on the item (supabase/shared_list_checks.sql) so everyone with the
-// link sees the same state live. Taps show immediately, are queued while offline and replayed when
-// the connection returns; the last tap wins. The server renders the confirmed state, pending taps
-// apply right after hydration.
-export function useSharedChecks(
-  token: string,
-  items: SharedListItem[],
-  online: boolean,
-  onConfirmed: (productId: string, checkedAt: string | null) => void
-) {
+export function useSharedChecks({ token, items, online, onSaved, onLinkLost }: UseSharedChecksOptions) {
   const key = pendingKey(token);
-  const pending = useSyncExternalStore(subscribe, () => readPending(key), () => EMPTY);
+  const pending = useSyncExternalStore(pendingStore.subscribe, () => pendingStore.read(key), () => EMPTY);
+  const [failedAt, setFailedAt] = useState<number | null>(null);
 
   const checkedItems = useMemo<CheckedItems>(() => {
     const checked: CheckedItems = {};
@@ -103,57 +94,52 @@ export function useSharedChecks(
       return;
     }
     flushing.current = true;
-    const supabase = createClient();
     try {
       let failed = false;
+      let dropped = false;
       do {
         rerun.current = false;
-        for (const [productId, tappedAt] of Object.entries(readPending(key))) {
-          const { data, error } = await supabase.rpc("set_shared_item_checked", {
-            p_token: token,
-            p_product_id: productId,
-            p_checked: tappedAt > 0,
-          });
-          if (error) {
-            // Keep the tap queued; the next tap or reconnect retries it.
-            console.error("[useSharedChecks] Tick not saved:", error);
-            failed = true;
-            break;
-          }
-          const now = readPending(key);
-          if (now[productId] === tappedAt) {
-            const rest = { ...now };
-            delete rest[productId];
-            writePending(key, rest);
-          }
-          onConfirmed(productId, (data as string | null) ?? null);
-        }
+        const outcome = await replayTaps(key, (productId, checked) => sendTap(token, productId, checked), onSaved);
+        failed = outcome.failed;
+        dropped ||= outcome.dropped;
       } while (rerun.current && !failed);
+
+      if (dropped) onLinkLost();
+      setFailedAt(failed ? Date.now() : null);
     } finally {
       flushing.current = false;
     }
-  }, [key, token, onConfirmed]);
+  }, [key, token, onSaved, onLinkLost]);
 
-  // Replay queued taps on load and whenever the connection comes back.
+  // Old device-only ticks are dropped, not published to everyone.
   useEffect(() => {
     try {
       window.localStorage.removeItem(legacyKey(token));
     } catch {
-      // Storage unavailable: nothing to clean up.
     }
   }, [token]);
+
   useEffect(() => {
     if (online) void flush();
   }, [online, flush]);
 
+  // Each failed attempt sets a new failedAt, which schedules the next retry.
+  useEffect(() => {
+    if (failedAt === null || !online) return;
+    const timer = setTimeout(() => void flush(), RETRY_MS);
+    return () => clearTimeout(timer);
+  }, [failedAt, online, flush]);
+
   const toggleItem = useCallback(
     (productId: string) => {
-      const next = { ...readPending(key), [productId]: checkedItems[productId] ? 0 : Date.now() };
-      writePending(key, next);
+      const next = { ...pendingStore.read(key), [productId]: checkedItems[productId] ? 0 : Date.now() };
+      pendingStore.write(key, next);
       void flush();
     },
     [key, checkedItems, flush]
   );
 
-  return { checkedItems, toggleItem, pendingCount: Object.keys(pending).length };
+  const unsaved = failedAt !== null && Object.keys(pending).length > 0;
+
+  return { checkedItems, toggleItem, unsaved };
 }

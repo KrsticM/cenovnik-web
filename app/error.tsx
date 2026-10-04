@@ -1,21 +1,14 @@
 "use client";
 
-import { useEffect } from "react";
 import { ErrorScreen } from "@/components/StatePage/ErrorScreen";
-import { LogoHeader } from "@/components/StatePage/LogoHeader";
+import { SimpleHeader } from "@/components/StatePage/SimpleHeader";
 
-// Errors outside the app shell (sign-in, shared list page).
-export default function RootError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  useEffect(() => {
-    console.error(error);
-  }, [error]);
-
+export default function RootError(props: { error: Error & { digest?: string }; reset: () => void }) {
   return (
     <div className="min-h-screen bg-paper text-ink antialiased">
-      <title>Greška | eCenovnik</title>
-      <LogoHeader />
+      <SimpleHeader />
       <main>
-        <ErrorScreen code={error.digest} reset={reset} />
+        <ErrorScreen {...props} />
       </main>
     </div>
   );

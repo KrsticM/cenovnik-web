@@ -1,6 +1,7 @@
 import { ShoppingList, ShoppingListItem } from "@/types/shoppingList";
 import { createClient } from "@/lib/supabase/client";
 import { fetchProductOffers } from "@/lib/services/products";
+import { FALLBACK_PRODUCT_NAME, primaryBarcode } from "@/lib/services/listItemRow";
 
 const SHOPPING_LISTS_TABLE = "shopping_lists";
 const SHOPPING_LIST_ITEMS_TABLE = "shopping_list_items";
@@ -17,7 +18,7 @@ type ListItemRow = {
   product_id: string;
   quantity: number;
   created_at: string;
-  checked_at?: string | null;
+  checked_at: string | null;
   products: ListItemProduct | ListItemProduct[] | null;
 };
 
@@ -27,12 +28,12 @@ function mapListItem(row: ListItemRow): ShoppingListItem {
     id: row.id,
     shoppingListId: row.shopping_list_id,
     productId: row.product_id,
-    productName: product?.product_name || "Unknown",
-    primaryBarcode: product?.barcodes?.[0]?.barcode || null,
+    productName: product?.product_name || FALLBACK_PRODUCT_NAME,
+    primaryBarcode: primaryBarcode(product?.barcodes),
     hasImage: product?.has_image ?? false,
     quantity: row.quantity,
     price: null,
-    checkedAt: row.checked_at ?? null,
+    checkedAt: row.checked_at,
     createdAt: row.created_at,
   };
 }
@@ -87,29 +88,25 @@ export async function getOrCreateActiveList(userId: string): Promise<ShoppingLis
 
 export async function fetchListItems(listId: string): Promise<ShoppingListItem[]> {
   const supabase = createClient();
-  const query = (checked: string) =>
-    supabase
-      .from(SHOPPING_LIST_ITEMS_TABLE)
-      .select(
-        `
+  const { data, error } = await supabase
+    .from(SHOPPING_LIST_ITEMS_TABLE)
+    .select(
+      `
       id,
       shopping_list_id,
       product_id,
       quantity,
-      created_at,${checked}
+      created_at,
+      checked_at,
       products (
         product_name,
         has_image,
         barcodes (barcode)
       )
     `
-      )
-      .eq("shopping_list_id", listId)
-      .order("created_at", { ascending: true });
-
-  let { data, error } = await query("\n      checked_at,");
-  // 42703 = column missing: supabase/shared_list_checks.sql hasn't been run yet.
-  if (error?.code === "42703") ({ data, error } = await query(""));
+    )
+    .eq("shopping_list_id", listId)
+    .order("created_at", { ascending: true });
   if (error) throw error;
 
   return ((data as ListItemRow[] | null) ?? []).map(mapListItem);
@@ -153,19 +150,6 @@ export async function removeItem(listId: string, productId: string): Promise<voi
     .delete()
     .eq("shopping_list_id", listId)
     .eq("product_id", productId);
-
-  if (error) throw error;
-}
-
-// Unticks every bought item (the owner's "Očisti kupljeno").
-export async function clearCheckedItems(listId: string): Promise<void> {
-  const supabase = createClient();
-
-  const { error } = await supabase
-    .from(SHOPPING_LIST_ITEMS_TABLE)
-    .update({ checked_at: null })
-    .eq("shopping_list_id", listId)
-    .not("checked_at", "is", null);
 
   if (error) throw error;
 }

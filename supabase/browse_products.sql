@@ -68,7 +68,6 @@ exception when undefined_table then null;
 end $$;
 
 -- Building this sorts all current_prices rows once; expect it to take a while on first run.
--- regular_price belongs to the winning row, so on a deal it is the price before the discount.
 create materialized view if not exists public.product_price_summary as
 select distinct on (cp.product_id)
   cp.product_id,
@@ -157,8 +156,7 @@ as $$
     from normalized n
   ),
   scoped_prices as (
-    -- Cheapest price, whether it is a discount, and the regular price of that same row
-    -- (ordered like product_price_summary, so scoped and unscoped results agree).
+    -- Ordered like product_price_summary, so scoped and unscoped results agree.
     select
       cp.product_id,
       min(coalesce(cp.discounted_price, cp.regular_price)) as min_price,

@@ -1,23 +1,25 @@
--- RLS policies for authenticated user access to shopping lists
--- Allows users to read/write/delete their own lists and items
+-- Owners read and edit only their own lists and items. Safe to re-run.
 
 -- Enable RLS on tables (should already be enabled, but ensure it)
 ALTER TABLE public.shopping_lists ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.shopping_list_items ENABLE ROW LEVEL SECURITY;
 
 -- Policy for shopping_lists: authenticated users can select their own lists
+DROP POLICY IF EXISTS "Users can select their own shopping lists" ON public.shopping_lists;
 CREATE POLICY "Users can select their own shopping lists"
   ON public.shopping_lists
   FOR SELECT
   USING (auth.uid() = user_id);
 
 -- Policy for shopping_lists: authenticated users can insert their own lists
+DROP POLICY IF EXISTS "Users can create shopping lists" ON public.shopping_lists;
 CREATE POLICY "Users can create shopping lists"
   ON public.shopping_lists
   FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
 -- Policy for shopping_lists: authenticated users can update their own lists
+DROP POLICY IF EXISTS "Users can update their own shopping lists" ON public.shopping_lists;
 CREATE POLICY "Users can update their own shopping lists"
   ON public.shopping_lists
   FOR UPDATE
@@ -25,12 +27,14 @@ CREATE POLICY "Users can update their own shopping lists"
   WITH CHECK (auth.uid() = user_id);
 
 -- Policy for shopping_lists: authenticated users can delete their own lists
+DROP POLICY IF EXISTS "Users can delete their own shopping lists" ON public.shopping_lists;
 CREATE POLICY "Users can delete their own shopping lists"
   ON public.shopping_lists
   FOR DELETE
   USING (auth.uid() = user_id);
 
 -- Policy for shopping_list_items: authenticated users can select items from their lists
+DROP POLICY IF EXISTS "Users can select items from their shopping lists" ON public.shopping_list_items;
 CREATE POLICY "Users can select items from their shopping lists"
   ON public.shopping_list_items
   FOR SELECT
@@ -43,6 +47,7 @@ CREATE POLICY "Users can select items from their shopping lists"
   );
 
 -- Policy for shopping_list_items: authenticated users can insert items to their lists
+DROP POLICY IF EXISTS "Users can add items to their shopping lists" ON public.shopping_list_items;
 CREATE POLICY "Users can add items to their shopping lists"
   ON public.shopping_list_items
   FOR INSERT
@@ -55,6 +60,7 @@ CREATE POLICY "Users can add items to their shopping lists"
   );
 
 -- Policy for shopping_list_items: authenticated users can update items in their lists
+DROP POLICY IF EXISTS "Users can update items in their shopping lists" ON public.shopping_list_items;
 CREATE POLICY "Users can update items in their shopping lists"
   ON public.shopping_list_items
   FOR UPDATE
@@ -74,6 +80,7 @@ CREATE POLICY "Users can update items in their shopping lists"
   );
 
 -- Policy for shopping_list_items: authenticated users can delete items from their lists
+DROP POLICY IF EXISTS "Users can delete items from their shopping lists" ON public.shopping_list_items;
 CREATE POLICY "Users can delete items from their shopping lists"
   ON public.shopping_list_items
   FOR DELETE

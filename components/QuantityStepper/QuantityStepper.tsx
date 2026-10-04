@@ -13,9 +13,7 @@ interface QuantityStepperProps {
   disabled?: boolean;
   size?: "sm" | "md";
   showRemove?: boolean;
-  variant?: "solid" | "soft" | "wide";
-  // "wide" only: text between − and +, e.g. "2 na listi".
-  label?: string;
+  variant?: "solid" | "soft";
 }
 
 export function QuantityStepper({
@@ -27,23 +25,7 @@ export function QuantityStepper({
   size = "md",
   showRemove = false,
   variant = "solid",
-  label,
 }: QuantityStepperProps) {
-  if (variant === "wide") {
-    const wideButton = "h-10 w-10 shrink-0 bg-cream/14 text-xl leading-none hover:bg-cream/26";
-    return (
-      <div role="group" aria-label="Količina" className="flex h-[52px] w-full items-center justify-between gap-3 rounded-[26px] bg-sage-dark px-1.5">
-        <Button variant="on-sage" size="icon-lg" onClick={onDecrement} disabled={disabled} aria-label="Smanji" className={wideButton}>
-          −
-        </Button>
-        <span className="whitespace-nowrap text-base font-medium text-cream">{label ?? quantity}</span>
-        <Button variant="on-sage" size="icon-lg" onClick={onIncrement} disabled={disabled} aria-label="Povećaj" className={wideButton}>
-          +
-        </Button>
-      </div>
-    );
-  }
-
   if (variant === "soft") {
     return (
       <span className="inline-flex h-[34px] items-center gap-0.5 rounded-[17px] bg-cream px-[5px]">

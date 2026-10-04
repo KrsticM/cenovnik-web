@@ -13,15 +13,11 @@ export type OfferGroup = {
   retailerName: string;
   price: number;
   stores: GroupStore[];
-  // Any store in the group sells at a discount.
   isDeal: boolean;
   maxDiscountPct: number;
-  // Shared pre-discount price, or null when stores differ (then only the max discount is shown).
   regularPrice: number | null;
 };
 
-// One row per chain and paid price: its stores collapse into "N lokacija", even when their
-// regular prices (and so their discounts) differ.
 export function groupOffers(offers: ProductOffer[]): OfferGroup[] {
   const byKey = new Map<string, { retailerName: string; price: number; stores: GroupStore[] }>();
   for (const offer of offers) {
@@ -57,12 +53,3 @@ export function groupOffers(offers: ProductOffer[]): OfferGroup[] {
     .sort((a, b) => a.price - b.price);
 }
 
-export function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((word) => word[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}

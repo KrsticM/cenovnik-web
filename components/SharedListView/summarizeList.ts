@@ -1,37 +1,42 @@
-import type { Item } from "@/hooks";
+import type { SharedListItem } from "@/lib/services/sharedList";
 import type { CheckedItems } from "@/hooks/useSharedChecks";
-import { formatPrice, plural } from "@/lib/formatPrice";
+import { articleCount, formatPrice } from "@/lib/formatPrice";
 
-const articles = (n: number) => plural(n, "artikal", "artikla", "artikala");
-const lineTotal = (items: Item[]) =>
+const lineTotal = (items: SharedListItem[]) =>
   items.reduce((sum, item) => sum + (item.price ?? 0) * item.quantity, 0);
 
-export type ListSummary = {
-  active: Item[];
-  done: Item[];
-  // False when no item has a price: every price on the page is hidden.
-  showPrices: boolean;
+export type ListSummaryLabels = {
   summaryLabel: string;
   remainingLabel: string | null;
   progress: number;
   progressLabel: string;
+  showProgress: boolean;
 };
 
-// Splits the list into to-buy and bought (newest check first) and builds the header texts.
-// Items without a price are left out of the totals; a partial total says how many it covers.
-export function summarizeList(items: Item[], checked: CheckedItems): ListSummary {
-  const active = items.filter((item) => !checked[item.productId]);
-  const done = items
-    .filter((item) => checked[item.productId])
-    .sort((a, b) => checked[b.productId] - checked[a.productId]);
+export type ListSummary = ListSummaryLabels & {
+  active: SharedListItem[];
+  done: SharedListItem[];
+  showPrices: boolean;
+};
+
+export function partitionByChecked(items: SharedListItem[], checked: CheckedItems) {
+  return {
+    active: items.filter((item) => !checked[item.productId]),
+    done: items
+      .filter((item) => checked[item.productId])
+      .sort((a, b) => checked[b.productId] - checked[a.productId]),
+  };
+}
+
+export function summarizeList(items: SharedListItem[], checked: CheckedItems): ListSummary {
+  const { active, done } = partitionByChecked(items, checked);
 
   const n = items.length;
   const priced = items.filter((item) => item.price !== null).length;
   const showPrices = priced > 0;
-  const countLabel = `${n} ${articles(n)}`;
   const totalLabel = formatPrice(lineTotal(items));
 
-  let summaryLabel = countLabel;
+  let summaryLabel = articleCount(n);
   if (showPrices) {
     summaryLabel += priced === n ? ` · ${totalLabel}` : ` · ${totalLabel} (za ${priced} od ${n})`;
   }
@@ -41,9 +46,9 @@ export function summarizeList(items: Item[], checked: CheckedItems): ListSummary
     done,
     showPrices,
     summaryLabel,
-    remainingLabel:
-      showPrices && done.length > 0 && active.length > 0 ? formatPrice(lineTotal(active)) : null,
+    remainingLabel: showPrices && done.length > 0 && active.length > 0 ? formatPrice(lineTotal(active)) : null,
     progress: n > 0 ? done.length / n : 0,
     progressLabel: `${done.length} od ${n} kupljeno`,
+    showProgress: n > 0,
   };
 }

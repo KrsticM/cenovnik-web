@@ -9,7 +9,6 @@ function subscribe(onChange: () => void) {
   };
 }
 
-// Browser connectivity; assumed online during server rendering.
 export function useOnlineStatus(): boolean {
   return useSyncExternalStore(subscribe, () => navigator.onLine, () => true);
 }

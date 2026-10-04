@@ -4,18 +4,14 @@ import { SectionLabel } from "@/components/ui/section-label";
 
 interface StateMessageProps {
   illustration: ComponentProps<typeof StateIllustration>["variant"];
-  // Small label above the title, e.g. "Greška 404".
   eyebrow?: string;
   title: string;
   description: ReactNode;
-  // Primary action first, secondary link after it.
   actions?: ReactNode;
   footnote?: ReactNode;
-  // role="alert" for errors so screen readers announce them.
   role?: "alert";
 }
 
-// Centered system message (not found, errors) on the paper background, max 480 px wide.
 export function StateMessage({ illustration, eyebrow, title, description, actions, footnote, role }: StateMessageProps) {
   return (
     <div

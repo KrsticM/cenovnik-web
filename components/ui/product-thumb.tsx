@@ -8,7 +8,6 @@ interface ProductThumbProps extends React.HTMLAttributes<HTMLDivElement> {
   hasImage: boolean
   alt: string
   imgClassName?: string
-  // "full" (750 px) falls back to the thumb (340 px) when the large photo is missing.
   size?: "thumb" | "full"
 }
 

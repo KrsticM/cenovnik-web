@@ -1,7 +1,6 @@
 // Reusable components
 export { BrandMark } from "./BrandMark/BrandMark";
 
-// System states (404, errors, shared-list states)
 export { StateMessage } from "./StatePage/StateMessage";
 
 // Main composite component

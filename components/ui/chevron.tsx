@@ -3,8 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
 
-// Border-drawn chevron that points down and flips up when its trigger is open. The trigger needs
-// the `group/trigger` class; Radix sets data-state="open" on it (e.g. CollapsibleTrigger).
+// Flips when the trigger has `group/trigger` and Radix's data-state="open".
 const chevronVariants = cva(
   "block shrink-0 border-b border-r border-current transition-transform group-data-[state=open]/trigger:-rotate-[135deg]",
   {

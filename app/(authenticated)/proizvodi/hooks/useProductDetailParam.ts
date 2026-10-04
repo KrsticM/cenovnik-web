@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
+import type { CatalogItem } from "@/lib/services/products";
 
 const PARAM = "proizvod";
 
@@ -10,13 +11,12 @@ function urlWith(productId: string | null): string {
   return url.toString();
 }
 
-// The open product lives in the URL (?proizvod=<id>), so a detail is shareable and Back closes it.
-// Uses the History API like useProductSearch; Next keeps useSearchParams in sync with it.
-export function useProductDetailParam() {
+export function useProductDetailParam(loaded: CatalogItem[]) {
   const productId = useSearchParams().get(PARAM);
-  // True when we pushed the entry, so closing can go back instead of leaving a duplicate entry.
+  const knownProduct = loaded.find((item) => item.product.id === productId)?.product ?? null;
+  // Closing goes back only over an entry we pushed; a shared link replaces instead.
   const pushedRef = useRef(false);
-  // The dialog isn't opened by a Radix trigger, so remember where focus should go back to.
+  // No Radix trigger opens the dialog, so focus return is manual.
   const triggerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -44,5 +44,5 @@ export function useProductDetailParam() {
     if (trigger?.isConnected) trigger.focus({ preventScroll: true });
   }, []);
 
-  return { productId, open, close, restoreFocus };
+  return { productId, knownProduct, open, close, restoreFocus };
 }

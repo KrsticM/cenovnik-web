@@ -5,8 +5,6 @@ import * as CheckboxPrimitive from "@radix-ui/react-checkbox"
 
 import { cn } from "@/lib/utils"
 
-// A whole list row that is one checkbox: the box on the left, any content after it.
-// Unchecked rows are roomy with a hover tint; checked rows are compact on the warm "done" surface.
 const CheckRow = React.forwardRef<
   React.ElementRef<typeof CheckboxPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>
@@ -14,7 +12,7 @@ const CheckRow = React.forwardRef<
   <CheckboxPrimitive.Root
     ref={ref}
     className={cn(
-      "group flex w-full cursor-pointer items-center gap-3.5 bg-transparent px-[clamp(20px,4vw,28px)] text-left outline-none",
+      "group flex w-full cursor-pointer items-center gap-3.5 bg-transparent px-card text-left outline-none",
       "min-h-[72px] border-b border-line-soft py-3 hover:bg-paper-warm focus-visible:bg-paper-warm",
       "data-[state=checked]:min-h-16 data-[state=checked]:border-b-0 data-[state=checked]:border-t data-[state=checked]:border-t-[#efede8] data-[state=checked]:py-2.5 data-[state=checked]:hover:bg-[#f6f4ef] data-[state=checked]:focus-visible:bg-[#f6f4ef]",
       "focus-visible:shadow-[inset_3px_0_0_var(--color-sage)]",
