@@ -1,8 +1,9 @@
 "use client";
 
 import { createContext, useContext, useMemo, type ReactNode } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { useHistoryParam } from "@/hooks/useHistoryParam";
-import { MY_MARKETS_PARAM, myMarketsDialogMode } from "./myMarkets";
+import { MY_MARKETS_PARAM, myMarketsDialogMode, signedInAs } from "./myMarkets";
 import { MyMarketsDialog } from "./MyMarketsDialog";
 import { MyMarketsPicker } from "./MyMarketsPicker";
 
@@ -15,14 +16,16 @@ interface MyMarketsDialogProviderProps {
 }
 
 export function MyMarketsDialogProvider({ required, children }: MyMarketsDialogProviderProps) {
+  const { user, signOutUser } = useAuth();
   const { value, open, close, restoreFocus } = useHistoryParam(MY_MARKETS_PARAM);
   const mode = myMarketsDialogMode({ required, requested: value !== null });
+  const signOut = !mode.dismissable && user ? { ...signedInAs(user), onSignOut: signOutUser } : undefined;
   const context = useMemo(() => ({ open: () => open("1") }), [open]);
 
   return (
     <MyMarketsDialogContext.Provider value={context}>
       {children}
-      <MyMarketsDialog {...mode} onClose={close} onRestoreFocus={restoreFocus}>
+      <MyMarketsDialog {...mode} onClose={close} onRestoreFocus={restoreFocus} signOut={signOut}>
         <MyMarketsPicker />
       </MyMarketsDialog>
     </MyMarketsDialogContext.Provider>
