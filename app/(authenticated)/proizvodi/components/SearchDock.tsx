@@ -5,7 +5,7 @@ import { SearchField, SearchFieldProps } from "./SearchField";
 
 export type SearchBindings = Pick<
   SearchFieldProps,
-  "value" | "onChange" | "onCommit" | "suggestions" | "searching"
+  "value" | "onChange" | "onCommit" | "onPickSuggestion" | "suggestions" | "recent" | "onClearRecent" | "searching"
 >;
 
 interface SearchDockProps {
