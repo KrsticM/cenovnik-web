@@ -16,3 +16,26 @@ export async function getUserStoreIds(userId: string): Promise<string[]> {
 
   return ((data as UserStoreRow[] | null) ?? []).map((row) => row.store_id);
 }
+
+// Same two steps as the mobile app: drop stores no longer picked, then add the new ones.
+export async function saveUserStoreIds(userId: string, storeIds: string[]): Promise<void> {
+  if (storeIds.length === 0) throw new Error("At least one store must be selected.");
+
+  const supabase = createClient();
+  const inList = storeIds.map((id) => `"${id}"`).join(",");
+
+  const { error: deleteError } = await supabase
+    .from("user_stores")
+    .delete()
+    .eq("user_id", userId)
+    .not("store_id", "in", `(${inList})`);
+  if (deleteError) throw deleteError;
+
+  const { error: upsertError } = await supabase
+    .from("user_stores")
+    .upsert(
+      storeIds.map((store_id) => ({ user_id: userId, store_id })),
+      { onConflict: "user_id,store_id", ignoreDuplicates: true }
+    );
+  if (upsertError) throw upsertError;
+}

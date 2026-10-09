@@ -35,6 +35,11 @@ Defined in `app/globals.css`: raw values on `:root`, exposed to Tailwind as `--c
 | `ink-faint` | #9a958c | paused live-indicator ring (offline) |
 | `skeleton` | #efece6 | skeleton blocks |
 | `toggle-off` | #cfcac0 | switch track when off, dashed "Kombinovano" border |
+| `sage-wash` | #f3f5f0 | picked-store chips (sign-in store picker) |
+| `sage-wash-dark` | #e8ece3 | hover of `sage-wash` chips |
+| `rust-tint` | #fdf3ec | sign-in error alert fill |
+| `rust-border` | #ecc9b2 | sign-in error alert border |
+| `ink-stone` | #8a8378 | store-picker search ring, chain initials |
 
 ## Utilities
 

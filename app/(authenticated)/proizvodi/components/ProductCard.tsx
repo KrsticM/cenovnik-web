@@ -89,7 +89,7 @@ function ProductCardComponent({
           </Link>
         </h3>
         <div className="mt-3">
-          <DealPrice price={price} regularPrice={isDeal ? regularPrice : null} size="card" />
+          <DealPrice price={price} regularPrice={isDeal ? regularPrice : null} size="card" layout="below" />
         </div>
       </div>
 

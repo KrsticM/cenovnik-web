@@ -1,5 +1,6 @@
 "use client";
 
+import { classifyVerifyError, type VerifyFailureKind } from "@/lib/authErrors";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
@@ -16,13 +17,15 @@ interface AuthActionResult {
   msg?: string;
 }
 
+type VerifyOtpResult = { success: true } | { success: false; kind: VerifyFailureKind };
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   signInWithGoogle: (next?: string) => Promise<AuthActionResult>;
   signInWithApple: (next?: string) => Promise<AuthActionResult>;
   signInWithEmail: (email: string) => Promise<AuthActionResult>;
-  verifyOtpCode: (email: string, code: string) => Promise<AuthActionResult>;
+  verifyOtpCode: (email: string, code: string) => Promise<VerifyOtpResult>;
   signOutUser: () => Promise<void>;
   deleteAccount: () => Promise<void>;
 }
@@ -87,6 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const redirectUrl = new URL(
           `${typeof window !== "undefined" ? window.location.origin : ""}/auth/callback`
         );
+        redirectUrl.searchParams.set("provider", "google");
         if (next) redirectUrl.searchParams.set("next", next);
         const { error } = await createClient().auth.signInWithOAuth({
           provider: "google",
@@ -108,6 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const redirectUrl = new URL(
           `${typeof window !== "undefined" ? window.location.origin : ""}/auth/callback`
         );
+        redirectUrl.searchParams.set("provider", "apple");
         if (next) redirectUrl.searchParams.set("next", next);
         const { error } = await createClient().auth.signInWithOAuth({
           provider: "apple",
@@ -140,27 +145,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
-  const verifyOtpCode = useCallback(
-    async (email: string, code: string): Promise<AuthActionResult> => {
-      try {
-        const { error } = await createClient().auth.verifyOtp({
-          email,
-          token: code,
-          type: "email",
-        });
-        if (error)
-          return { success: false, msg: "Kod nije ispravan ili je istekao." };
-        return { success: true };
-      } catch (error) {
-        console.error("Verify OTP error:", error);
-        return {
-          success: false,
-          msg: "Kod nije ispravan ili je istekao.",
-        };
-      }
-    },
-    []
-  );
+  const verifyOtpCode = useCallback(async (email: string, code: string): Promise<VerifyOtpResult> => {
+    try {
+      const { error } = await createClient().auth.verifyOtp({ email, token: code, type: "email" });
+      return error ? { success: false, kind: classifyVerifyError(error) } : { success: true };
+    } catch (error) {
+      console.error("Verify OTP error:", error);
+      return { success: false, kind: classifyVerifyError(error) };
+    }
+  }, []);
 
   const signOutUser = useCallback(async () => {
     const supabase = createClient();

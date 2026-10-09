@@ -100,7 +100,7 @@ select
 -- 8. "My markets" scope and capped counts --------------------------------------------------
 -- Uses the stores of the user with the most favourite stores.
 -- Expect: my_markets prices >= all_markets price for the same product (a subset can't be cheaper),
---         counts are numbers <= 1001.
+--         counts are numbers <= 101.
 with me as (
   select array_agg(store_id) as store_ids from public.user_stores
   where user_id = (select user_id from public.user_stores group by user_id order by count(*) desc limit 1)
@@ -146,6 +146,30 @@ set local statement_timeout = '8s';
 explain (analyze, buffers) select * from public.browse_products(
   p_store_ids => current_setting('checks.store_ids')::text[],
   p_sort => 'price_asc', p_limit => 20);
+rollback;
+
+-- 9e. First load of /proizvodi: "Preporučeno" + "Samo moji marketi" (page 1, then its count).
+-- Expect: both well under 500 ms; the plan walks product_browse_order_key_idx and stops early.
+begin;
+select set_config('checks.store_ids',
+  (select array_agg(store_id)::text from public.user_stores
+   where user_id = (select user_id from public.user_stores group by user_id order by count(*) desc limit 1)),
+  true) as store_ids_used;
+set local role authenticated;
+set local statement_timeout = '8s';
+explain (analyze, buffers) select * from public.browse_products(
+  p_store_ids => current_setting('checks.store_ids')::text[], p_limit => 20);
+rollback;
+
+begin;
+select set_config('checks.store_ids',
+  (select array_agg(store_id)::text from public.user_stores
+   where user_id = (select user_id from public.user_stores group by user_id order by count(*) desc limit 1)),
+  true) as store_ids_used;
+set local role authenticated;
+set local statement_timeout = '8s';
+explain (analyze, buffers) select public.browse_products_count(
+  p_store_ids => current_setting('checks.store_ids')::text[]);
 rollback;
 
 -- 9d. Worst-case capped count (a single letter matches almost everything)

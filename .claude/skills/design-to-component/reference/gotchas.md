@@ -30,7 +30,7 @@ Each of these cost a bug or a debugging session. Check new work against them.
 
 ## Data & performance
 
-- **Catalog browse/search/filter/sort/count run in Postgres** (`supabase/browse_products.sql`): `browse_products` (keyset cursor, no OFFSET) and `browse_products_count` (capped at 1001 → "1.000+"), called via `browseProducts` / `countProducts` in `lib/services/products.ts` and `useProductCatalog`. Don't reintroduce client-side filtering or per-page price downloads for the grid. Verify DB changes with `supabase/browse_products_checks.sql` (run blocks one at a time; block 9 = app role + 8 s timeout).
+- **Catalog browse/search/filter/sort/count run in Postgres** (`supabase/browse_products.sql`): `browse_products` (keyset cursor, no OFFSET) and `browse_products_count` (capped at 101 → "100+"), called via `browseProducts` / `countProducts` in `lib/services/products.ts` and `useProductCatalog`. Don't reintroduce client-side filtering or per-page price downloads for the grid. Verify DB changes with `supabase/browse_products_checks.sql` (run blocks one at a time; block 9 = app role + 8 s timeout).
 
 - **PostgREST returns max 1000 rows**, and Supabase has a statement timeout (error `57014`). "All markets" prices can be ~10k rows per 20 products; `count: "exact"` plus deep `OFFSET` pages over that set timed out. `fetchPriceRows` in `lib/services/products.ts` reads per product when unscoped (small index-backed queries, paged only if a product has >1000 prices) and in one query when scoped to the user's stores. Reuse it; avoid `count: "exact"` on `current_prices`.
 - `current_prices` has no FK to `stores` for PostgREST embedding; store/retailer names come from `fetchStoresByIds` (`lib/services/stores.ts`).

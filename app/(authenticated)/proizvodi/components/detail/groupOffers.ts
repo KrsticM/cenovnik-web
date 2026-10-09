@@ -10,6 +10,7 @@ export type GroupStore = {
 
 export type OfferGroup = {
   key: string;
+  retailerId: string;
   retailerName: string;
   price: number;
   stores: GroupStore[];
@@ -19,12 +20,12 @@ export type OfferGroup = {
 };
 
 export function groupOffers(offers: ProductOffer[]): OfferGroup[] {
-  const byKey = new Map<string, { retailerName: string; price: number; stores: GroupStore[] }>();
+  const byKey = new Map<string, { retailerId: string; retailerName: string; price: number; stores: GroupStore[] }>();
   for (const offer of offers) {
     const key = `${offer.retailerId}|${offer.price}`;
     let entry = byKey.get(key);
     if (!entry) {
-      entry = { retailerName: offer.retailerName, price: offer.price, stores: [] };
+      entry = { retailerId: offer.retailerId, retailerName: offer.retailerName, price: offer.price, stores: [] };
       byKey.set(key, entry);
     }
     entry.stores.push({
@@ -37,11 +38,12 @@ export function groupOffers(offers: ProductOffer[]): OfferGroup[] {
   }
 
   return [...byKey.entries()]
-    .map(([key, { retailerName, price, stores }]) => {
+    .map(([key, { retailerId, retailerName, price, stores }]) => {
       const allDeals = stores.every((s) => s.isDeal);
       const sameRegular = stores.every((s) => s.regularPrice === stores[0].regularPrice);
       return {
         key,
+        retailerId,
         retailerName,
         price,
         stores,

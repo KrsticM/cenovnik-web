@@ -1,10 +1,8 @@
 import Link from "next/link";
-import type { Store } from "@/lib/services/stores";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { InitialsTile } from "@/components/ui/initials-tile";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ProductOffersState } from "../../hooks/useProductDetail";
 import type { OfferGroup } from "./groupOffers";
@@ -25,56 +23,45 @@ export function StoreOffers({ state }: { state: ProductOffersState }) {
           size="sm"
           illustration="no-markets"
           title="Izaberi svoje markete"
-          description="Prikazaćemo cene iz prodavnica u kojima kupuješ, pa ćeš lakše videti gde je najjeftinije."
+          description="Prikazaćemo cene iz marketa u kojima kupuješ, pa ćeš lakše videti gde je najjeftinije."
           action={
             <Button asChild variant="sage" size="pill-md">
-              <Link href="/prodavnice">Izaberi markete</Link>
+              <Link href="/moji-marketi">Izaberi markete</Link>
             </Button>
           }
           className="mt-3.5"
         />
       );
     case "ready":
-      return <OfferList groups={state.groups} unavailable={state.unavailable} />;
+      return <OfferList groups={state.groups} />;
   }
 }
 
-function OfferList({ groups, unavailable }: { groups: OfferGroup[]; unavailable: Store[] }) {
-  return (
-    <>
-      {groups.length > 0 ? (
-        <div className="mt-3.5 flex flex-col gap-2.5">
-          {groups.map((group, index) => (
-            <StoreOfferRow key={group.key} group={group} best={index === 0} />
-          ))}
-        </div>
-      ) : (
-        <EmptyState
-          variant="dashed"
-          size="sm"
-          illustration="not-in-markets"
-          title="Proizvod nije dostupan u tvojim marketima."
-          className="mt-3.5"
-        />
-      )}
+function OfferList({ groups }: { groups: OfferGroup[] }) {
+  if (groups.length === 0) {
+    return (
+      <EmptyState
+        variant="dashed"
+        size="sm"
+        illustration="not-in-markets"
+        title="Proizvod nije dostupan u tvojim marketima."
+        description="Možda ga ima u nekom drugom marketu."
+        action={
+          <Button asChild variant="pill" className="h-10 rounded-full px-[18px]">
+            <Link href="/moji-marketi">Dodaj market</Link>
+          </Button>
+        }
+        className="mt-3.5"
+      />
+    );
+  }
 
-      {unavailable.length > 0 && (
-        <div className="mt-6">
-          <p className="text-[13px] font-semibold text-ink-muted">Nije dostupno u tvojim marketima</p>
-          <div className="mt-2.5 flex flex-col gap-2">
-            {unavailable.map((store) => (
-              <Card key={store.id} className="flex items-center gap-3.5 rounded-[14px] border-0 bg-paper px-4 py-2.5 shadow-none">
-                <InitialsTile name={store.retailerName} size="sm" tone="muted" />
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-ink">{store.retailerName}</p>
-                  {store.address && <p className="mt-0.5 text-xs text-ink-muted">{store.address}</p>}
-                </div>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-    </>
+  return (
+    <div className="mt-3.5 flex flex-col gap-2.5">
+      {groups.map((group, index) => (
+        <StoreOfferRow key={group.key} group={group} best={index === 0} />
+      ))}
+    </div>
   );
 }
 

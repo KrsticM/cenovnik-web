@@ -17,6 +17,7 @@ const emptyStateVariants = cva("text-center", {
 
 const TITLE_SIZE = { lg: "text-[17px]", md: "text-base", sm: "text-[15px]" }
 const TITLE_GAP = { lg: "mt-[22px]", md: "mt-[22px]", sm: "mt-3" }
+const ACTION_GAP = { lg: "mt-5", md: "mt-5", sm: "mt-3.5" }
 
 interface EmptyStateProps extends VariantProps<typeof emptyStateVariants> {
   illustration?: StateIllustrationVariant
@@ -45,7 +46,7 @@ function EmptyState({
         {title}
       </p>
       {description && <p className="mt-1.5 text-sm text-ink-muted">{description}</p>}
-      {action && <div className="mt-5">{action}</div>}
+      {action && <div className={ACTION_GAP[size]}>{action}</div>}
     </div>
   )
 }

@@ -11,7 +11,7 @@ interface DealPriceProps {
   upTo?: boolean
   size?: VariantProps<typeof priceVariants>["size"]
   priceClassName?: string
-  layout?: "inline" | "stacked"
+  layout?: "inline" | "below" | "stacked"
 }
 
 function DealPrice({
@@ -50,6 +50,20 @@ function DealPrice({
         )}
         {current}
       </div>
+    )
+  }
+
+  if (layout === "below") {
+    return (
+      <span className="flex flex-col items-start gap-2">
+        {current}
+        {(regular || badge) && (
+          <span className="flex items-baseline gap-2">
+            {regular}
+            {badge}
+          </span>
+        )}
+      </span>
     )
   }
 

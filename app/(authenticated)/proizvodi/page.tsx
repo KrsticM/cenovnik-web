@@ -8,12 +8,14 @@ import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { useProductSearch } from "./hooks/useProductSearch";
 import { useProductCatalog } from "./hooks/useProductCatalog";
+import { useRecentSearches } from "./hooks/useRecentSearches";
 import { useProductFilters } from "./hooks/useProductFilters";
 import { useSearchDock } from "./hooks/useSearchDock";
 import { useSearchSuggestions } from "./hooks/useSearchSuggestions";
 import { useProductDetailParam } from "./hooks/useProductDetailParam";
 import { SearchDock, SearchBindings } from "./components/SearchDock";
 import { CompactBandSearch, CompactDockedSearch } from "./components/CompactSearch";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ProductGrid } from "./components/ProductGrid";
 import { FilterBar } from "./components/FilterBar";
 import { FilterDrawer } from "./components/FilterDrawer";
@@ -49,13 +51,24 @@ function ProizvodiContent() {
   );
 
   const suggestions = useSearchSuggestions(search.query, scope);
+  const recentSearches = useRecentSearches();
   const detail = useProductDetailParam(catalog.items);
 
   const searchBindings: SearchBindings = {
     value: search.query,
     onChange: search.setQuery,
-    onCommit: search.commit,
+    onCommit: (value) => {
+      search.commit(value);
+      recentSearches.add(value);
+    },
+    // A product suggestion opens that product; the typed words still count as a recent search.
+    onPickSuggestion: (productId) => {
+      recentSearches.add(search.query);
+      detail.open(productId);
+    },
     suggestions,
+    recent: recentSearches.items,
+    onClearRecent: recentSearches.clear,
     searching: search.searching,
   };
 
@@ -111,7 +124,7 @@ function ProizvodiContent() {
               <span>
                 Pretraga i cene obuhvataju artikle iz{" "}
                 <Button asChild variant="underline" size="text" className="inline font-semibold hover:text-sage-darker">
-                  <Link href="/prodavnice">tvojih omiljenih marketa</Link>
+                  <Link href="/moji-marketi">tvojih omiljenih marketa</Link>
                 </Button>
               </span>
             ) : (
@@ -137,7 +150,7 @@ function ProizvodiContent() {
             <h1 className="m-0 text-[26px] font-semibold tracking-[-0.03em] text-ink lg:text-[34px]">
               {heading}
             </h1>
-            <p className="mt-2 min-h-[22px] text-[15px] text-ink-muted">{subtitle}</p>
+            <p aria-live="polite" className="mt-2 min-h-[22px] text-[15px] text-ink-muted">{subtitle}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2.5">
             {live && (
@@ -158,22 +171,37 @@ function ProizvodiContent() {
         <FilterBar {...filterControls} />
         <ActiveFilterChips chips={filters.activeChips} onClear={filters.clearFilters} />
 
-        {catalog.error && (
-          <Alert variant="destructive" className="mb-6 border-0 bg-destructive/10">
-            {catalog.error}
-          </Alert>
+        {catalog.failed ? (
+          <EmptyState
+            variant="card"
+            illustration="error"
+            title={catalog.error}
+            description="Proveri internet konekciju i pokušaj ponovo za koji trenutak."
+            action={
+              <Button variant="sage" size="pill-md" onClick={catalog.retry} className="hover:bg-sage-dark">
+                Pokušaj ponovo
+              </Button>
+            }
+          />
+        ) : (
+          <>
+            {catalog.error && (
+              <Alert variant="destructive" className="mb-6 border-0 bg-destructive/10">
+                {catalog.error}
+              </Alert>
+            )}
+            <ProductGrid
+              items={catalog.items}
+              showSkeleton={showSkeleton}
+              isLoadingMore={catalog.loadingMore}
+              hasMore={catalog.hasMore}
+              onLoadMore={catalog.loadMore}
+              endLabel={live ? "To je sve za ovu pretragu." : "To je sve za sada."}
+              onReset={resetAll}
+              onOpenProduct={detail.open}
+            />
+          </>
         )}
-
-        <ProductGrid
-          items={catalog.items}
-          showSkeleton={showSkeleton}
-          isLoadingMore={catalog.loadingMore}
-          hasMore={catalog.hasMore}
-          onLoadMore={catalog.loadMore}
-          endLabel={live ? "To je sve za ovu pretragu." : "To je sve za sada."}
-          onReset={resetAll}
-          onOpenProduct={detail.open}
-        />
       </main>
 
       <FilterDrawer

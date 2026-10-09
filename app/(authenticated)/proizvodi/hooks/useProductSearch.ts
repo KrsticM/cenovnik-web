@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { SEARCH_DEBOUNCE_MS, SEARCH_MIN_LENGTH } from "../config";
 
-const SEARCH_DEBOUNCE_MS = 400;
+const liveTerm = (value: string) => {
+  const term = value.trim();
+  return term.length >= SEARCH_MIN_LENGTH ? term : "";
+};
 
 function readUrlQuery(): string {
   return new URLSearchParams(window.location.search).get("q") ?? "";
@@ -17,8 +21,7 @@ function syncUrl(value: string, push: boolean) {
   else window.history.replaceState(null, "", url.toString());
 }
 
-// Search input state: what's typed (`query`) vs. what's searched (`liveQuery`, debounced or
-// committed on Enter / suggestion), kept in the URL as ?q= with back/forward support.
+// `query` is what's typed, `liveQuery` what's searched (debounced or committed); kept in the URL as ?q=.
 export function useProductSearch() {
   const initialQuery = useSearchParams().get("q") ?? "";
   const [query, setQueryState] = useState(initialQuery);
@@ -39,13 +42,14 @@ export function useProductSearch() {
   }, []);
 
   const setQuery = useCallback((value: string) => {
+    const term = liveTerm(value);
     setQueryState(value);
-    setSearching(value.trim().length > 0);
+    setSearching(term.length > 0);
     cancelDebounce();
     debounceRef.current = setTimeout(() => {
-      setLiveQuery(value.trim());
+      setLiveQuery(term);
       setSearching(false);
-      syncUrl(value, false);
+      syncUrl(term, false);
     }, SEARCH_DEBOUNCE_MS);
   }, []);
 

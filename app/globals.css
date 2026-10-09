@@ -35,6 +35,11 @@
   --skeleton: #efece6;
   --toggle-off: #cfcac0;
   --cream-stripe: #f7e5c8;
+  --sage-wash: #f3f5f0;
+  --sage-wash-dark: #e8ece3;
+  --rust-tint: #fdf3ec;
+  --rust-border: #ecc9b2;
+  --ink-stone: #8a8378;
 
   /* Surfaces & backgrounds */
   --paper: #f8f8f8;
@@ -77,6 +82,7 @@
   --shadow-panel: -20px 0 60px rgba(26, 26, 26, 0.18);
 
   --animate-skeleton: pulse 1.4s ease-in-out infinite;
+  --animate-caret-blink: blink 1s step-end infinite;
 }
 
 @theme inline {
@@ -130,6 +136,11 @@
   --color-skeleton: var(--skeleton);
   --color-toggle-off: var(--toggle-off);
   --color-cream-stripe: var(--cream-stripe);
+  --color-sage-wash: var(--sage-wash);
+  --color-sage-wash-dark: var(--sage-wash-dark);
+  --color-rust-tint: var(--rust-tint);
+  --color-rust-border: var(--rust-border);
+  --color-ink-stone: var(--ink-stone);
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -207,6 +218,16 @@
   to { opacity: 1; }
 }
 
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
 
 @keyframes pulse {
   0%, 100% { opacity: 1; }

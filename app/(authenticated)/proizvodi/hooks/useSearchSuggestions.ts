@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { browseProducts } from "@/lib/services/products";
 import { formatPrice } from "@/lib/formatPrice";
+import { isAborted } from "@/lib/services/serviceError";
+import { SEARCH_DEBOUNCE_MS, SEARCH_MIN_LENGTH } from "../config";
 import type { SearchSuggestion } from "../components/SearchField";
 
-const SUGGESTION_DEBOUNCE_MS = 150;
 const SUGGESTION_LIMIT = 6;
 
 // storeIds: null means "all markets".
@@ -14,10 +15,11 @@ export function useSearchSuggestions(query: string, storeIds: string[] | null) {
   const cacheRef = useRef(new Map<string, SearchSuggestion[]>());
 
   useEffect(() => {
-    if (!term) return;
+    if (term.length < SEARCH_MIN_LENGTH) return;
     const key = `${scopeKey}|${term}`;
     const cached = cacheRef.current.get(key);
-    let cancelled = false;
+    // The next keystroke aborts this request, so only the latest term can fill the list.
+    const controller = new AbortController();
 
     const timer = setTimeout(async () => {
       if (cached) {
@@ -28,7 +30,7 @@ export function useSearchSuggestions(query: string, storeIds: string[] | null) {
         // Same ranking and market scope as the results grid; only products priced in scope.
         const { items: found } = await browseProducts(
           { query: term, storeIds },
-          { sort: "relevance", seed: "", limit: SUGGESTION_LIMIT }
+          { sort: "relevance", seed: "", limit: SUGGESTION_LIMIT, signal: controller.signal }
         );
         const items = found.map(({ product, price }) => ({
           id: product.id,
@@ -36,14 +38,16 @@ export function useSearchSuggestions(query: string, storeIds: string[] | null) {
           hint: formatPrice(price),
         }));
         cacheRef.current.set(key, items);
-        if (!cancelled) setShown({ scope: scopeKey, items });
+        if (!controller.signal.aborted) setShown({ scope: scopeKey, items });
       } catch (err) {
-        console.error("[useSearchSuggestions] Failed to load suggestions:", err);
+        if (!controller.signal.aborted && !isAborted(err)) {
+          console.error("[useSearchSuggestions] Failed to load suggestions:", err);
+        }
       }
-    }, cached ? 0 : SUGGESTION_DEBOUNCE_MS);
+    }, cached ? 0 : SEARCH_DEBOUNCE_MS);
 
     return () => {
-      cancelled = true;
+      controller.abort();
       clearTimeout(timer);
     };
     // scopeKey stands in for storeIds, whose array identity isn't stable.
@@ -51,5 +55,5 @@ export function useSearchSuggestions(query: string, storeIds: string[] | null) {
   }, [term, scopeKey]);
 
   // Keep the previous list visible while the next one loads, as the design does.
-  return term && shown.scope === scopeKey ? shown.items : [];
+  return term.length >= SEARCH_MIN_LENGTH && shown.scope === scopeKey ? shown.items : [];
 }

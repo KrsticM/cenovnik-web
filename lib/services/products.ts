@@ -1,6 +1,7 @@
 import { Product } from "@/types/product";
 import { createClient } from "@/lib/supabase/client";
 import { fetchStoresByIds, type Store } from "@/lib/services/stores";
+import { ServiceError } from "@/lib/services/serviceError";
 
 const CURRENT_PRICES_COLLECTION = "current_prices";
 const PRICE_ROWS_PAGE = 1000;
@@ -42,8 +43,8 @@ type BrowseRow = {
   sort_text: string;
 };
 
-// Above this the count is capped; the UI shows "1.000+".
-export const COUNT_CAP = 1000;
+// Above this the count is capped; the UI shows "100+".
+export const COUNT_CAP = 100;
 
 function filterParams(filters: BrowseFilters) {
   return {
@@ -55,14 +56,13 @@ function filterParams(filters: BrowseFilters) {
   };
 }
 
-// One page of products with the cheapest price in scope, filtered and sorted in the database.
-// Pass the returned cursor to get the next page (keyset pagination, no OFFSET).
+// One page of cheapest in-scope prices, filtered and sorted in the database; pass the cursor for the next page.
 export async function browseProducts(
   filters: BrowseFilters,
-  options: { sort: BrowseSort; seed: string; limit: number; after?: BrowseCursor | null }
+  options: { sort: BrowseSort; seed: string; limit: number; after?: BrowseCursor | null; signal?: AbortSignal }
 ): Promise<{ items: CatalogItem[]; nextCursor: BrowseCursor | null }> {
   const supabase = createClient();
-  const { data, error } = await supabase.rpc("browse_products", {
+  let request = supabase.rpc("browse_products", {
     ...filterParams(filters),
     p_sort: options.sort,
     p_seed: options.seed,
@@ -71,7 +71,10 @@ export async function browseProducts(
     p_after_text: options.after?.text ?? null,
     p_after_id: options.after?.id ?? null,
   });
-  if (error) throw error;
+  // A replaced search is aborted so its late answer can never land; the database may still finish it.
+  if (options.signal) request = request.abortSignal(options.signal);
+  const { data, error } = await request;
+  if (error) throw new ServiceError(error);
 
   const rows = (data as BrowseRow[] | null) ?? [];
   const items = rows.map((row) => ({
@@ -95,10 +98,12 @@ export async function browseProducts(
 }
 
 // Number of matching products, exact up to COUNT_CAP; anything above returns COUNT_CAP + 1.
-export async function countProducts(filters: BrowseFilters): Promise<number> {
+export async function countProducts(filters: BrowseFilters, signal?: AbortSignal): Promise<number> {
   const supabase = createClient();
-  const { data, error } = await supabase.rpc("browse_products_count", filterParams(filters));
-  if (error) throw error;
+  let request = supabase.rpc("browse_products_count", filterParams(filters));
+  if (signal) request = request.abortSignal(signal);
+  const { data, error } = await request;
+  if (error) throw new ServiceError(error);
   return (data as number | null) ?? 0;
 }
 
@@ -139,9 +144,7 @@ async function fetchPriceRowsPaged(productIds: string[], storeIds?: string[]): P
   }
 }
 
-// Scoped to the user's stores the result is small, so one query suffices. "All markets" can be
-// ~10k rows per 20 products: an exact count plus deep OFFSET pages over that set hit the statement
-// timeout (57014), so fetch per product instead — each is a small index-backed read.
+// Unscoped, a count plus deep OFFSET pages hit the statement timeout (57014), so fetch per product with small index-backed reads.
 async function fetchPriceRows(productIds: string[], storeIds?: string[]): Promise<OfferPriceRow[]> {
   if (storeIds && storeIds.length > 0) {
     return fetchPriceRowsPaged(productIds, storeIds);
@@ -150,8 +153,7 @@ async function fetchPriceRows(productIds: string[], storeIds?: string[]): Promis
   return perProduct.flat();
 }
 
-// Every requested id gets an entry; [] means "no price in scope", so callers can tell it apart from
-// "not fetched yet". `stores` covers the whole scope (or every store with an offer when unscoped).
+// Every requested id gets an entry ([] = no price in scope); `stores` covers the whole scope.
 export async function fetchProductOffers(
   productIds: string[],
   storeIds?: string[]
