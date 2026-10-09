@@ -41,8 +41,10 @@ npm run dev        # http://localhost:3000
 npm run build      # production build
 npm run lint
 npm test           # unit tests (Vitest); see .claude/skills/write-tests
-npx tsc --noEmit   # type check
+npm run typecheck  # same as npx tsc --noEmit
 ```
+
+Checks run automatically: a pre-commit hook (husky + lint-staged) lints the staged files and runs the tests related to them, a pre-push hook runs the type check and the full test suite, `npm run build` runs the tests first (`prebuild`, so Vercel deploys never ship failing tests), and GitHub Actions runs lint, type check and tests on every pull request.
 
 `.env.local` (not committed):
 

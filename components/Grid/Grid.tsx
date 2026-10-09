@@ -28,7 +28,7 @@ export function Grid({
   const isResponsive = typeof columns === "object"
   const gridClass = [styles.grid, className].filter(Boolean).join(" ")
 
-  const style: React.CSSProperties & Record<string, any> = {}
+  const style: React.CSSProperties & Record<`--${string}`, string> = {}
 
   if (minItemWidth) {
     style.display = "grid"

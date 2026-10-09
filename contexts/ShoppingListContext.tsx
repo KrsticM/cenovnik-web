@@ -48,7 +48,13 @@ interface ShoppingListContextValue {
 
 const ShoppingListContext = createContext<ShoppingListContextValue | null>(null);
 
+// Keyed by user, so signing out or switching user starts from an empty list instead of the previous one.
 export function ShoppingListProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  return <UserShoppingList key={user?.id ?? "signed-out"}>{children}</UserShoppingList>;
+}
+
+function UserShoppingList({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [list, setList] = useState<ShoppingList | null>(null);
   const [items, setItems] = useState<ShoppingListItem[]>([]);
@@ -73,8 +79,7 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     []
   );
 
-  // Reloads can finish out of order (realtime fires once per write). Only the newest one is
-  // applied, and never while local changes are still saving, so the screen can't jump back.
+  // Only the newest reload applies, and never while saves are pending, so out-of-order reloads can't undo changes.
   const reload = useCallback(
     async (listId: string) => {
       const seq = ++reloadSeqRef.current;
@@ -91,14 +96,7 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
   );
 
   useEffect(() => {
-    if (!user?.id) {
-      listIdRef.current = null;
-      setList(null);
-      setItems([]);
-      setStoreIds([]);
-      setError(null);
-      return;
-    }
+    if (!user?.id) return;
 
     let cancelled = false;
     const supabase = createClient();
@@ -171,8 +169,7 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
   }, []);
 
-  // Applies a change on screen first, then queues the write. Once the queue is idle, one reload
-  // brings in server data (ids, prices) and undoes anything that failed to save.
+  // Updates the screen first, then queues the write; one reload once idle brings in server data and undoes failed saves.
   const save = (listId: string, write: () => Promise<void>, failure: string) => {
     pendingSavesRef.current += 1;
     reloadSeqRef.current += 1; // a reload already in flight read the list before this change
