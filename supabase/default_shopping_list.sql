@@ -15,7 +15,7 @@ set search_path = ''
 as $$
 begin
   insert into public.shopping_lists (user_id, name, created_at, updated_at)
-  values (new.id, 'Moja lista za kupovinu', now(), now())
+  values (new.id, 'Moja lista', now(), now())
   on conflict (user_id) do nothing;
   return new;
 end;
@@ -30,7 +30,7 @@ create trigger on_auth_user_created_shopping_list
 
 -- 3. Accounts that exist already and have no list yet.
 insert into public.shopping_lists (user_id, name, created_at, updated_at)
-select u.id, 'Moja lista za kupovinu', now(), now()
+select u.id, 'Moja lista', now(), now()
 from auth.users u
 where not exists (select 1 from public.shopping_lists l where l.user_id = u.id);
 
