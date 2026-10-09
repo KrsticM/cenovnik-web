@@ -2,6 +2,7 @@ export type ShoppingList = {
   id: string;
   userId: string;
   name: string;
+  isDefault: boolean;
   shareToken: string | null;
   createdAt: string;
   updatedAt: string;

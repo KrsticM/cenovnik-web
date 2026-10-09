@@ -56,13 +56,14 @@ export async function attachPrices(
   });
 }
 
-// The database creates the user's one list with the account (supabase/default_shopping_list.sql),
+// The database creates the user's default list with the account (supabase/default_shopping_list.sql),
 // so this only reads it. Creating one here would race with itself and leave duplicates.
 export async function getShoppingList(userId: string): Promise<ShoppingList> {
   const { data, error } = await createClient()
     .from(SHOPPING_LISTS_TABLE)
     .select("*")
     .eq("user_id", userId)
+    .eq("is_default", true)
     .maybeSingle();
 
   if (error) throw error;
@@ -153,6 +154,7 @@ type ShoppingListRow = {
   id: string;
   user_id: string;
   name: string;
+  is_default: boolean;
   share_token: string | null;
   created_at: string;
   updated_at: string;
@@ -163,6 +165,7 @@ function mapShoppingList(row: ShoppingListRow): ShoppingList {
     id: row.id,
     userId: row.user_id,
     name: row.name,
+    isDefault: row.is_default,
     shareToken: row.share_token || null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

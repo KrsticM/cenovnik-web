@@ -118,7 +118,7 @@ Scripts in `supabase/`, run in the Supabase SQL Editor. All are safe to re-run.
 | Script | Provides |
 |---|---|
 | `authenticated_shopping_lists.sql` | RLS: owners read and edit only their own lists and items |
-| `default_shopping_list.sql` | One list per user, created with the account (unique index, trigger on `auth.users`, backfill) |
+| `default_shopping_list.sql` | One default list per user, created with the account (`is_default` flag, unique index, trigger on `auth.users`, backfill) |
 | `browse_products.sql` | Catalog search functions, `product_price_summary` view, refresh function, pg_cron note |
 | `browse_products_checks.sql` | Read-only checks for the catalog functions (run block by block) |
 | `shared_list_checks.sql` | `checked_at` on list items, `set_shared_item_checked` |
