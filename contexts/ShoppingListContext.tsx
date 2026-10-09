@@ -11,7 +11,7 @@ import React, {
 import { useAuth } from "./AuthContext";
 import { ShoppingList, ShoppingListItem } from "@/types/shoppingList";
 import {
-  getOrCreateActiveList,
+  getShoppingList,
   fetchListItems,
   setItemQuantity as serviceSetQuantity,
   removeItem as serviceRemoveItem,
@@ -109,7 +109,7 @@ function UserShoppingList({ children }: { children: React.ReactNode }) {
         setError(null);
 
         const [userList, userStoreIds] = await Promise.all([
-          getOrCreateActiveList(user.id),
+          getShoppingList(user.id),
           getUserStoreIds(user.id),
         ]);
         if (cancelled) return;

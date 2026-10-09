@@ -56,34 +56,19 @@ export async function attachPrices(
   });
 }
 
-export async function getOrCreateActiveList(userId: string): Promise<ShoppingList> {
-  const supabase = createClient();
-
-  // Try to get existing list for this user
-  const { data: existingList, error: fetchError } = await supabase
+// The database creates the user's default list with the account (supabase/default_shopping_list.sql),
+// so this only reads it. Creating one here would race with itself and leave duplicates.
+export async function getShoppingList(userId: string): Promise<ShoppingList> {
+  const { data, error } = await createClient()
     .from(SHOPPING_LISTS_TABLE)
     .select("*")
     .eq("user_id", userId)
-    .single();
+    .eq("is_default", true)
+    .maybeSingle();
 
-  if (!fetchError && existingList) {
-    return mapShoppingList(existingList);
-  }
-
-  // Create new list if none exists
-  const { data: newList, error: createError } = await supabase
-    .from(SHOPPING_LISTS_TABLE)
-    .insert({
-      user_id: userId,
-      name: "Moja lista za kupovinu",
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .select()
-    .single();
-
-  if (createError) throw createError;
-  return mapShoppingList(newList);
+  if (error) throw error;
+  if (!data) throw new Error("Shopping list not found for this user.");
+  return mapShoppingList(data);
 }
 
 export async function fetchListItems(listId: string): Promise<ShoppingListItem[]> {
@@ -169,6 +154,7 @@ type ShoppingListRow = {
   id: string;
   user_id: string;
   name: string;
+  is_default: boolean;
   share_token: string | null;
   created_at: string;
   updated_at: string;
@@ -179,6 +165,7 @@ function mapShoppingList(row: ShoppingListRow): ShoppingList {
     id: row.id,
     userId: row.user_id,
     name: row.name,
+    isDefault: row.is_default,
     shareToken: row.share_token || null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
