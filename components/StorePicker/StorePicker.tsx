@@ -24,7 +24,7 @@ export function StorePicker({ picker, onSave, heading: Heading = "h1" }: StorePi
       {picker.isNewAccount && (
         <span className="flex items-center gap-2 text-[13px] font-medium text-sage-dark">
           <CheckCircle />
-          Nalog je napravljen
+          Još samo ovaj korak
         </span>
       )}
       <Heading className={cn("text-[28px] font-semibold leading-[1.15] tracking-[-0.025em] text-ink", picker.isNewAccount && "mt-4")}>
