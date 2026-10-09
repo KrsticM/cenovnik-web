@@ -1,97 +1,47 @@
-"use client";
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { fetchSigninShowcase } from "@/lib/services/signinShowcase";
+import { safeNext } from "@/lib/safeNext";
+import { STORE_PICKER_STEP } from "@/lib/storePickerGate";
+import { SigninBackdrop } from "./components/SigninBackdrop";
+import { SigninFlow } from "./components/SigninFlow";
+import type { OAuthError } from "./hooks/useSigninFlow";
 
-import { Button } from "@/components/ui/button";
-import { Container } from "@/components/ui/container";
-import { useAuth } from "@/contexts/AuthContext";
-import Link from "next/link";
-import { useSearchParams, useRouter } from "next/navigation";
-import { Suspense, useCallback, useEffect, useState } from "react";
+export const metadata: Metadata = { title: "Prijava" };
 
-function PrijavaContent() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const { signInWithGoogle, signInWithApple } = useAuth();
-  const [loading, setLoading] = useState(false);
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
-  const error = searchParams.get("error");
-  const next = searchParams.get("next");
+const param = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value) ?? null;
 
-  useEffect(() => {
-    const handlePageShow = (event: PageTransitionEvent) => {
-      if (event.persisted) setLoading(false);
-    };
-    window.addEventListener("pageshow", handlePageShow);
-    return () => window.removeEventListener("pageshow", handlePageShow);
-  }, []);
+export default async function PrijavaPage({ searchParams }: { searchParams: SearchParams }) {
+  const params = await searchParams;
+  const next = safeNext(param(params.next));
+  const supabase = await createClient();
+  const [
+    {
+      data: { user },
+    },
+    showcase,
+  ] = await Promise.all([supabase.auth.getUser(), fetchSigninShowcase()]);
 
-  const handleGoogleSignIn = useCallback(async () => {
-    setLoading(true);
-    const result = await signInWithGoogle(next || undefined);
-    if (!result.success) {
-      setLoading(false);
-    }
-  }, [signInWithGoogle, next]);
+  // Signed-in users only come here to pick their stores; everyone else goes on.
+  const picking = param(params.korak) === STORE_PICKER_STEP;
+  if (user && !picking) redirect(next);
 
-  const handleAppleSignIn = useCallback(async () => {
-    setLoading(true);
-    const result = await signInWithApple(next || undefined);
-    if (!result.success) {
-      setLoading(false);
-    }
-  }, [signInWithApple, next]);
-
-  const emailLink =
-    next !== null ? `/prijava/email?next=${encodeURIComponent(next || "")}` : "/prijava/email";
+  const provider = param(params.provider);
+  const oauthError: OAuthError | null =
+    param(params.error) === "auth_failed" ? (provider === "apple" || provider === "google" ? provider : "unknown") : null;
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-background">
-      <Container size="sm">
-        <div className="w-full max-w-sm space-y-6">
-        <div className="space-y-2 text-center">
-          <h1 className="font-sans text-2xl font-semibold text-foreground">Prijava</h1>
-        </div>
-
-        {error === "auth_failed" && (
-          <div className="rounded bg-destructive/10 px-4 py-2 text-sm text-destructive">
-            Prijava nije uspela. Pokušaj ponovo.
-          </div>
-        )}
-
-        <div className="space-y-3">
-          <Button
-            onClick={handleAppleSignIn}
-            disabled={loading}
-            variant="outline"
-            className="w-full"
-          >
-            {loading ? "Učitavam..." : "Nastavi sa Apple nalogom"}
-          </Button>
-
-          <Button
-            onClick={handleGoogleSignIn}
-            disabled={loading}
-            variant="outline"
-            className="w-full"
-          >
-            {loading ? "Učitavam..." : "Nastavi sa Google nalogom"}
-          </Button>
-
-          <Link href={emailLink} className="block">
-            <Button variant="outline" className="w-full">
-              Nastavi sa Email nalogom
-            </Button>
-          </Link>
-        </div>
-        </div>
-      </Container>
-    </main>
-  );
-}
-
-export default function PrijavaPage() {
-  return (
-    <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Učitavam...</div>}>
-      <PrijavaContent />
-    </Suspense>
+    <>
+      <SigninBackdrop items={showcase} />
+      <SigninFlow
+        next={next}
+        initialStep={user && picking ? "markets" : "start"}
+        initialUserId={user?.id ?? null}
+        initialOAuthError={oauthError}
+      />
+    </>
   );
 }

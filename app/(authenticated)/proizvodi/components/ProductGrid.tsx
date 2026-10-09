@@ -5,7 +5,7 @@ import type { CatalogItem } from "@/lib/services/products";
 import { ProductCard } from "./ProductCard";
 import { ProductCardSkeleton } from "./ProductCardSkeleton";
 import { InfiniteScrollSentinel } from "./InfiniteScrollSentinel";
-import { GRID_CLASSES } from "../config";
+import { GRID_CLASSES } from "@/lib/gridClasses";
 import { useGridColumns } from "../hooks/useGridColumns";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";

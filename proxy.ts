@@ -33,19 +33,16 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
-  // If user is authenticated and trying to access /prijava, redirect to /proizvodi
-  if (user && pathname.startsWith("/prijava")) {
-    const redirectResponse = NextResponse.redirect(new URL("/proizvodi", request.url));
-    // Copy any cookies from the session update to the redirect response
-    response.cookies.getAll().forEach(({ name, value, ...options }) => {
-      redirectResponse.cookies.set(name, value, options);
-    });
-    return redirectResponse;
-  }
-
-  // Protected routes: require authentication
+  // Protected routes: require authentication, and come back to the same page afterwards.
   if (!user) {
-    const redirectResponse = NextResponse.redirect(new URL("/prijava", request.url));
+    if (pathname.startsWith("/api/")) {
+      const unauthorized = NextResponse.json({ error: "Nisi prijavljen." }, { status: 401 });
+      response.cookies.getAll().forEach(({ name, value, ...options }) => unauthorized.cookies.set(name, value, options));
+      return unauthorized;
+    }
+    const signIn = new URL("/prijava", request.url);
+    if (pathname !== "/proizvodi") signIn.searchParams.set("next", pathname + request.nextUrl.search);
+    const redirectResponse = NextResponse.redirect(signIn);
     // Copy any cookies from the session update to the redirect response
     response.cookies.getAll().forEach(({ name, value, ...options }) => {
       redirectResponse.cookies.set(name, value, options);
@@ -59,10 +56,7 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Match all paths except:
-    // - _next/static (static files)
-    // - _next/image (image optimization files)
-    // - favicon.ico, static assets (.png, .jpg, .svg, .webp, etc.)
+    // Everything except Next internals and static assets.
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|webp|gif|ico)).*)",
   ],
 };
