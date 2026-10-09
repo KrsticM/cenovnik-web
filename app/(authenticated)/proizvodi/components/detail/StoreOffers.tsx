@@ -1,6 +1,5 @@
-import Link from "next/link";
+import { OpenMyMarketsButton } from "@/components/MyMarketsDialog/OpenMyMarketsButton";
 import { Alert } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -25,9 +24,9 @@ export function StoreOffers({ state }: { state: ProductOffersState }) {
           title="Izaberi svoje markete"
           description="Prikazaćemo cene iz marketa u kojima kupuješ, pa ćeš lakše videti gde je najjeftinije."
           action={
-            <Button asChild variant="sage" size="pill-md">
-              <Link href="/moji-marketi">Izaberi markete</Link>
-            </Button>
+            <OpenMyMarketsButton variant="sage" size="pill-md">
+              Izaberi markete
+            </OpenMyMarketsButton>
           }
           className="mt-3.5"
         />
@@ -47,9 +46,9 @@ function OfferList({ groups }: { groups: OfferGroup[] }) {
         title="Proizvod nije dostupan u tvojim marketima."
         description="Možda ga ima u nekom drugom marketu."
         action={
-          <Button asChild variant="pill" className="h-10 rounded-full px-[18px]">
-            <Link href="/moji-marketi">Dodaj market</Link>
-          </Button>
+          <OpenMyMarketsButton variant="pill" className="h-10 rounded-full px-[18px]">
+            Dodaj market
+          </OpenMyMarketsButton>
         }
         className="mt-3.5"
       />

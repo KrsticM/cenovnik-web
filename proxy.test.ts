@@ -21,12 +21,12 @@ describe("proxy", () => {
   });
 
   it("sends a signed-out visitor to sign-in and remembers the page", async () => {
-    const response = await visit("/moji-marketi", null);
-    expect(response.headers.get("location")).toBe("http://app.test/prijava?next=%2Fmoji-marketi");
+    const response = await visit("/podesavanja", null);
+    expect(response.headers.get("location")).toBe("http://app.test/prijava?next=%2Fpodesavanja");
   });
 
   it("lets a signed-in user through", async () => {
-    expect((await visit("/moji-marketi", { id: "user-1" })).headers.get("location")).toBeNull();
+    expect((await visit("/podesavanja", { id: "user-1" })).headers.get("location")).toBeNull();
   });
 
   it("lets anyone open the public routes", async () => {

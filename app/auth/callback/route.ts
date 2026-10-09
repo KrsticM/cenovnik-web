@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { safeNext } from "@/lib/safeNext";
-import { needsStorePicker, storePickerPath } from "@/lib/storePickerGate";
 
 export const dynamic = "force-dynamic";
 
@@ -12,12 +11,9 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     const supabase = await createClient();
-    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
-      if (await needsStorePicker(supabase, data.user.id)) {
-        return NextResponse.redirect(new URL(storePickerPath(next), request.url));
-      }
       return NextResponse.redirect(new URL(next, request.url));
     }
     console.error("[auth/callback] Code exchange failed:", error.message);

@@ -1,3 +1,4 @@
+import type { ElementType } from "react";
 import { Button } from "@/components/ui/button";
 import { CheckCircle } from "@/components/ui/check-circle";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -13,9 +14,11 @@ import type { StorePickerState } from "./useStorePicker";
 interface StorePickerProps {
   picker: StorePickerState;
   onSave: () => void;
+  // A dialog passes its title component, so the heading names the dialog.
+  heading?: ElementType;
 }
 
-export function StorePicker({ picker, onSave }: StorePickerProps) {
+export function StorePicker({ picker, onSave, heading: Heading = "h1" }: StorePickerProps) {
   return (
     <div className="flex flex-col animate-[fadeUp_300ms_ease_150ms_both]">
       {picker.isNewAccount && (
@@ -24,9 +27,9 @@ export function StorePicker({ picker, onSave }: StorePickerProps) {
           Nalog je napravljen
         </span>
       )}
-      <h1 className={cn("text-[28px] font-semibold leading-[1.15] tracking-[-0.025em] text-ink", picker.isNewAccount && "mt-4")}>
+      <Heading className={cn("text-[28px] font-semibold leading-[1.15] tracking-[-0.025em] text-ink", picker.isNewAccount && "mt-4")}>
         Izaberi svoje markete
-      </h1>
+      </Heading>
       <p className="mt-2.5 text-base leading-normal text-ink-muted text-pretty">
         Cene proizvoda nisu iste u svim marketima. Izaberi markete koji te zanimaju kako bismo ti prikazali odgovarajuće cene.
       </p>

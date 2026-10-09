@@ -20,7 +20,7 @@ export default function PremiumPage() {
           Radimo na ovoj stranici. Uskoro ćeš ovde moći da pređeš na Premium.
         </p>
         <Button asChild variant="sage" size="pill-lg" className="mt-7 px-6 font-medium">
-          <Link href="/moji-marketi">Nazad na Moje markete</Link>
+          <Link href="/proizvodi?moji-marketi=1">Nazad na Moje markete</Link>
         </Button>
       </Card>
     </main>

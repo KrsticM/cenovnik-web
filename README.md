@@ -70,7 +70,7 @@ The database also needs the scripts under [Database](#database).
 | `/auth/callback` | public | OAuth / magic-link callback |
 | `/proizvodi` | signed in | Product catalog and detail dialog |
 | `/lista` | signed in | Older full-page list (the panel is the main list UI) |
-| `/moji-marketi` | signed in | Store picker (same component as the sign-in step) |
+| `?moji-marketi=1` on any signed-in page | signed in | Moji marketi dialog (store picker). Opens from the account menu and the market links; it opens by itself, and cannot be closed, until an account has saved at least 2 stores. `/moji-marketi` and `/prodavnice` redirect to `/proizvodi?moji-marketi=1` |
 | `/podesavanja` | signed in | Placeholder |
 | `/lista/[token]` | public | Shared list (server-rendered, real 404 for dead links) |
 | `/api/lista/[token]` | public | Shared list JSON for client refreshes |
@@ -158,7 +158,7 @@ Designs come from `Stanja.dc.html` (system states) and `Proizvodi.dc.html` (in-p
 | "Tvoja lista je prazna." | Empty list panel | `ListPanel` |
 | "Proizvod nije dostupan u tvojim marketima." / "Izaberi svoje markete" | Product detail with no offers / no favourite markets | `StoreOffers` |
 | Loading skeletons | Grid, detail prices, list panel | `ProductCardSkeleton`, `StoreOffers`, `ListPanelSkeleton` |
-| Full-page "Bez marketa" | Not built yet: waits for store selection in `/moji-marketi` | — |
+| Full-page "Bez marketa" | Not built yet: waits for store selection in the Moji marketi dialog | — |
 
 ## Deployment
 
