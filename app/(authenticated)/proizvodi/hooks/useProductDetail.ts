@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useFavouriteStores } from "@/contexts/ShoppingListContext";
 import { fetchProduct, fetchProductOffers, type ProductOffer } from "@/lib/services/products";
-import type { Store } from "@/lib/services/stores";
 import { isUuid } from "@/lib/uuid";
 import type { Product } from "@/types/product";
 import { groupOffers, type OfferGroup } from "../components/detail/groupOffers";
@@ -11,20 +10,19 @@ export type ProductOffersState =
   | { status: "error"; message: string }
   | { status: "no-stores" }
   | { status: "stores-failed" }
-  | { status: "ready"; groups: OfferGroup[]; unavailable: Store[]; cheapestPrice: number | null };
+  | { status: "ready"; groups: OfferGroup[]; cheapestPrice: number | null };
 
 type DetailData = {
   key: string;
   product: Product | null;
   offers: ProductOffer[];
-  stores: Map<string, Store>;
   error: string | null;
 };
 
-const EMPTY: DetailData = { key: "", product: null, offers: [], stores: new Map(), error: null };
+const EMPTY: DetailData = { key: "", product: null, offers: [], error: null };
 const NOT_FOUND = "Proizvod nije pronađen.";
 const UNAVAILABLE = "Detalji proizvoda trenutno nisu dostupni.";
-const NO_OFFERS = { offers: {} as Record<string, ProductOffer[]>, stores: new Map<string, Store>() };
+const NO_OFFERS = { offers: {} as Record<string, ProductOffer[]> };
 
 export function useProductDetail(productId: string | null, known: Product | null) {
   const { storeIds, ready: storesReady, failed: storesFailed } = useFavouriteStores();
@@ -49,7 +47,6 @@ export function useProductDetail(productId: string | null, known: Product | null
           key: requestKey,
           product,
           offers: priced.offers[productId] ?? [],
-          stores: priced.stores,
           error: product ? null : NOT_FOUND,
         });
       } catch (err) {
@@ -74,12 +71,10 @@ export function useProductDetail(productId: string | null, known: Product | null
     if (storesFailed) return { status: "stores-failed" };
     if (storeKey === "") return { status: "no-stores" };
 
-    const offered = new Set(data.offers.map((offer) => offer.storeId));
     const groups = groupOffers(data.offers);
     return {
       status: "ready",
       groups,
-      unavailable: [...data.stores.values()].filter((store) => !offered.has(store.id)),
       cheapestPrice: groups[0]?.price ?? null,
     };
   }, [productId, validId, storesReady, storesFailed, storeKey, requestKey, data]);

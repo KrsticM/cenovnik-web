@@ -124,7 +124,7 @@ function ProizvodiContent() {
               <span>
                 Pretraga i cene obuhvataju artikle iz{" "}
                 <Button asChild variant="underline" size="text" className="inline font-semibold hover:text-sage-darker">
-                  <Link href="/prodavnice">tvojih omiljenih marketa</Link>
+                  <Link href="/moji-marketi">tvojih omiljenih marketa</Link>
                 </Button>
               </span>
             ) : (

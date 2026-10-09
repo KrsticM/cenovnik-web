@@ -22,7 +22,7 @@ Web app for eCenovnik, the Serbian grocery price-comparison platform. It mirrors
   - offline: ticks queue on the device and sync on reconnect;
   - never shows owner details and is not indexed by search engines.
 - **System states**: 404, error pages, loading skeletons, empty states and an offline banner. All are listed under [System states](#system-states).
-- **Not built yet**: store selection (`/prodavnice`) and settings (`/podesavanja`) are placeholders.
+- **Not built yet**: settings (`/podesavanja`) is a placeholder.
 
 UI copy is Serbian (Latin), in the informal "ti" form.
 
@@ -40,6 +40,7 @@ npm install
 npm run dev        # http://localhost:3000
 npm run build      # production build
 npm run lint
+npm test           # unit tests (Vitest); see .claude/skills/write-tests
 npx tsc --noEmit   # type check
 ```
 
@@ -48,7 +49,11 @@ npx tsc --noEmit   # type check
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=xxx
+REVENUECAT_PROJECT_ID=xxx
+REVENUECAT_SECRET_KEY=sk_xxx
 ```
+
+The two RevenueCat variables are server-only (never `NEXT_PUBLIC_`) and used by `/api/pretplata` to check Premium. The key is a **v2 secret API key** with only *Customer information → read only*; the project id is in the RevenueCat dashboard URL. On Vercel add both under Project Settings → Environment Variables for Production and Preview. Without them locally the endpoint answers 500 with `isPremium: null` and everyone is treated as Standard, which is fine unless you are testing Premium. Restart `npm run dev` after changing `.env.local`. `.env.example` lists every variable.
 
 The database also needs the scripts under [Database](#database).
 
@@ -63,7 +68,8 @@ The database also needs the scripts under [Database](#database).
 | `/auth/callback` | public | OAuth / magic-link callback |
 | `/proizvodi` | signed in | Product catalog and detail dialog |
 | `/lista` | signed in | Older full-page list (the panel is the main list UI) |
-| `/prodavnice`, `/podesavanja` | signed in | Placeholders |
+| `/moji-marketi` | signed in | Store picker (same component as the sign-in step) |
+| `/podesavanja` | signed in | Placeholder |
 | `/lista/[token]` | public | Shared list (server-rendered, real 404 for dead links) |
 | `/api/lista/[token]` | public | Shared list JSON for client refreshes |
 
@@ -96,7 +102,7 @@ Conventions:
 ### Data and sync
 
 - **Signed-in users** talk to Supabase directly from the browser; Row-Level Security limits them to their own lists.
-- **Catalog**: Postgres functions `browse_products` / `browse_products_count` do search, filters, sort, keyset pagination and a capped count. The cheapest price per product comes from the materialized view `product_price_summary`, refreshed daily by pg_cron.
+- **Catalog**: Postgres functions `browse_products` / `browse_products_count` do search, filters, sort, keyset pagination and a capped count. The cheapest price per product comes from the materialized view `product_price_summary`, and the daily "Preporučeno" order from `product_browse_order`; a pg_cron job refreshes both by calling `refresh_product_price_summary()`.
 - **Owner's list**: `ShoppingListContext` applies changes optimistically and saves them one after another. Realtime `postgres_changes` keeps other devices in sync, with reloads debounced and shared-list ticks ignored.
 - **Shared list**:
   - **Reads:** anonymous visitors have no table access at all. They read through `get_shared_list(token)` and tick through `set_shared_item_checked(token, …)`, both security-definer functions checked against the token.
@@ -115,6 +121,7 @@ Scripts in `supabase/`, run in the Supabase SQL Editor. All are safe to re-run.
 | `shared_list_checks.sql` | `checked_at` on list items, `set_shared_item_checked` |
 | `shared_list_realtime.sql` | Broadcast triggers and `shared_list_topic` for live shared lists |
 | `get_shared_list.sql` | `get_shared_list(token)`: name, topic, items, cheapest prices |
+| `signin_showcase.sql` | `get_signin_showcase(limit)`: popular products behind the sign-in card |
 | `public_shopping_lists.sql` | Removes all direct table access for anonymous visitors |
 
 Order for a new database:
@@ -123,8 +130,9 @@ Order for a new database:
 3. `shared_list_checks.sql`
 4. `shared_list_realtime.sql`
 5. `get_shared_list.sql`
-6. Deploy the web app.
-7. `public_shopping_lists.sql`, last: app versions older than the `get_shared_list` reader stop working once it runs.
+6. `signin_showcase.sql`
+7. Deploy the web app.
+8. `public_shopping_lists.sql`, last: app versions older than the `get_shared_list` reader stop working once it runs.
 
 ## System states
 
@@ -146,7 +154,7 @@ Designs come from `Stanja.dc.html` (system states) and `Proizvodi.dc.html` (in-p
 | "Tvoja lista je prazna." | Empty list panel | `ListPanel` |
 | "Proizvod nije dostupan u tvojim marketima." / "Izaberi svoje markete" | Product detail with no offers / no favourite markets | `StoreOffers` |
 | Loading skeletons | Grid, detail prices, list panel | `ProductCardSkeleton`, `StoreOffers`, `ListPanelSkeleton` |
-| Full-page "Bez marketa" | Not built yet: waits for store selection in `/prodavnice` | — |
+| Full-page "Bez marketa" | Not built yet: waits for store selection in `/moji-marketi` | — |
 
 ## Deployment
 

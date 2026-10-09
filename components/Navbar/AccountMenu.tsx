@@ -58,7 +58,7 @@ export function AccountMenu() {
         </DropdownMenuItem>
 
         <DropdownMenuItem asChild>
-          <Link href="/prodavnice">Moje prodavnice</Link>
+          <Link href="/moji-marketi">Moji marketi</Link>
         </DropdownMenuItem>
 
         <DropdownMenuSeparator />

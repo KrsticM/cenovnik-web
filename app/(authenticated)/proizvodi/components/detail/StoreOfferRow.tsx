@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Chevron } from "@/components/ui/chevron";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { DealPrice } from "@/components/ui/deal-price";
-import { InitialsTile } from "@/components/ui/initials-tile";
+import { RetailerLogo } from "@/components/ui/retailer-logo";
+import { retailerLogoUrl } from "@/lib/retailerLogos";
 import { StoreCard } from "@/components/StoreCard/StoreCard";
 import type { OfferGroup } from "./groupOffers";
 
@@ -38,7 +39,7 @@ export function StoreOfferRow({ group, best }: StoreOfferRowProps) {
         highlight={best}
         align="center"
         className="px-4 py-3.5"
-        leading={<InitialsTile name={group.retailerName} />}
+        leading={<RetailerLogo name={group.retailerName} src={retailerLogoUrl(group.retailerId)} className="h-11 w-11" />}
         badge={best && <Badge variant="tag">Najniža cena</Badge>}
         subtitle={subtitle}
         aside={
