@@ -6,26 +6,25 @@ import { AuthProvider } from "@/contexts/AuthContext";
 const geist = Geist({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://www.ecenovnik.app"),
+  metadataBase: new URL("https://web.ecenovnik.app"),
   title: {
     default: "eCenovnik",
     template: "%s | eCenovnik",
   },
-  description: "Pregledaj listu za kupovinu podeljenu iz eCenovnik aplikacije.",
-  icons: { icon: "/icon.png", shortcut: "/icon.png", apple: "/icon.png" },
+  description: "Uporedi cene u svojim marketima i sastavi listu za kupovinu.",
+  // Home-screen label on iOS; otherwise it takes the page title, e.g. "Proizvodi | eCenovnik".
+  appleWebApp: { title: "eCenovnik", capable: false },
   openGraph: {
     type: "website",
     locale: "sr_RS",
     siteName: "eCenovnik",
-    title: "eCenovnik — Lista za kupovinu",
-    description: "Lista za kupovinu, uvek pri ruci.",
-    images: [{ url: "/og.png?v=2", width: 1732, height: 909, alt: "eCenovnik lista za kupovinu" }],
+    title: "eCenovnik — Uporedi cene u svojim marketima",
+    description: "Pronađi najnižu cenu i sastavi listu za kupovinu.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "eCenovnik — Lista za kupovinu",
-    description: "Lista za kupovinu, uvek pri ruci.",
-    images: ["/og.png?v=2"],
+    title: "eCenovnik — Uporedi cene u svojim marketima",
+    description: "Pronađi najnižu cenu i sastavi listu za kupovinu.",
   },
 };
 

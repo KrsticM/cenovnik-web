@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useRef, useState } from "react";
-import Link from "next/link";
+import { OpenMyMarketsButton } from "@/components/MyMarketsDialog/OpenMyMarketsButton";
 import { useFavouriteStores } from "@/contexts/ShoppingListContext";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
@@ -123,9 +123,9 @@ function ProizvodiContent() {
             {filters.myMarkets ? (
               <span>
                 Pretraga i cene obuhvataju artikle iz{" "}
-                <Button asChild variant="underline" size="text" className="inline font-semibold hover:text-sage-darker">
-                  <Link href="/moji-marketi">tvojih omiljenih marketa</Link>
-                </Button>
+                <OpenMyMarketsButton variant="underline" size="text" className="inline font-semibold hover:text-sage-darker">
+                  tvojih omiljenih marketa
+                </OpenMyMarketsButton>
               </span>
             ) : (
               <span>

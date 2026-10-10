@@ -1,12 +1,9 @@
 "use client";
 
-import { BrandBars } from "@/components/ui/brand-bars";
 import { CheckCircle } from "@/components/ui/check-circle";
 import { Card } from "@/components/ui/card";
-import { StorePicker } from "@/components/StorePicker/StorePicker";
-import { cn } from "@/lib/utils";
 import { describeNext } from "../signinRules";
-import { useSigninFlow, type OAuthError, type SigninStep } from "../hooks/useSigninFlow";
+import { useSigninFlow, type OAuthError } from "../hooks/useSigninFlow";
 import { CodeStep } from "./CodeStep";
 import { EmailStep } from "./EmailStep";
 import { StartStep } from "./StartStep";
@@ -14,8 +11,6 @@ import { StatusStep } from "./StatusStep";
 
 interface SigninFlowProps {
   next: string;
-  initialStep: SigninStep;
-  initialUserId: string | null;
   initialOAuthError: OAuthError | null;
 }
 
@@ -25,12 +20,7 @@ export function SigninFlow(props: SigninFlowProps) {
 
   return (
     <main aria-label="Prijava" className="relative flex min-h-screen flex-1 items-center justify-center px-4 py-8">
-      <Card
-        className={cn(
-          "w-full rounded-[24px] border-line bg-white p-[clamp(24px,6vw,44px)] shadow-[0_20px_50px_rgba(26,26,26,0.06)] transition-[max-width] duration-[450ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]",
-          flow.step === "markets" ? "max-w-[640px]" : "max-w-[440px]"
-        )}
-      >
+      <Card className="w-full max-w-[440px] rounded-[24px] border-line bg-white p-[clamp(24px,6vw,44px)] shadow-[0_20px_50px_rgba(26,26,26,0.06)]">
         {flow.step === "start" && (
           <StartStep
             returnTo={returnTo}
@@ -48,15 +38,6 @@ export function SigninFlow(props: SigninFlowProps) {
             title="Uspešna prijava"
             text={returnTo ? `Vraćamo te na ${returnTo}.` : "Vodimo te na proizvode."}
             status="Preusmeravamo te…"
-          />
-        )}
-        {flow.step === "markets" && <StorePicker picker={flow.picker} onSave={flow.saveMarkets} />}
-        {flow.step === "ready" && (
-          <StatusStep
-            icon={<BrandBars />}
-            title="Sve je spremno"
-            text="Cene su sada prilagođene tvojim marketima."
-            status={returnTo ? "Vraćamo te nazad…" : "Otvaramo proizvode…"}
           />
         )}
       </Card>

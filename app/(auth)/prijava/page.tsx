@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { fetchSigninShowcase } from "@/lib/services/signinShowcase";
 import { safeNext } from "@/lib/safeNext";
-import { STORE_PICKER_STEP } from "@/lib/storePickerGate";
 import { SigninBackdrop } from "./components/SigninBackdrop";
 import { SigninFlow } from "./components/SigninFlow";
 import type { OAuthError } from "./hooks/useSigninFlow";
@@ -25,9 +24,7 @@ export default async function PrijavaPage({ searchParams }: { searchParams: Sear
     showcase,
   ] = await Promise.all([supabase.auth.getUser(), fetchSigninShowcase()]);
 
-  // Signed-in users only come here to pick their stores; everyone else goes on.
-  const picking = param(params.korak) === STORE_PICKER_STEP;
-  if (user && !picking) redirect(next);
+  if (user) redirect(next);
 
   const provider = param(params.provider);
   const oauthError: OAuthError | null =
@@ -36,12 +33,7 @@ export default async function PrijavaPage({ searchParams }: { searchParams: Sear
   return (
     <>
       <SigninBackdrop items={showcase} />
-      <SigninFlow
-        next={next}
-        initialStep={user && picking ? "markets" : "start"}
-        initialUserId={user?.id ?? null}
-        initialOAuthError={oauthError}
-      />
+      <SigninFlow next={next} initialOAuthError={oauthError} />
     </>
   );
 }

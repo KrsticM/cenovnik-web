@@ -1,6 +1,4 @@
 // Reusable components
-export { BrandMark } from "./BrandMark/BrandMark";
-
 export { StateMessage } from "./StatePage/StateMessage";
 
 // Main composite component

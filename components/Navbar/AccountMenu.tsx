@@ -1,5 +1,6 @@
 "use client";
 
+import { useMyMarketsDialog } from "@/components/MyMarketsDialog/MyMarketsDialogProvider";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   DropdownMenu,
@@ -13,6 +14,7 @@ import { cn } from "@/lib/utils";
 
 export function AccountMenu() {
   const { user, signOutUser } = useAuth();
+  const { open: openMyMarkets } = useMyMarketsDialog();
 
   if (!user?.email) return null;
 
@@ -57,9 +59,7 @@ export function AccountMenu() {
           <Link href="/podesavanja">Podešavanja</Link>
         </DropdownMenuItem>
 
-        <DropdownMenuItem asChild>
-          <Link href="/moji-marketi">Moji marketi</Link>
-        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={openMyMarkets}>Moji marketi</DropdownMenuItem>
 
         <DropdownMenuSeparator />
 

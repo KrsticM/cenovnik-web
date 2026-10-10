@@ -40,6 +40,7 @@ Defined in `app/globals.css`: raw values on `:root`, exposed to Tailwind as `--c
 | `rust-tint` | #fdf3ec | sign-in error alert fill |
 | `rust-border` | #ecc9b2 | sign-in error alert border |
 | `ink-stone` | #8a8378 | store-picker search ring, chain initials |
+| `line-warm` | #eeebe5 | divider under the signed-in line (Moji marketi dialog) |
 
 ## Utilities
 

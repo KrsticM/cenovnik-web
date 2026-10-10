@@ -1,7 +1,6 @@
-import { redirect } from "next/navigation";
 import { AppShell } from "@/components/AppShell/AppShell";
 import { createClient } from "@/lib/supabase/server";
-import { needsStorePicker, storePickerPath } from "@/lib/storePickerGate";
+import { needsStorePicker } from "@/lib/storePickerGate";
 
 // Layouts don't re-render on client navigation, so this runs once per entry into the app.
 export default async function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
@@ -10,7 +9,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (user && (await needsStorePicker(supabase, user.id))) redirect(storePickerPath());
+  const requireMyMarkets = user ? await needsStorePicker(supabase, user.id) : false;
 
-  return <AppShell>{children}</AppShell>;
+  return <AppShell requireMyMarkets={requireMyMarkets}>{children}</AppShell>;
 }
