@@ -1,6 +1,7 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fetchIsPremium } from "./revenuecat";
 
+const NOW = new Date("2026-10-10T12:00:00Z").getTime();
 const DAY = 24 * 60 * 60 * 1000;
 const config = { secret: "sk_test", projectId: "proj1" };
 const entitlement = (expires_at: number | null) => ({
@@ -15,11 +16,19 @@ function respondWith(body: unknown, status = 200) {
   return fetchMock;
 }
 
-afterEach(() => vi.unstubAllGlobals());
+beforeEach(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(NOW);
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
 
 describe("fetchIsPremium", () => {
   it("is premium with an active entitlement", async () => {
-    respondWith({ items: [entitlement(Date.now() + DAY)], next_page: null });
+    respondWith({ items: [entitlement(NOW + DAY)], next_page: null });
     expect(await fetchIsPremium("user-1", config)).toBe(true);
   });
 
@@ -34,7 +43,7 @@ describe("fetchIsPremium", () => {
   });
 
   it("is not premium when the only entitlement has expired", async () => {
-    respondWith({ items: [entitlement(Date.now() - DAY)] });
+    respondWith({ items: [entitlement(NOW - DAY)] });
     expect(await fetchIsPremium("user-1", config)).toBe(false);
   });
 
