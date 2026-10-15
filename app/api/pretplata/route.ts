@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { fetchIsPremium } from "@/lib/revenuecat";
+import { fetchIsPremium, fetchSubscriptionDetails } from "@/lib/revenuecat";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET() {
@@ -17,8 +17,16 @@ export async function GET() {
   }
 
   try {
-    const isPremium = await fetchIsPremium(user.id, { secret, projectId });
-    return NextResponse.json({ isPremium }, { headers: { "Cache-Control": "private, max-age=300" } });
+    const config = { secret, projectId };
+    const isPremium = await fetchIsPremium(user.id, config);
+    // Details only decorate the answer, so a failure here must not turn a known status into "unknown".
+    const subscription = isPremium
+      ? await fetchSubscriptionDetails(user.id, config).catch((err) => {
+          console.error("[pretplata] RevenueCat subscription details failed:", err);
+          return null;
+        })
+      : null;
+    return NextResponse.json({ isPremium, subscription }, { headers: { "Cache-Control": "private, max-age=300" } });
   } catch (err) {
     console.error("[pretplata] RevenueCat request failed:", err);
     return unknown(502);
