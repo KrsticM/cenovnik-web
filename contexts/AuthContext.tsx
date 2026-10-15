@@ -165,9 +165,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const deleteAccount = useCallback(async () => {
     try {
       const supabase = createClient();
-      await supabase.functions.invoke("delete-account", {
+      // invoke() reports failures in `error` instead of throwing; a failed delete must not look like a success.
+      const { error } = await supabase.functions.invoke("delete-account", {
         method: "POST",
       });
+      if (error) throw error;
+      await supabase.auth.signOut({ scope: "local" });
       setUser(null);
       router.push("/prijava");
     } catch (error) {
