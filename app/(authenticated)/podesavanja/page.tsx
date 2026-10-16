@@ -1,11 +1,6 @@
-import { PlaceholderPage } from "@/components/PlaceholderPage";
+import { redirect } from "next/navigation";
+import { SETTINGS_PARAM } from "@/components/SettingsDialog/settings";
 
 export default function PodesavanjaPage() {
-  return (
-    <PlaceholderPage
-      eyebrow="Podešavanja"
-      title="Stiže uskoro"
-      description="Stranica sa podešavanjima će uskoro biti dostupan."
-    />
-  );
+  redirect(`/proizvodi?${SETTINGS_PARAM}=1`);
 }

@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { fetchIsPremium } from "@/lib/revenuecat";
+import { fetchIsPremium, fetchSubscriptionDetails } from "@/lib/revenuecat";
 import { createClient } from "@/lib/supabase/server";
 
-export async function GET() {
+// `?details=0` is for callers that only need the Premium flag and should not pay for a second RevenueCat call.
+export async function GET(request: Request) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -17,15 +18,25 @@ export async function GET() {
   }
 
   try {
-    const isPremium = await fetchIsPremium(user.id, { secret, projectId });
-    return NextResponse.json({ isPremium }, { headers: { "Cache-Control": "private, max-age=300" } });
+    const config = { secret, projectId };
+    const isPremium = await fetchIsPremium(user.id, config);
+    // Details only decorate the answer, so a failure here must not turn a known status into "unknown".
+    const wantsDetails = new URL(request.url).searchParams.get("details") !== "0";
+    const subscription = isPremium && wantsDetails
+      ? await fetchSubscriptionDetails(user.id, config).catch((err) => {
+          console.error("[pretplata] RevenueCat subscription details failed:", err);
+          return null;
+        })
+      : null;
+    // Not cached either: the browser keys its cache by URL, so another account or a fresh purchase would see a stale answer.
+    return NextResponse.json({ isPremium, subscription }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (err) {
     console.error("[pretplata] RevenueCat request failed:", err);
     return unknown(502);
   }
 }
 
-// Failures are never cached, or one RevenueCat blip would downgrade a paying user for minutes.
+// Failures are never cached, or one RevenueCat blip would downgrade a paying user.
 function unknown(status: number) {
   return NextResponse.json({ isPremium: null }, { status, headers: { "Cache-Control": "no-store" } });
 }

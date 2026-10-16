@@ -7,7 +7,7 @@ import { MY_MARKETS_PARAM, myMarketsDialogMode, signedInAs } from "./myMarkets";
 import { MyMarketsDialog } from "./MyMarketsDialog";
 import { MyMarketsPicker } from "./MyMarketsPicker";
 
-const MyMarketsDialogContext = createContext<{ open: () => void } | null>(null);
+const MyMarketsDialogContext = createContext<{ open: (trigger?: HTMLElement | null) => void } | null>(null);
 
 interface MyMarketsDialogProviderProps {
   // The account has fewer than two stores: the dialog opens by itself and cannot be closed.
@@ -20,7 +20,7 @@ export function MyMarketsDialogProvider({ required, children }: MyMarketsDialogP
   const { value, open, close, restoreFocus } = useHistoryParam(MY_MARKETS_PARAM);
   const mode = myMarketsDialogMode({ required, requested: value !== null });
   const signOut = !mode.dismissable && user ? { ...signedInAs(user), onSignOut: signOutUser } : undefined;
-  const context = useMemo(() => ({ open: () => open("1") }), [open]);
+  const context = useMemo(() => ({ open: (trigger?: HTMLElement | null) => open("1", trigger) }), [open]);
 
   return (
     <MyMarketsDialogContext.Provider value={context}>

@@ -6,9 +6,11 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 
 const fetchIsPremium = vi.fn();
-vi.mock("@/lib/revenuecat", () => ({ fetchIsPremium }));
+const fetchSubscriptionDetails = vi.fn();
+vi.mock("@/lib/revenuecat", () => ({ fetchIsPremium, fetchSubscriptionDetails }));
 
-const { GET } = await import("./route");
+const { GET: handle } = await import("./route");
+const GET = (query = "") => handle(new Request(`http://localhost/api/pretplata${query}`));
 
 beforeEach(() => {
   getUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
@@ -21,6 +23,7 @@ afterEach(() => {
   vi.unstubAllEnvs();
   vi.restoreAllMocks();
   fetchIsPremium.mockReset();
+  fetchSubscriptionDetails.mockReset();
 });
 
 describe("GET /api/pretplata", () => {
@@ -29,12 +32,34 @@ describe("GET /api/pretplata", () => {
     expect((await GET()).status).toBe(401);
   });
 
-  it("returns and briefly caches a successful lookup", async () => {
+  it("returns a successful lookup without letting the browser cache it", async () => {
+    const subscription = { plan: "yearly", store: "app_store", renewal: "renews", trial: false, endsAt: 1 };
     fetchIsPremium.mockResolvedValue(true);
+    fetchSubscriptionDetails.mockResolvedValue(subscription);
     const response = await GET();
-    expect(await response.json()).toEqual({ isPremium: true });
-    expect(response.headers.get("Cache-Control")).toBe("private, max-age=300");
+    expect(await response.json()).toEqual({ isPremium: true, subscription });
+    expect(response.headers.get("Cache-Control")).toBe("private, no-store");
     expect(fetchIsPremium).toHaveBeenCalledWith("user-1", { secret: "sk_test", projectId: "proj_test" });
+  });
+
+  it("keeps a known Premium status when only the subscription details fail", async () => {
+    fetchIsPremium.mockResolvedValue(true);
+    fetchSubscriptionDetails.mockRejectedValue(new Error("RevenueCat responded with 500"));
+    const response = await GET();
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ isPremium: true, subscription: null });
+  });
+
+  it("skips the details call when only the Premium flag is asked for", async () => {
+    fetchIsPremium.mockResolvedValue(true);
+    expect(await (await GET("?details=0")).json()).toEqual({ isPremium: true, subscription: null });
+    expect(fetchSubscriptionDetails).not.toHaveBeenCalled();
+  });
+
+  it("does not look up details for a Standard account", async () => {
+    fetchIsPremium.mockResolvedValue(false);
+    expect(await (await GET()).json()).toEqual({ isPremium: false, subscription: null });
+    expect(fetchSubscriptionDetails).not.toHaveBeenCalled();
   });
 
   it("answers unknown and never caches when RevenueCat fails", async () => {

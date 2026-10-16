@@ -7,6 +7,7 @@ const publicRoutes = [
   { path: "prijava", exact: false },
   { path: "auth/callback", exact: false },
   { path: "api/lista", exact: false },
+  { path: "preuzmi", exact: true },
 ];
 
 function isRoutePublic(pathname: string): boolean {

@@ -20,11 +20,13 @@ describe("signedInAs", () => {
     expect(signedInAs({ email: "x7k2@privaterelay.appleid.com", app_metadata: { provider: "apple" } })).toEqual({
       account: "Apple nalog",
       via: "email skriven",
+      kind: "apple",
     });
   });
 
   it("names the provider for Google and Apple, but not for email sign-in", () => {
-    expect(signedInAs({ email: "ime@gmail.com", app_metadata: { provider: "google" } }).via).toBe("Google");
-    expect(signedInAs({ email: "ime@email.com", app_metadata: { provider: "email" } })).toEqual({ account: "ime@email.com", via: null });
+    expect(signedInAs({ email: "ime@gmail.com", app_metadata: { provider: "google" } })).toMatchObject({ via: "Google", kind: "google" });
+    expect(signedInAs({ email: "ime@icloud.com", app_metadata: { provider: "apple" } })).toMatchObject({ via: "Apple", kind: "apple" });
+    expect(signedInAs({ email: "ime@email.com", app_metadata: { provider: "email" } })).toEqual({ account: "ime@email.com", via: null, kind: "email" });
   });
 });

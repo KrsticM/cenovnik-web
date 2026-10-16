@@ -1,6 +1,8 @@
 "use client";
 
 import { useMyMarketsDialog } from "@/components/MyMarketsDialog/MyMarketsDialogProvider";
+import { useSettingsDialog } from "@/components/SettingsDialog/SettingsDialogProvider";
+import { useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   DropdownMenu,
@@ -9,12 +11,14 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 export function AccountMenu() {
   const { user, signOutUser } = useAuth();
   const { open: openMyMarkets } = useMyMarketsDialog();
+  const { open: openSettings } = useSettingsDialog();
+  // The menu item is gone by the time a dialog closes, so focus goes back to the account button.
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   if (!user?.email) return null;
 
@@ -33,6 +37,7 @@ export function AccountMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
+        ref={triggerRef}
         className={cn(
           "flex h-11 w-11 items-center justify-center rounded-full",
           "bg-cream text-sage-dark font-semibold text-sm",
@@ -55,11 +60,9 @@ export function AccountMenu() {
         </div>
 
         {/* Menu items */}
-        <DropdownMenuItem asChild>
-          <Link href="/podesavanja">Podešavanja</Link>
-        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => openSettings(triggerRef.current)}>Podešavanja</DropdownMenuItem>
 
-        <DropdownMenuItem onSelect={openMyMarkets}>Moji marketi</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => openMyMarkets(triggerRef.current)}>Moji marketi</DropdownMenuItem>
 
         <DropdownMenuSeparator />
 
