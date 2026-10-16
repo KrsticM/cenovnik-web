@@ -8,9 +8,8 @@ export function LegalLinks({ links }: { links: { label: string; href: string }[]
         <Button
           key={href}
           asChild
-          variant="ghost"
-          size="text"
-          className="min-h-9 rounded text-[13px] font-normal text-ink-muted hover:bg-transparent hover:text-rust focus-visible:ring-offset-0"
+          variant="quiet"
+          size="link-sm"
         >
           <a href={href} target="_blank" rel="noopener noreferrer" aria-label={`${label}, otvara se na ecenovnik.app u novoj kartici`}>
             <span>{label}</span>

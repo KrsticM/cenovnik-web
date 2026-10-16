@@ -1,14 +1,12 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { platformFrom, type Platform } from "@/lib/platform";
 
-export type Platform = "ios" | "android" | "other";
+export type { Platform };
 
 const subscribe = () => () => {};
-const detect = (): Platform => {
-  const ua = navigator.userAgent;
-  return /iPhone|iPad|iPod/.test(ua) ? "ios" : /Android/.test(ua) ? "android" : "other";
-};
+const detect = () => platformFrom(navigator.userAgent, navigator.maxTouchPoints);
 
 // "other" on the server and during hydration, so both stores show until the browser is known.
 export function usePlatform(): Platform {

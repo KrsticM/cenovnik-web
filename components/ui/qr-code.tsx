@@ -12,8 +12,8 @@ interface QrCodeProps {
 
 function QrCode({ value, label, className }: QrCodeProps) {
   return (
-    <span className={cn("block shrink-0 rounded-xl border border-line bg-white p-2 text-ink", className)}>
-      <QRCodeSVG value={value} size={88} level="M" title={label} fgColor="currentColor" bgColor="transparent" />
+    <span className={cn("block shrink-0 rounded-[12px] border border-line bg-white p-2.5 text-ink", className)}>
+      <QRCodeSVG value={value} size={90} level="M" title={label} fgColor="currentColor" bgColor="transparent" />
     </span>
   )
 }

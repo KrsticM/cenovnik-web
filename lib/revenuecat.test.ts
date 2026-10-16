@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fetchIsPremium } from "./revenuecat";
+import { fetchIsPremium, fetchSubscriptionDetails } from "./revenuecat";
 
 const NOW = new Date("2026-10-10T12:00:00Z").getTime();
 const DAY = 24 * 60 * 60 * 1000;
@@ -65,5 +65,40 @@ describe("fetchIsPremium", () => {
       "https://api.revenuecat.com/v2/projects/proj%201/customers/a%2Fb%20c/active_entitlements?limit=1"
     );
     expect(init.headers.Authorization).toBe("Bearer sk_test");
+  });
+});
+
+describe("fetchSubscriptionDetails", () => {
+  it("throws instead of answering null when RevenueCat fails", async () => {
+    respondWith({ message: "unavailable" }, 503);
+    await expect(fetchSubscriptionDetails("user-1", config)).rejects.toThrow("503");
+  });
+
+  it("answers null for a customer RevenueCat has never seen", async () => {
+    respondWith({ message: "not found" }, 404);
+    expect(await fetchSubscriptionDetails("user-1", config)).toBeNull();
+  });
+
+  it("maps the subscription RevenueCat returns", async () => {
+    const endsAt = NOW + 300 * DAY;
+    respondWith({
+      items: [
+        {
+          gives_access: true,
+          store: "play_store",
+          status: "active",
+          auto_renewal_status: "will_renew",
+          current_period_starts_at: endsAt - 365 * DAY,
+          current_period_ends_at: endsAt,
+        },
+      ],
+    });
+    expect(await fetchSubscriptionDetails("user-1", config)).toEqual({
+      plan: "yearly",
+      store: "google_play",
+      renewal: "renews",
+      trial: false,
+      endsAt,
+    });
   });
 });

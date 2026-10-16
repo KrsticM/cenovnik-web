@@ -9,7 +9,8 @@ const fetchIsPremium = vi.fn();
 const fetchSubscriptionDetails = vi.fn();
 vi.mock("@/lib/revenuecat", () => ({ fetchIsPremium, fetchSubscriptionDetails }));
 
-const { GET } = await import("./route");
+const { GET: handle } = await import("./route");
+const GET = (query = "") => handle(new Request(`http://localhost/api/pretplata${query}`));
 
 beforeEach(() => {
   getUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
@@ -32,7 +33,7 @@ describe("GET /api/pretplata", () => {
   });
 
   it("returns a successful lookup without letting the browser cache it", async () => {
-    const subscription = { plan: "yearly", store: "app_store", renewal: "renews", endsAt: 1 };
+    const subscription = { plan: "yearly", store: "app_store", renewal: "renews", trial: false, endsAt: 1 };
     fetchIsPremium.mockResolvedValue(true);
     fetchSubscriptionDetails.mockResolvedValue(subscription);
     const response = await GET();
@@ -47,6 +48,12 @@ describe("GET /api/pretplata", () => {
     const response = await GET();
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ isPremium: true, subscription: null });
+  });
+
+  it("skips the details call when only the Premium flag is asked for", async () => {
+    fetchIsPremium.mockResolvedValue(true);
+    expect(await (await GET("?details=0")).json()).toEqual({ isPremium: true, subscription: null });
+    expect(fetchSubscriptionDetails).not.toHaveBeenCalled();
   });
 
   it("does not look up details for a Standard account", async () => {

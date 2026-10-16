@@ -26,6 +26,7 @@ const buttonVariants = cva(
         chip: "border border-sage bg-sage-tint text-sage-dark",
         underline: "text-sage-dark underline underline-offset-2 hover:text-rust",
         "ghost-muted": "font-normal text-ink-muted hover:bg-paper hover:text-rust",
+        quiet: "font-normal text-ink-muted hover:text-rust",
         "ghost-clear": "text-ink-muted hover:bg-sand hover:text-ink",
         "on-sage": "font-semibold text-cream hover:bg-cream/18",
         "on-sage-remove": "font-normal bg-cream/16 text-cream hover:bg-rust",
@@ -48,6 +49,12 @@ const buttonVariants = cva(
         // Full width on a phone, natural width from `sm`; for the actions inside dialogs.
         action: "h-12 flex-[1_1_100%] rounded-full px-4 text-sm focus-visible:ring-offset-0 sm:h-10 sm:flex-none",
         text: "h-auto p-0",
+        // Text links in dialogs: a 32px or 36px touch area with a flat focus ring.
+        link: "h-auto min-h-8 rounded p-0 text-sm underline-offset-[3px] focus-visible:ring-offset-0",
+        "link-sm": "h-auto min-h-9 rounded p-0 text-[13px] focus-visible:ring-offset-0",
+        "icon-touch": "size-11 rounded-full p-0 focus-visible:ring-offset-0",
+        // The big pair of buttons on a confirmation step.
+        confirm: "h-12 rounded-full px-[22px] text-[15px] focus-visible:ring-offset-white",
         "icon-xs": "h-[26px] w-[26px] rounded-full p-0",
         "icon-sm": "h-7 w-7 rounded-full p-0",
         "icon-md": "h-9 w-9 rounded-full p-0",

@@ -1,48 +1,43 @@
-import { Button } from "@/components/ui/button";
-import { AppleIcon, GooglePlayIcon } from "@/components/ui/provider-icon";
+import { Panel } from "@/components/ui/panel";
 import { QrCode } from "@/components/ui/qr-code";
-import { APP_STORE_URL, PLAY_STORE_URL } from "@/lib/support";
+import { StoreBadge } from "@/components/ui/store-badge";
 import type { Platform } from "@/hooks/usePlatform";
+import { APP_STORE_URL, PLAY_STORE_URL } from "@/lib/support";
 
-const LINK = "rounded-xl font-medium text-white focus-visible:ring-offset-white";
-
-// Each store is hidden on the other's phone, so nobody is sent to a store they cannot use.
 interface StoreLinksProps {
   platform: Platform;
   // Only for people on a computer; null on a phone, which is already one tap from its store.
   qrUrl: string | null;
 }
 
-export function StoreLinks({ platform, qrUrl }: StoreLinksProps) {
-  const buttons = (
-    <div className="flex flex-[1_1_auto] flex-wrap gap-2.5">
-      {platform !== "android" && (
-        <Button asChild variant="dark" size="action" className={LINK}>
-          <a href={APP_STORE_URL} target="_blank" rel="noopener noreferrer" aria-label="Preuzmi eCenovnik u App Store-u, otvara se u novoj kartici">
-            <AppleIcon mono />
-            <span>Preuzmi u App Store-u</span>
-          </a>
-        </Button>
-      )}
-      {platform !== "ios" && (
-        <Button asChild variant="dark" size="action" className={LINK}>
-          <a href={PLAY_STORE_URL} target="_blank" rel="noopener noreferrer" aria-label="Nabavi eCenovnik na Google Play-u, otvara se u novoj kartici">
-            <GooglePlayIcon />
-            <span>Nabavi na Google Play-u</span>
-          </a>
-        </Button>
-      )}
+// Each store is hidden on the other's phone, so nobody is sent to a store they cannot use.
+function Badges({ platform }: { platform: Platform }) {
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      {platform !== "android" && <StoreBadge store="app_store" href={APP_STORE_URL} />}
+      {platform !== "ios" && <StoreBadge store="google_play" href={PLAY_STORE_URL} />}
     </div>
   );
+}
 
-  if (!qrUrl) return buttons;
+export function StoreLinks({ platform, qrUrl }: StoreLinksProps) {
+  if (!qrUrl) return <Badges platform={platform} />;
+
+  // A computer gets the QR code only; a window too narrow for the panel gets the badges instead.
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-      {buttons}
-      <figure className="flex items-center gap-3">
-        <QrCode value={qrUrl} label="QR kod za preuzimanje eCenovnik aplikacije" />
-        <figcaption className="max-w-[110px] text-[13px] leading-[1.4] text-ink-muted">Skeniraj telefonom i preuzmi aplikaciju</figcaption>
-      </figure>
-    </div>
+    <>
+      <Panel role="note" size="roomy" className="hidden items-center gap-5 sm:flex">
+        <QrCode value={qrUrl} label="QR kod za preuzimanje aplikacije" />
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <span className="text-[15px] font-semibold">Preuzmi aplikaciju i aktiviraj Premium članstvo</span>
+          <p className="text-sm leading-normal text-ink-muted text-pretty">
+            Skeniraj kod kamerom svog telefona. Otvoriće se link do eCenovnik aplikacije u App Store-u ili Google Play-u.
+          </p>
+        </div>
+      </Panel>
+      <div className="sm:hidden">
+        <Badges platform={platform} />
+      </div>
+    </>
   );
 }

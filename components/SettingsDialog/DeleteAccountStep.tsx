@@ -1,9 +1,9 @@
 import { CircleAlert } from "lucide-react";
-import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Panel } from "@/components/ui/panel";
 import { Spinner } from "@/components/ui/spinner";
 
 export interface DeleteAccountStepProps {
@@ -16,8 +16,6 @@ export interface DeleteAccountStepProps {
   onConfirm: () => void;
   onCancel: () => void;
 }
-
-const BUTTON = "px-[22px] focus-visible:ring-offset-white";
 
 export function DeleteAccountStep({
   subscriptionNote,
@@ -38,13 +36,13 @@ export function DeleteAccountStep({
       </div>
 
       {subscriptionNote && (
-        <Alert role="note" className="flex gap-2.5 rounded-xl border-rust-border bg-rust-tint px-3.5 py-3">
+        <Panel role="note" tone="danger" className="gap-2.5">
           <CircleAlert className="mt-px size-[18px] shrink-0 text-rust" strokeWidth={2} aria-hidden="true" />
           <p className="text-sm leading-normal text-pretty">{subscriptionNote}</p>
-        </Alert>
+        </Panel>
       )}
 
-      <Label className="flex min-h-12 cursor-pointer items-start gap-3 rounded-xl border border-line px-3.5 py-[13px] text-sm font-normal leading-[1.45]">
+      <Label className="flex min-h-12 cursor-pointer items-start gap-3 rounded-[12px] border border-line px-3.5 py-[13px] text-sm font-normal leading-[1.45]">
         <Checkbox
           checked={confirmed}
           disabled={pending}
@@ -55,9 +53,9 @@ export function DeleteAccountStep({
       </Label>
 
       {failed && (
-        <Alert className="rounded-xl border-rust-border bg-rust-tint px-3.5 py-3 text-sm leading-normal text-rust text-pretty">
+        <Panel role="alert" tone="danger" className="leading-normal text-rust text-pretty">
           Brisanje nije uspelo. Pokušaj ponovo ili nam piši na podršku.
-        </Alert>
+        </Panel>
       )}
 
       <span role="status" className="sr-only">
@@ -65,10 +63,10 @@ export function DeleteAccountStep({
       </span>
 
       <div className="mt-2 flex flex-col-reverse justify-end gap-2.5 sm:flex-row">
-        <Button autoFocus type="button" variant="pill" size="pill-lg" className={BUTTON} disabled={pending} onClick={onCancel}>
+        <Button autoFocus type="button" variant="pill" size="confirm" disabled={pending} onClick={onCancel}>
           Odustani
         </Button>
-        <Button type="button" variant="danger" size="pill-lg" className={BUTTON} disabled={!confirmed || pending} onClick={onConfirm}>
+        <Button type="button" variant="danger" size="confirm" disabled={!confirmed || pending} onClick={onConfirm}>
           {pending && <Spinner tone="cream" />}
           {pending ? "Brišem nalog…" : "Obriši nalog"}
         </Button>

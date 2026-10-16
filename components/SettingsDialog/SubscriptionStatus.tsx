@@ -1,7 +1,8 @@
 import { RefreshCw } from "lucide-react";
-import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Panel } from "@/components/ui/panel";
+import { ProgressBar } from "@/components/ui/progress-bar";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Platform } from "@/hooks/usePlatform";
 import type { SubscriptionState } from "@/hooks/useSubscription";
@@ -18,29 +19,18 @@ interface SubscriptionStatusProps {
   onRetry: () => void;
 }
 
-const TONES = {
-  premium: "border-gold-border bg-gold-wash",
-  standard: "border-sage-wash-line bg-sage-wash",
-  neutral: "border-line-warm bg-ivory",
-};
-
-const tone = (status: SubscriptionState["status"]) =>
-  status === "premium" ? TONES.premium : status === "standard" ? TONES.standard : TONES.neutral;
+const TONES = { premium: "premium", standard: "standard", loading: "neutral", unknown: "neutral" } as const;
 
 const NOTE = "text-sm leading-normal text-pretty";
 
 export function SubscriptionStatus({ state, platform, qrUrl, copy, onRetry }: SubscriptionStatusProps) {
   return (
-    <Alert
-      role="status"
-      aria-busy={state.status === "loading"}
-      className={cn("flex flex-col gap-3.5 rounded-2xl px-5 py-[18px]", tone(state.status))}
-    >
+    <Panel role="status" aria-busy={state.status === "loading"} tone={TONES[state.status]} size="card" className="flex-col gap-3.5">
       {state.status === "loading" && (
         <div role="img" aria-label="Učitavanje pretplate" className="flex flex-col gap-2.5">
-          <Skeleton className="h-6 w-[120px] rounded-xl bg-line-warm" />
+          <Skeleton className="h-6 w-[120px] rounded-[12px] bg-line-warm" />
           <Skeleton className="h-3.5 w-[200px] max-w-full rounded-[7px] bg-sand" />
-          <Skeleton className="mt-1 h-12 w-full rounded-xl bg-sand" />
+          <Skeleton className="mt-1 h-12 w-full rounded-[12px] bg-sand" />
         </div>
       )}
 
@@ -59,16 +49,17 @@ export function SubscriptionStatus({ state, platform, qrUrl, copy, onRetry }: Su
 
       {state.status === "standard" && (
         <>
-          <span className="text-base font-semibold">Standard članstvo</span>
+          <span className="text-base font-semibold">Standardno članstvo</span>
           <p className={cn(NOTE, "-mt-1.5 text-ink-muted")}>
-            Sa Premiumom pratiš cene u do 25 marketa umesto 10. Premium možeš aktivirati u mobilnoj aplikaciji.
+            Želiš da isprobaš benefite Premium članstva i pratiš cene u neograničenom broju omiljenih marketa umesto dosadašnjih 10?
+            Premium članstvo možeš aktivirati putem mobilne eCenovnik aplikacije.
           </p>
           <StoreLinks platform={platform} qrUrl={qrUrl} />
         </>
       )}
 
       {state.status === "premium" && <PremiumDetails copy={copy} />}
-    </Alert>
+    </Panel>
   );
 }
 
@@ -77,13 +68,16 @@ function PremiumDetails({ copy }: { copy: SubscriptionCopy }) {
     <>
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2">
         <span className="text-base font-semibold">Premium članstvo</span>
-        {copy.cancelled && <Badge variant="cancelled">Otkazano</Badge>}
+        {copy.badge === "cancelled" && <Badge variant="notice">Otkazano</Badge>}
+        {copy.badge === "trial" && <Badge variant="trial">Probni period</Badge>}
+        {copy.badge === "lastDay" && <Badge variant="notice">Poslednji dan</Badge>}
       </div>
       {copy.dateLine && <span className="-mt-1.5 text-sm text-ink-muted">{copy.dateLine}</span>}
-      <Alert role="note" className="flex flex-col gap-2.5 rounded-xl border-0 bg-white/70 px-3.5 py-3">
+      {copy.trialProgress !== null && <ProgressBar tone="trial" value={copy.trialProgress} className="-mt-1" />}
+      <Panel role="note" className="flex-col gap-2.5">
         <p className={NOTE}>{copy.manageNote}</p>
-        {copy.showHow && <CancelHowTo steps={copy.howSteps} />}
-      </Alert>
+        {copy.showHow && <CancelHowTo steps={copy.howSteps} footnote={copy.howFoot} defaultOpen={copy.howOpenByDefault} />}
+      </Panel>
     </>
   );
 }

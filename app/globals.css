@@ -43,6 +43,7 @@
   --line-warm: #eeebe5;
   --gold-wash: #fff6e6;
   --gold-border: #f5e1bf;
+  --gold-edge: #f0d3a3;
   --ivory: #faf9f6;
   --sage-wash-line: #e3e8dc;
   --ink-hover: #333;
@@ -150,6 +151,7 @@
   --color-line-warm: var(--line-warm);
   --color-gold-wash: var(--gold-wash);
   --color-gold-border: var(--gold-border);
+  --color-gold-edge: var(--gold-edge);
   --color-ivory: var(--ivory);
   --color-sage-wash-line: var(--sage-wash-line);
   --color-ink-hover: var(--ink-hover);

@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { fetchIsPremium, fetchSubscriptionDetails } from "@/lib/revenuecat";
 import { createClient } from "@/lib/supabase/server";
 
-export async function GET() {
+// `?details=0` is for callers that only need the Premium flag and should not pay for a second RevenueCat call.
+export async function GET(request: Request) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -20,7 +21,8 @@ export async function GET() {
     const config = { secret, projectId };
     const isPremium = await fetchIsPremium(user.id, config);
     // Details only decorate the answer, so a failure here must not turn a known status into "unknown".
-    const subscription = isPremium
+    const wantsDetails = new URL(request.url).searchParams.get("details") !== "0";
+    const subscription = isPremium && wantsDetails
       ? await fetchSubscriptionDetails(user.id, config).catch((err) => {
           console.error("[pretplata] RevenueCat subscription details failed:", err);
           return null;

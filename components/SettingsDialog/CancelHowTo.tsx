@@ -2,22 +2,24 @@ import { Button } from "@/components/ui/button";
 import { Chevron } from "@/components/ui/chevron";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { AppleIcon, GooglePlayIcon } from "@/components/ui/provider-icon";
-import type { PremiumStore } from "@/lib/revenuecat";
+import type { PremiumStore } from "@/lib/subscriptionDetails";
 
 interface CancelHowToProps {
   steps: { store: PremiumStore; text: string }[];
+  footnote: string;
+  defaultOpen?: boolean;
 }
 
 const STORE_NAMES = { app_store: "App Store", google_play: "Google Play" };
 
-export function CancelHowTo({ steps }: CancelHowToProps) {
+export function CancelHowTo({ steps, footnote, defaultOpen = false }: CancelHowToProps) {
   return (
-    <Collapsible className="flex flex-col gap-2.5">
+    <Collapsible defaultOpen={defaultOpen} className="flex flex-col gap-2.5">
       <CollapsibleTrigger asChild>
         <Button
           variant="underline"
-          size="text"
-          className="group/trigger -my-1 min-h-8 gap-1 self-start rounded text-sm underline-offset-[3px] focus-visible:ring-offset-0"
+          size="link"
+          className="group/trigger -my-1 gap-1 self-start"
         >
           <span>Kako otkazati</span>
           <Chevron />
@@ -33,9 +35,7 @@ export function CancelHowTo({ steps }: CancelHowToProps) {
             <p className="text-sm leading-normal text-pretty">{text}</p>
           </div>
         ))}
-        <p className="text-[13px] leading-normal text-ink-muted text-pretty">
-          Posle otkazivanja Premium ostaje aktivan do kraja plaćenog perioda.
-        </p>
+        <p className="text-[13px] leading-normal text-ink-muted text-pretty">{footnote}</p>
       </CollapsibleContent>
     </Collapsible>
   );

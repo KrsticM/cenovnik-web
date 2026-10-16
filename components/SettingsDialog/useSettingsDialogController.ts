@@ -1,15 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useReducer } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHistoryParam } from "@/hooks/useHistoryParam";
 import { usePlatform } from "@/hooks/usePlatform";
 import { useSubscription } from "@/hooks/useSubscription";
 import { subscriptionCopy } from "@/lib/subscription";
-import type { DeleteAccountStepProps } from "./DeleteAccountStep";
 import type { SettingsContentProps } from "./SettingsContent";
 import { SETTINGS_PARAM, accountSummary } from "./settings";
-import { initialSettingsFlow, settingsFlowReducer } from "./settingsFlow";
+import { useDeleteAccountFlow } from "./useDeleteAccountFlow";
 
 interface ControllerOptions {
   // Another dialog that cannot be closed is on screen (the market picker); two stacked modals would trap focus against each other.
@@ -21,14 +20,16 @@ export function useSettingsDialogController({ suppressed }: ControllerOptions) {
   const { user, deleteAccount } = useAuth();
   const { value, open, close, restoreFocus } = useHistoryParam(SETTINGS_PARAM);
   const platform = usePlatform();
-  const [flow, dispatch] = useReducer(settingsFlowReducer, initialSettingsFlow);
+  const { flow, reset, askDelete, back, deletion } = useDeleteAccountFlow(deleteAccount);
+  // The days left are read against the moment the dialog was opened.
+  const [now, setNow] = useState(() => Date.now());
   // A delete in flight keeps the dialog up even if the history entry is gone.
   const isOpen = !suppressed && ((value !== null && user !== null) || flow.deleting);
   const { state: subscription, retry } = useSubscription(isOpen);
 
   useEffect(() => {
-    if (!isOpen) dispatch({ type: "reset" });
-  }, [isOpen]);
+    if (!isOpen) reset();
+  }, [isOpen, reset]);
 
   useEffect(() => {
     if (value === null && flow.deleting) open("1");
@@ -36,26 +37,15 @@ export function useSettingsDialogController({ suppressed }: ControllerOptions) {
 
   const openDialog = useCallback(
     (trigger?: HTMLElement | null) => {
-      dispatch({ type: "reset" });
+      reset();
+      setNow(Date.now());
       open("1", trigger);
     },
-    [open]
+    [open, reset]
   );
 
-  const back = () => dispatch({ type: "back" });
-
-  const confirmDelete = async () => {
-    if (!flow.confirmed || flow.deleting) return;
-    dispatch({ type: "deleteStarted" });
-    try {
-      await deleteAccount();
-    } catch {
-      dispatch({ type: "deleteFailed" });
-    }
-  };
-
   const details = subscription.status === "premium" ? subscription.details : null;
-  const copy = subscriptionCopy(details);
+  const copy = subscriptionCopy(details, now);
   const activePremium = subscription.status === "premium" && !copy.cancelled;
   const qrUrl = isOpen && platform === "other" && typeof window !== "undefined" ? new URL("/preuzmi", window.location.origin).href : null;
 
@@ -68,19 +58,9 @@ export function useSettingsDialogController({ suppressed }: ControllerOptions) {
         account: accountSummary(user),
         focusDelete: flow.returned,
         onRetry: retry,
-        onDelete: () => dispatch({ type: "askDelete" }),
+        onDelete: askDelete,
       }
     : null;
-
-  const deletion: DeleteAccountStepProps = {
-    subscriptionNote: activePremium ? copy.deleteNote : null,
-    confirmed: flow.confirmed,
-    pending: flow.deleting,
-    failed: flow.failed,
-    onConfirmedChange: (confirmed) => dispatch({ type: "confirm", confirmed }),
-    onConfirm: confirmDelete,
-    onCancel: back,
-  };
 
   return {
     open: openDialog,
@@ -93,7 +73,7 @@ export function useSettingsDialogController({ suppressed }: ControllerOptions) {
     },
     step: flow.step,
     settings,
-    deletion,
+    deletion: { ...deletion, subscriptionNote: activePremium ? copy.deleteNote : null },
     onBack: back,
   };
 }

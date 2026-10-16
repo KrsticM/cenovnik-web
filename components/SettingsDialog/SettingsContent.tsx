@@ -53,7 +53,7 @@ export function SettingsContent({
           <SettingsRow
             label="Kontakt i podrška"
             action={
-              <Button asChild variant="underline" size="text" className="min-h-8 rounded text-sm font-medium underline-offset-[3px] focus-visible:ring-offset-0">
+              <Button asChild variant="underline" size="link" className="font-medium">
                 <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
               </Button>
             }
@@ -69,7 +69,6 @@ export function SettingsContent({
                 type="button"
                 variant="danger-outline"
                 size="action"
-                className="px-[18px]"
                 onClick={onDelete}
               >
                 Obriši nalog
