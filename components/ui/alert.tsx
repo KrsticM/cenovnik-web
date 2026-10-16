@@ -11,6 +11,9 @@ const alertVariants = cva(
         default: "bg-background text-foreground",
         destructive:
           "border-destructive/50 text-destructive dark:border-destructive [&>svg]:text-destructive",
+        note: "rounded-[14px] border-0 bg-cream px-4 py-3 text-sm leading-[1.45] text-sage-dark text-pretty",
+        "note-compact": "rounded-[12px] border-0 bg-cream px-3.5 py-3 text-[13px] leading-[1.45] text-sage-dark text-pretty",
+        error: "rounded-[14px] border-rust-border bg-rust-tint px-4 py-3 text-sm leading-[1.45] text-rust text-pretty",
       },
     },
     defaultVariants: {

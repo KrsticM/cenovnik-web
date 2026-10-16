@@ -16,12 +16,10 @@ export function OAuthButton({ icon, label, loading, dimmed, disabled, onClick }:
   return (
     <Button
       variant="pill"
+      size="oauth"
       onClick={onClick}
       disabled={disabled}
-      className={cn(
-        "relative h-[52px] w-full rounded-full px-[52px] text-[15px] font-medium transition-[border-color,opacity] duration-150 focus-visible:ring-offset-[3px] disabled:opacity-100",
-        dimmed && "disabled:opacity-50"
-      )}
+      className={cn(dimmed && "disabled:opacity-50")}
     >
       <span aria-hidden="true" className="absolute left-5 flex h-5 w-5 items-center justify-center">
         {loading ? <Spinner tone="dark" /> : icon}

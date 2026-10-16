@@ -1,6 +1,7 @@
 import { Alert } from "@/components/ui/alert";
 import { BrandBars } from "@/components/ui/brand-bars";
 import { Button } from "@/components/ui/button";
+import { Heading, Strong, Text } from "@/components/ui/typography";
 import { PRIVACY_URL, TERMS_URL } from "@/lib/support";
 import type { OAuthError, OAuthProvider } from "../hooks/useSigninFlow";
 import { AppleIcon, EmailIcon, GoogleIcon } from "@/components/ui/provider-icon";
@@ -26,20 +27,20 @@ export function StartStep({ returnTo, oauth, oauthError, onOAuth, onEmail }: Sta
     <>
       <div className="flex flex-col items-center text-center animate-[fadeUp_200ms_ease_both]">
         <BrandBars />
-        <h1 className="mt-[22px] text-[32px] font-semibold leading-[1.1] tracking-[-0.03em] text-ink">
+        <Heading size="brand" className="mt-[22px]">
           <span className="text-terracotta">e</span>Cenovnik
-        </h1>
-        <p className="mt-2.5 text-base text-ink-muted">Tvoj vodič za pametnu kupovinu.</p>
+        </Heading>
+        <Text size="plain" className="mt-2.5">Tvoj vodič za pametnu kupovinu.</Text>
       </div>
 
       {returnTo && (
-        <Alert role="note" className="mt-7 rounded-[14px] border-0 bg-cream px-4 py-3 text-center text-sm leading-[1.45] text-sage-dark text-pretty">
-          Posle prijave vraćamo te na: <strong className="font-semibold">{returnTo}</strong>
+        <Alert role="note" variant="note" className="mt-7 text-center">
+          Posle prijave vraćamo te na: <Strong>{returnTo}</Strong>
         </Alert>
       )}
 
       {oauthError && (
-        <Alert className="mt-6 rounded-[14px] border-rust-border bg-rust-tint px-4 py-3 text-sm leading-[1.45] text-rust text-pretty animate-[fadeUp_200ms_ease_both]">
+        <Alert variant="error" className="mt-6 animate-[fadeUp_200ms_ease_both]">
           {ERRORS[oauthError]}
         </Alert>
       )}
@@ -64,7 +65,7 @@ export function StartStep({ returnTo, oauth, oauthError, onOAuth, onEmail }: Sta
         <OAuthButton icon={<EmailIcon />} label="Nastavi sa e-mailom" disabled={busy} dimmed={busy} onClick={onEmail} />
       </div>
 
-      <p className="mt-7 text-center text-[13px] leading-normal text-ink-muted text-pretty">
+      <Text size="caption" className="mt-7 text-center">
         Prijavom prihvataš{" "}
         <Button asChild variant="underline" size="text" className="inline text-[13px] font-normal">
           <a href={TERMS_URL}>uslove korišćenja</a>
@@ -74,7 +75,7 @@ export function StartStep({ returnTo, oauth, oauthError, onOAuth, onEmail }: Sta
           <a href={PRIVACY_URL}>politiku privatnosti</a>
         </Button>
         .
-      </p>
+      </Text>
     </>
   );
 }

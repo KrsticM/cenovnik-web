@@ -4,6 +4,7 @@ import { CheckCircle } from "@/components/ui/check-circle";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
+import { Heading as TitleText, Text } from "@/components/ui/typography";
 import { cn } from "@/lib/utils";
 import { ChainRow } from "./ChainRow";
 import { PickedStoreChips } from "./PickedStoreChips";
@@ -27,12 +28,12 @@ export function StorePicker({ picker, onSave, heading: Heading = "h1" }: StorePi
           Još samo ovaj korak
         </span>
       )}
-      <Heading className={cn("text-[28px] font-semibold leading-[1.15] tracking-[-0.025em] text-ink", picker.isNewAccount && "mt-4")}>
+      <TitleText as={Heading} className={cn(picker.isNewAccount && "mt-4")}>
         Izaberi svoje markete
-      </Heading>
-      <p className="mt-2.5 text-base leading-normal text-ink-muted text-pretty">
+      </TitleText>
+      <Text className="mt-2.5">
         Cene proizvoda nisu iste u svim marketima. Izaberi markete koji te zanimaju kako bismo ti prikazali odgovarajuće cene.
-      </p>
+      </Text>
 
       <StoreSearch value={picker.query} onChange={picker.setQuery} />
       <PickedStoreChips chips={picker.chips} onRemove={picker.toggleStore} />
@@ -45,9 +46,10 @@ export function StorePicker({ picker, onSave, heading: Heading = "h1" }: StorePi
       <div className="mt-5 flex flex-col gap-2.5">
         <Button
           variant="sage"
+          size="cta"
           onClick={onSave}
           disabled={!picker.canSave}
-          className="h-[52px] rounded-full text-[15px] font-medium focus-visible:ring-offset-[3px] disabled:bg-sand-dark disabled:text-ink-warm disabled:opacity-100"
+          className="disabled:bg-sand-dark disabled:text-ink-warm disabled:opacity-100"
         >
           {picker.saving && <Spinner tone="cream" />}
           {picker.saveLabel}
@@ -94,9 +96,9 @@ function ChainList({ picker }: { picker: StorePickerState }) {
 
   if (picker.rows.length === 0) {
     return (
-      <p className="px-5 py-7 text-center text-sm leading-normal text-ink-muted text-pretty">
+      <Text size="small" className="px-5 py-7 text-center">
         Nema marketa za „{picker.query}“. Probaj naziv ulice ili mesta.
-      </p>
+      </Text>
     );
   }
 

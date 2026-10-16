@@ -1,4 +1,5 @@
 import { BrandBars } from "@/components/ui/brand-bars";
+import { Heading } from "@/components/ui/typography";
 import type { CatalogItem } from "@/lib/services/products";
 import { GRID_CLASSES } from "@/lib/gridClasses";
 import { ShowcaseCard } from "./ShowcaseCard";
@@ -22,7 +23,7 @@ export function SigninBackdrop({ items }: { items: CatalogItem[] }) {
           </div>
         </section>
         <div className="mx-auto w-full max-w-[1360px] px-4 pt-7 sm:px-5 lg:px-8 lg:pt-10 2xl:max-w-[1720px] 2xl:px-12">
-          <p className="mb-6 text-[26px] font-semibold tracking-[-0.03em] text-ink lg:text-[34px]">Popularni proizvodi</p>
+          <Heading as="p" className="mb-6 text-[26px] leading-normal tracking-[-0.03em] lg:text-[34px]">Popularni proizvodi</Heading>
           <div className={GRID_CLASSES}>
             {items.map((item) => (
               <ShowcaseCard key={item.product.id} item={item} />

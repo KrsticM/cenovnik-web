@@ -26,8 +26,9 @@ export function ChainRow({ chain, first, onToggleChain, onToggleStore }: ChainRo
         <RetailerLogo name={chain.name} src={retailerLogoUrl(chain.id)} />
         <CollapsibleTrigger asChild>
           <Button
-            variant="ghost"
-            className="group/trigger h-auto min-h-[68px] flex-1 justify-start gap-3 whitespace-normal rounded-[12px] py-0 pl-0 pr-1 text-left hover:bg-transparent focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-offset-0"
+            variant="row"
+            size="row"
+            className="group/trigger"
           >
             <span className="flex min-w-0 flex-1 flex-col gap-0.5">
               <span className="text-base font-semibold text-ink">{chain.name}</span>

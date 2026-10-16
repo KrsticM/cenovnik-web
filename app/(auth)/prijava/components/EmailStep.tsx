@@ -2,13 +2,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
-import { cn } from "@/lib/utils";
-import type { EmailCodeState } from "../hooks/useEmailCode";
+import type { EmailStepState } from "../hooks/useEmailStep";
 import { BackButton } from "./BackButton";
 import { StepHeading } from "./StepHeading";
 
 interface EmailStepProps {
-  email: EmailCodeState;
+  email: EmailStepState;
   onBack: () => void;
   onSubmit: () => void;
 }
@@ -41,10 +40,7 @@ export function EmailStep({ email, onBack, onSubmit }: EmailStepProps) {
           onChange={(event) => email.setEmail(event.target.value)}
           aria-invalid={email.emailError !== null}
           aria-describedby={email.emailError ? "email-err" : undefined}
-          className={cn(
-            "h-[52px] rounded-2xl bg-white px-[18px] text-base text-ink transition-[border-color,box-shadow] duration-150 focus-visible:border-sage focus-visible:ring-[3px] focus-visible:ring-sage/18 focus-visible:ring-offset-0 md:text-base",
-            email.emailError ? "border-rust" : "border-line"
-          )}
+          variant="field"
         />
         {email.emailError && (
           <span id="email-err" role="alert" className="text-sm text-rust">
@@ -54,8 +50,9 @@ export function EmailStep({ email, onBack, onSubmit }: EmailStepProps) {
         <Button
           type="submit"
           variant="sage"
+          size="cta"
           disabled={email.sending || empty}
-          className="mt-3 h-[52px] gap-2.5 rounded-full text-[15px] font-medium transition-opacity focus-visible:ring-offset-[3px] disabled:opacity-45"
+          className="mt-3 gap-2.5 transition-opacity disabled:opacity-45"
         >
           {email.sending && <Spinner tone="cream" />}
           {email.sending ? "Šaljemo kod…" : "Pošalji kod"}
