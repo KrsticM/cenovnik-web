@@ -1,7 +1,9 @@
+import { Fragment } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Chevron } from "@/components/ui/chevron";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { SectionLabel } from "@/components/ui/section-label";
 import { RetailerLogo } from "@/components/ui/retailer-logo";
 import { retailerLogoUrl } from "@/lib/retailerLogos";
 import { cn } from "@/lib/utils";
@@ -26,8 +28,9 @@ export function ChainRow({ chain, first, onToggleChain, onToggleStore }: ChainRo
         <RetailerLogo name={chain.name} src={retailerLogoUrl(chain.id)} />
         <CollapsibleTrigger asChild>
           <Button
-            variant="ghost"
-            className="group/trigger h-auto min-h-[68px] flex-1 justify-start gap-3 whitespace-normal rounded-[12px] py-0 pl-0 pr-1 text-left hover:bg-transparent focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-offset-0"
+            variant="row"
+            size="row"
+            className="group/trigger"
           >
             <span className="flex min-w-0 flex-1 flex-col gap-0.5">
               <span className="text-base font-semibold text-ink">{chain.name}</span>
@@ -47,7 +50,10 @@ export function ChainRow({ chain, first, onToggleChain, onToggleStore }: ChainRo
       <CollapsibleContent asChild>
         <div role="group" aria-label={`${chain.name} marketi`} className="pb-2 pl-[68px] pr-3.5">
           {chain.stores.map((store) => (
-            <StoreOption key={store.id} store={store} onToggle={onToggleStore} />
+            <Fragment key={store.id}>
+              {store.separated && <SectionLabel className="block pb-1 pt-3 tracking-[0.04em] text-ink-stone">Ostale prodavnice</SectionLabel>}
+              <StoreOption store={store} onToggle={onToggleStore} />
+            </Fragment>
           ))}
         </div>
       </CollapsibleContent>

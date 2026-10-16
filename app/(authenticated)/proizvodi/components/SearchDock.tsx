@@ -17,7 +17,6 @@ interface SearchDockProps {
 
 export function SearchDock({ search, slotTop, docked, narrow }: SearchDockProps) {
   const width = docked ? (narrow ? 420 : 560) : narrow ? 560 : 720;
-  const iconLeft = docked ? 16 : 22;
 
   return (
     <div
@@ -29,35 +28,7 @@ export function SearchDock({ search, slotTop, docked, narrow }: SearchDockProps)
         transition: `width 220ms ${DOCK_EASE}`,
       }}
     >
-      <SearchField
-        {...search}
-        inputClassName={
-          docked
-            ? "border-line shadow-[0_1px_3px_rgba(26,26,26,0.05)] focus:shadow-[0_0_0_4px_rgba(112,132,95,0.14)]"
-            : "border-cream-border shadow-[0_4px_18px_rgba(122,100,60,0.10)] focus:shadow-[0_0_0_4px_rgba(112,132,95,0.14)]"
-        }
-        inputStyle={{
-          height: docked ? 44 : 62,
-          padding: docked ? "0 62px 0 42px" : "0 76px 0 52px",
-          borderRadius: docked ? 22 : 31,
-          fontSize: docked ? 15 : 17,
-          transition: `height 220ms ${DOCK_EASE}, padding 220ms ${DOCK_EASE}, border-radius 220ms ease, font-size 160ms ease, box-shadow 220ms ease, border-color 180ms ease`,
-        }}
-        iconClassName="border-ink-muted"
-        iconStyle={{
-          left: iconLeft,
-          width: docked ? 13 : 15,
-          height: docked ? 13 : 15,
-          transition: `left 220ms ${DOCK_EASE}, width 220ms ease, height 220ms ease`,
-        }}
-        spinnerClassName="h-[15px] w-[15px] border-line"
-        spinnerStyle={{ right: iconLeft, transition: `right 220ms ${DOCK_EASE}` }}
-        clearStyle={{ right: docked ? 34 : 44, transition: `right 220ms ${DOCK_EASE}` }}
-        dropdownClassName="rounded-2xl shadow-[0_18px_48px_rgba(26,26,26,0.16)]"
-        rowClassName="px-[18px] py-3"
-        rowTextClassName="text-sm"
-        showAllClassName="px-[18px] py-[13px]"
-      />
+      <SearchField {...search} variant="dock" docked={docked} />
     </div>
   );
 }

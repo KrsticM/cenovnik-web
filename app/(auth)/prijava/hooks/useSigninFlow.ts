@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useEmailCode } from "./useEmailCode";
+import { useEmailStep } from "./useEmailStep";
+import { useOtpVerification } from "./useOtpVerification";
 
 export type SigninStep = "start" | "email" | "code" | "done";
 export type OAuthProvider = "apple" | "google";
@@ -31,7 +32,9 @@ export function useSigninFlow({ next, initialOAuthError }: SigninFlowOptions) {
     leaveTimer.current = setTimeout(() => window.location.assign(next), DONE_REDIRECT_MS);
   }, [next]);
 
-  const email = useEmailCode(afterSignIn);
+  const email = useEmailStep();
+  const otp = useOtpVerification(email.email, afterSignIn);
+  const { codeSent } = otp;
 
   // Coming back from the provider with the browser's back button restores this page as it was.
   useEffect(() => {
@@ -55,8 +58,10 @@ export function useSigninFlow({ next, initialOAuthError }: SigninFlowOptions) {
   );
 
   const sendCode = useCallback(async () => {
-    if (await email.sendCode()) setStep("code");
-  }, [email]);
+    if (!(await email.sendCode())) return;
+    codeSent();
+    setStep("code");
+  }, [email, codeSent]);
 
   return {
     step,
@@ -69,6 +74,7 @@ export function useSigninFlow({ next, initialOAuthError }: SigninFlowOptions) {
     oauthError,
     startOAuth,
     email,
+    otp,
     sendCode,
   };
 }

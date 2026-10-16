@@ -2,20 +2,16 @@ import { describe, expect, it } from "vitest";
 import { afterFailedVerify, describeNext, isValidEmail } from "./signinRules";
 
 describe("afterFailedVerify", () => {
-  it("costs an attempt when the code is wrong", () => {
-    expect(afterFailedVerify("invalid", 5, false)).toMatchObject({ attemptsLeft: 4, blocked: false });
+  it("lets the user try again when the code is wrong", () => {
+    expect(afterFailedVerify("invalid", false)).toMatchObject({ blocked: false, error: "Kod nije tačan. Pokušaj ponovo." });
   });
 
-  it("blocks the code after the last wrong attempt", () => {
-    expect(afterFailedVerify("invalid", 1, false)).toMatchObject({ attemptsLeft: 0, blocked: true });
+  it("blocks an expired code so a new one is requested", () => {
+    expect(afterFailedVerify("invalid", true)).toMatchObject({ blocked: true });
   });
 
-  it("blocks an expired code without spending an attempt", () => {
-    expect(afterFailedVerify("invalid", 5, true)).toMatchObject({ attemptsLeft: 5, blocked: true });
-  });
-
-  it.each(["network", "rate-limited"] as const)("never costs an attempt when the failure is %s", (kind) => {
-    expect(afterFailedVerify(kind, 3, false)).toMatchObject({ attemptsLeft: 3, blocked: false });
+  it.each(["network", "rate-limited"] as const)("does not block on %s", (kind) => {
+    expect(afterFailedVerify(kind, false)).toMatchObject({ blocked: false });
   });
 });
 

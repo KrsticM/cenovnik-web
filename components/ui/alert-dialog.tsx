@@ -31,10 +31,12 @@ const AlertDialogContent = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Content> & {
     overlayClassName?: string
+    // Radix keeps an alert dialog open on outside clicks; give this to let the backdrop dismiss it.
+    onOverlayClick?: () => void
   }
->(({ className, overlayClassName, ...props }, ref) => (
+>(({ className, overlayClassName, onOverlayClick, ...props }, ref) => (
   <AlertDialogPortal>
-    <AlertDialogOverlay className={overlayClassName} />
+    <AlertDialogOverlay className={overlayClassName} onClick={onOverlayClick} />
     <AlertDialogPrimitive.Content
       ref={ref}
       className={cn(

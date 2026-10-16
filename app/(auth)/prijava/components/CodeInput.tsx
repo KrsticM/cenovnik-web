@@ -1,5 +1,5 @@
+import { useEffect, useRef } from "react";
 import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from "@/components/ui/input-otp";
-import { cn } from "@/lib/utils";
 import { CODE_LENGTH } from "../signinRules";
 
 interface CodeInputProps {
@@ -13,14 +13,15 @@ interface CodeInputProps {
 const half = CODE_LENGTH / 2;
 
 export function CodeInput({ value, onChange, invalid, disabled, blocked }: CodeInputProps) {
-  const slot = cn(
-    "h-[60px] w-auto max-w-[56px] flex-1 rounded-[14px] border text-2xl font-semibold tabular-nums text-ink shadow-none transition-[border-color,box-shadow] duration-100",
-    "first:rounded-[14px] last:rounded-[14px] data-[active=true]:z-0 data-[active=true]:border-sage data-[active=true]:ring-[3px] data-[active=true]:ring-sage/18",
-    invalid ? "border-rust" : "border-line",
-    blocked ? "bg-sand" : "bg-white"
-  );
+  const input = useRef<HTMLInputElement>(null);
+  // A disabled input drops focus while the code is checked; bring it back for the next try.
+  useEffect(() => {
+    if (!disabled) input.current?.focus();
+  }, [disabled]);
+
   return (
     <InputOTP
+      ref={input}
       maxLength={CODE_LENGTH}
       value={value}
       onChange={onChange}
@@ -35,13 +36,13 @@ export function CodeInput({ value, onChange, invalid, disabled, blocked }: CodeI
     >
       <InputOTPGroup className="min-w-0 flex-1 gap-2">
         {Array.from({ length: half }, (_, i) => (
-          <InputOTPSlot key={i} index={i} className={slot} />
+          <InputOTPSlot key={i} index={i} boxed invalid={invalid} muted={blocked} />
         ))}
       </InputOTPGroup>
       <InputOTPSeparator />
       <InputOTPGroup className="min-w-0 flex-1 gap-2">
         {Array.from({ length: half }, (_, i) => (
-          <InputOTPSlot key={i} index={half + i} className={slot} />
+          <InputOTPSlot key={i} index={half + i} boxed invalid={invalid} muted={blocked} />
         ))}
       </InputOTPGroup>
     </InputOTP>

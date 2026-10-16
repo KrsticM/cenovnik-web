@@ -19,7 +19,15 @@ function InputOTPGroup({ className, ...props }: React.ComponentProps<"div">) {
   return <div className={cn("flex items-center", className)} {...props} />
 }
 
-function InputOTPSlot({ index, className, ...props }: React.ComponentProps<"div"> & { index: number }) {
+interface InputOTPSlotProps extends React.ComponentProps<"div"> {
+  index: number
+  // The sign-in look: separate rounded boxes instead of one joined field.
+  boxed?: boolean
+  invalid?: boolean
+  muted?: boolean
+}
+
+function InputOTPSlot({ index, boxed, invalid, muted, className, ...props }: InputOTPSlotProps) {
   const { char, hasFakeCaret, isActive } = React.useContext(OTPInputContext).slots[index]
 
   return (
@@ -28,6 +36,13 @@ function InputOTPSlot({ index, className, ...props }: React.ComponentProps<"div"
       className={cn(
         "relative flex h-9 w-9 items-center justify-center border-y border-r border-input text-sm shadow-sm transition-all first:rounded-l-md first:border-l last:rounded-r-md",
         isActive && "z-10 ring-1 ring-ring",
+        boxed &&
+          cn(
+            "h-[60px] w-auto max-w-[56px] flex-1 rounded-[14px] border text-2xl font-semibold tabular-nums text-ink shadow-none transition-[border-color,box-shadow] duration-100 first:rounded-[14px] last:rounded-[14px]",
+            "data-[active=true]:z-0 data-[active=true]:border-sage data-[active=true]:ring-[3px] data-[active=true]:ring-sage/18",
+            invalid ? "border-rust" : "border-line",
+            muted ? "bg-sand" : "bg-white"
+          ),
         className
       )}
       {...props}

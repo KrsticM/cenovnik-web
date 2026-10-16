@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { saveUserStoreIds } from "@/lib/services/userStores";
 import { MIN_STORES, storeLimit } from "@/lib/storeLimits";
 import { usePremium } from "@/hooks/usePremium";
-import { buildChainRows, buildPickedChips, limitText, saveHint, saveLabel, toggleStoreSelection, toggled } from "./storePickerModel";
+import { buildChainRows, isDirty, limitText, saveHint, saveLabel, toggleStoreSelection, toggled } from "./storePickerModel";
 import { useStorePickerData } from "./useStorePickerData";
 
 // The user's changes on top of what was loaded; dropped when the data reloads.
@@ -17,6 +17,7 @@ export function useStorePicker(userId: string | null) {
   const [edit, setEdit] = useState<Edit | null>(null);
   const [openChains, setOpenChains] = useState<Set<string>>(new Set());
   const [query, setQueryState] = useState("");
+  const [searchMode, setSearchMode] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -37,6 +38,37 @@ export function useStorePicker(userId: string | null) {
     },
     [change, picked]
   );
+
+  // On a phone a tapped search takes the whole dialog, so the intro makes room for the results. A tap, not focus: the dialog focuses the field by itself when it opens.
+  const startSearch = useCallback(() => {
+    if (window.matchMedia("(max-width: 639px)").matches) setSearchMode(true);
+  }, []);
+
+  const exitSearch = useCallback(() => {
+    setSearchMode(false);
+    setQuery("");
+  }, [setQuery]);
+
+  // Leaving the phone layout (rotation, resize) ends it, and Escape leaves it before it would close the dialog.
+  useEffect(() => {
+    if (!searchMode) return;
+    const phone = window.matchMedia("(max-width: 639px)");
+    const onResize = () => {
+      if (!phone.matches) setSearchMode(false);
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.stopPropagation();
+      event.preventDefault();
+      exitSearch();
+    };
+    phone.addEventListener("change", onResize);
+    window.addEventListener("keydown", onKey, true);
+    return () => {
+      phone.removeEventListener("change", onResize);
+      window.removeEventListener("keydown", onKey, true);
+    };
+  }, [searchMode, exitSearch]);
 
   const toggleChain = useCallback(
     (chainId: string) => {
@@ -60,21 +92,22 @@ export function useStorePicker(userId: string | null) {
     setSaveError(null);
     try {
       await saveUserStoreIds(userId, [...picked]);
+      // Stays "saving" on success: the caller reloads the page, and the buttons must not wake up before that.
       return true;
     } catch (err) {
       console.error("Failed to save stores:", err);
       setSaveError("Nismo uspeli da sačuvamo markete. Pokušaj ponovo.");
-      return false;
-    } finally {
       setSaving(false);
+      return false;
     }
   }, [userId, picked, saving]);
+
+  const dirty = isDirty(picked, saved);
 
   const rows = useMemo(
     () => buildChainRows({ retailers, query, picked, pinned, openChains, limit }),
     [retailers, query, picked, pinned, openChains, limit]
   );
-  const chips = useMemo(() => buildPickedChips(retailers, picked), [retailers, picked]);
 
   return {
     loadState,
@@ -83,12 +116,15 @@ export function useStorePicker(userId: string | null) {
     query,
     setQuery,
     rows,
-    chips,
+    searchMode,
+    startSearch,
+    exitSearch,
     toggleChain,
     toggleStore,
     atLimit: picked.size >= limit,
     limitText: limitText(limit),
     showUpsell: isPremium === false,
+    dirty,
     canSave: picked.size >= MIN_STORES && !saving,
     saving,
     saveLabel: saveLabel(picked.size, saving),

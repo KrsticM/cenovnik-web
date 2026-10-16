@@ -5,7 +5,8 @@
 --   * browse_products(...)        one page of products with the cheapest price in scope,
 --                                 filtered, sorted and keyset-paginated server-side
 --   * browse_products_count(...)  the same filters, counted up to 101 (UI shows "100+")
---   * browse_products_matches(...) shared filter step used by both
+--   * private.browse_products_matches(...) shared filter step used by both (also private.browse_products_candidates
+--                                 and private.product_price_in_scope: helpers kept out of the exposed API schema)
 --   * product_price_summary       cheapest price per product across all markets
 --   * product_browse_order        daily shuffled order for "Preporučeno" (stops after one page)
 --   * refresh_product_price_summary()  call after each daily price import (service role); refreshes both
@@ -14,6 +15,13 @@
 
 create extension if not exists pg_trgm with schema extensions;
 create extension if not exists unaccent with schema extensions;
+
+-- The helper functions live in "private": the API only exposes "public", so they cannot be called
+-- directly. The entry points run as the signed-in user, who therefore needs USAGE on the schema and
+-- EXECUTE on each helper (a plain revoke on public functions breaks them).
+create schema if not exists private;
+revoke all on schema private from public, anon;
+grant usage on schema private to authenticated;
 
 -- Cleanup from earlier drafts (no-ops if they never existed):
 --  * the old expression index depends on f_search_normalize, so drop it before redefining it;
@@ -31,6 +39,17 @@ immutable
 parallel safe
 as $$
   select pg_catalog.lower(extensions.unaccent('extensions.unaccent'::regdictionary, coalesce(value, '')));
+$$;
+
+-- User text goes into LIKE patterns, where \, % and _ are special; escape them so "%" or "_" is
+-- an ordinary character instead of a match-everything wildcard. Same inlining rules as above.
+create or replace function public.f_like_escape(value text)
+returns text
+language sql
+immutable
+parallel safe
+as $$
+  select pg_catalog.replace(pg_catalog.replace(pg_catalog.replace(coalesce(value, ''), '\', '\\'), '%', '\%'), '_', '\_');
 $$;
 
 -- 2. Indexes -------------------------------------------------------------------------------
@@ -114,6 +133,54 @@ create index if not exists product_browse_order_key_idx
 
 grant select on public.product_browse_order to authenticated;
 
+-- 3c. Sign-in showcase (refreshed with the summary) ---------------------------------------------
+
+-- The most-added products of the last 30 days that have a photo and a current price, topped up
+-- with deals, ranked and capped at 32. get_signin_showcase() (signin_showcase.sql) only reads
+-- this, so an anonymous caller never triggers the 30-day aggregate. It is only as fresh as the
+-- daily refresh job (section 5): without the cron job it keeps the ranking from the last manual refresh.
+create materialized view if not exists public.signin_showcase_cache as
+with popular as (
+  select i.product_id, count(*) as adds
+  from public.shopping_list_items i
+  where i.created_at > now() - interval '30 days'
+  group by i.product_id
+),
+ranked as (
+  select
+    p.id,
+    p.product_name,
+    s.min_price,
+    s.regular_price,
+    s.is_deal,
+    coalesce(pop.adds, 0) as adds
+  from public.products p
+  join public.product_price_summary s on s.product_id = p.id
+  left join popular pop on pop.product_id = p.id
+  where p.has_image
+    and (pop.product_id is not null or s.is_deal)
+  order by coalesce(pop.adds, 0) desc, s.is_deal desc, p.id
+  limit 32
+)
+select
+  row_number() over (order by r.adds desc, r.is_deal desc, r.id) as rank,
+  jsonb_build_object(
+    'product_id', r.id,
+    'product_name', r.product_name,
+    'barcode', (select min(b.barcode collate "C") from public.barcodes b where b.product_id = r.id),
+    'min_price', r.min_price,
+    'regular_price', r.regular_price,
+    'is_deal', r.is_deal
+  ) as item
+from ranked r
+with data;
+
+create unique index if not exists signin_showcase_cache_rank_idx
+  on public.signin_showcase_cache (rank);
+
+-- Only get_signin_showcase() (security definer) reads it; keep it out of the REST API.
+revoke all on public.signin_showcase_cache from public, anon, authenticated;
+
 create or replace function public.refresh_product_price_summary()
 returns void
 language sql
@@ -122,6 +189,7 @@ set search_path = ''
 as $$
   refresh materialized view concurrently public.product_price_summary;
   refresh materialized view concurrently public.product_browse_order;
+  refresh materialized view concurrently public.signin_showcase_cache;
 $$;
 
 revoke all on function public.refresh_product_price_summary() from public, anon, authenticated;
@@ -138,11 +206,15 @@ grant execute on function public.refresh_product_price_summary() to service_role
 
 -- The return types gained regular_price; CREATE OR REPLACE can't change a return type.
 drop function if exists public.browse_products(text, text[], numeric, numeric, boolean, text, text, integer, numeric, text, uuid);
+-- Earlier versions of the helpers lived in public.
 drop function if exists public.browse_products_matches(text, text[], numeric, numeric, boolean);
+drop function if exists public.browse_products_candidates(text);
+drop function if exists public.product_price_in_scope(uuid, text[]);
+drop function if exists private.browse_products_matches(text, text[], numeric, numeric, boolean);
 
 -- Products whose name (or barcode) matches the query; all products when there is no query.
 -- Prices are not involved, so callers can order and page first and price only what they return.
-create or replace function public.browse_products_candidates(p_query text default null)
+create or replace function private.browse_products_candidates(p_query text default null)
 returns table (
   id            uuid,
   product_name  text,
@@ -185,16 +257,16 @@ as $$
           select 1 from public.barcodes b
           where b.product_id = p.id and b.barcode = pg_catalog.btrim(p_query)))
     or (not params.is_barcode
-        and p.search_name like '%' || params.anchor || '%'
+        and p.search_name like '%' || public.f_like_escape(params.anchor) || '%'
         and not exists (
           select 1 from pg_catalog.unnest(params.words) w
-          where p.search_name not like '%' || w || '%'));
+          where p.search_name not like '%' || public.f_like_escape(w) || '%'));
 $$;
 
 -- Shared filter step: products with a price in scope that match the query and filters.
 -- Prices every product in scope first, so it is only used where all of them are needed anyway
 -- (price sort without a search).
-create or replace function public.browse_products_matches(
+create or replace function private.browse_products_matches(
   p_query        text     default null,
   p_store_ids    text[]   default null,
   p_price_min    numeric  default null,
@@ -254,7 +326,7 @@ as $$
     pr.min_price,
     pr.regular_price,
     pr.is_deal
-  from public.browse_products_candidates(p_query) c
+  from private.browse_products_candidates(p_query) c
   join prices pr on pr.product_id = c.id
   where (p_price_min is null or pr.min_price >= p_price_min)
     and (p_price_max is null or pr.min_price < p_price_max)
@@ -264,7 +336,7 @@ $$;
 -- Cheapest price of one product in the user's stores (or across all markets when unscoped).
 -- Same rules as the scoped prices in browse_products_matches, but for a single product, so
 -- ordered walks can price only the rows they actually return.
-create or replace function public.product_price_in_scope(p_product_id uuid, p_store_ids text[])
+create or replace function private.product_price_in_scope(p_product_id uuid, p_store_ids text[])
 returns table (min_price numeric, regular_price numeric, is_deal boolean)
 language sql
 stable
@@ -354,7 +426,7 @@ begin
           o.browse_key
         from public.product_browse_order o
         join public.products p on p.id = o.product_id
-        cross join lateral public.product_price_in_scope(o.product_id, p_store_ids) pr
+        cross join lateral private.product_price_in_scope(o.product_id, p_store_ids) pr
         where o.browse_key >= v_from and o.browse_key < v_to
           and (p_after_id is null or v_segment <> p_after_num::integer
                or (o.browse_key, o.product_id) > (p_after_text, p_after_id))
@@ -389,7 +461,7 @@ begin
         0::numeric,
         p.search_name::text
       from public.products p
-      cross join lateral public.product_price_in_scope(p.id, p_store_ids) pr
+      cross join lateral private.product_price_in_scope(p.id, p_store_ids) pr
       where (p_after_id is null or (p.search_name, p.id) > (p_after_text, p_after_id))
         and (p_price_min is null or pr.min_price >= p_price_min)
         and (p_price_max is null or pr.min_price < p_price_max)
@@ -407,11 +479,11 @@ begin
           case
             when p_sort = 'name' then c.norm_name
             -- relevance: name starts with query, then a word starts with it, then contains
-            when c.norm_name like c.q || '%' then '0' || c.norm_name
-            when ' ' || c.norm_name like '% ' || c.q || '%' then '1' || c.norm_name
+            when c.norm_name like public.f_like_escape(c.q) || '%' then '0' || c.norm_name
+            when ' ' || c.norm_name like '% ' || public.f_like_escape(c.q) || '%' then '1' || c.norm_name
             else '2' || c.norm_name
           end as k_text
-        from public.browse_products_candidates(p_query) c
+        from private.browse_products_candidates(p_query) c
       ),
       -- Sorted before pricing (OFFSET 0 keeps it a separate step), so a broad search like "m"
       -- sorts names only and prices just the rows it returns.
@@ -435,7 +507,7 @@ begin
         0::numeric,
         k.k_text
       from ordered k
-      cross join lateral public.product_price_in_scope(k.id, p_store_ids) pr
+      cross join lateral private.product_price_in_scope(k.id, p_store_ids) pr
       where (p_price_min is null or pr.min_price >= p_price_min)
         and (p_price_max is null or pr.min_price < p_price_max)
         and (not coalesce(p_deals_only, false) or pr.is_deal)
@@ -454,8 +526,8 @@ begin
           pr.regular_price,
           pr.is_deal,
           (case when p_sort = 'price_desc' then -pr.min_price else pr.min_price end)::numeric as k_num
-        from public.browse_products_candidates(p_query) c
-        cross join lateral public.product_price_in_scope(c.id, p_store_ids) pr
+        from private.browse_products_candidates(p_query) c
+        cross join lateral private.product_price_in_scope(c.id, p_store_ids) pr
         where (p_price_min is null or pr.min_price >= p_price_min)
           and (p_price_max is null or pr.min_price < p_price_max)
           and (not coalesce(p_deals_only, false) or pr.is_deal)
@@ -496,15 +568,15 @@ begin
             when m.q is not null then
               -- relevance: name starts with query, then a word starts with it, then contains
               case
-                when m.norm_name like m.q || '%' then '0'
-                when ' ' || m.norm_name like '% ' || m.q || '%' then '1'
+                when m.norm_name like public.f_like_escape(m.q) || '%' then '0'
+                when ' ' || m.norm_name like '% ' || public.f_like_escape(m.q) || '%' then '1'
                 else '2'
               end || m.norm_name
             else
               -- "Preporučeno": images first, then a stable shuffle for this session
               case when m.has_image then '0' else '1' end || md5(m.id::text || coalesce(p_seed, ''))
           end as k_text
-        from public.browse_products_matches(p_query, p_store_ids, p_price_min, p_price_max, p_deals_only) m
+        from private.browse_products_matches(p_query, p_store_ids, p_price_min, p_price_max, p_deals_only) m
       )
       select
         k.id,
@@ -551,7 +623,7 @@ begin
         select count(*)::integer
         from (
           select 1
-          from public.browse_products_candidates(p_query) c
+          from private.browse_products_candidates(p_query) c
           join public.product_browse_order o on o.product_id = c.id
           limit 101
         ) capped
@@ -565,7 +637,7 @@ begin
       select count(*)::integer
       from (
         select 1
-        from public.browse_products_candidates(p_query) c
+        from private.browse_products_candidates(p_query) c
         cross join lateral (
           select 1
           from public.current_prices cp
@@ -582,8 +654,8 @@ begin
     select count(*)::integer
     from (
       select 1
-      from public.browse_products_candidates(p_query) c
-      cross join lateral public.product_price_in_scope(c.id, p_store_ids) pr
+      from private.browse_products_candidates(p_query) c
+      cross join lateral private.product_price_in_scope(c.id, p_store_ids) pr
       where (p_price_min is null or pr.min_price >= p_price_min)
         and (p_price_max is null or pr.min_price < p_price_max)
         and (not coalesce(p_deals_only, false) or pr.is_deal)
@@ -594,17 +666,20 @@ end;
 $$;
 
 grant execute on function public.browse_products(text, text[], numeric, numeric, boolean, text, text, integer, numeric, text, uuid) to authenticated;
-grant execute on function public.browse_products_matches(text, text[], numeric, numeric, boolean) to authenticated;
+revoke all on function private.browse_products_matches(text, text[], numeric, numeric, boolean) from public, anon;
+grant execute on function private.browse_products_matches(text, text[], numeric, numeric, boolean) to authenticated;
 grant execute on function public.browse_products_count(text, text[], numeric, numeric, boolean) to authenticated;
-grant execute on function public.product_price_in_scope(uuid, text[]) to authenticated;
-grant execute on function public.browse_products_candidates(text) to authenticated;
+revoke all on function private.product_price_in_scope(uuid, text[]) from public, anon;
+grant execute on function private.product_price_in_scope(uuid, text[]) to authenticated;
+revoke all on function private.browse_products_candidates(text) from public, anon;
+grant execute on function private.browse_products_candidates(text) to authenticated;
 
 -- 5. Daily refresh (optional, recommended) ---------------------------------------------------
 --
 -- The summary and the daily "Preporučeno" order must be refreshed after each daily price import.
 -- Calling refresh_product_price_summary() through the API can hit the statement timeout on ~7.7M
 -- rows, so schedule it inside the database instead, and have the job call the function (it
--- refreshes both views). Enable pg_cron (Database → Extensions), then run the block below.
+-- refreshes all three views: the summary, the browse order and the sign-in showcase). Enable pg_cron (Database → Extensions), then run the block below.
 -- pg_cron uses UTC: '0 11 * * *' = 12:00 CET (winter), 13:00 CEST (summer). Scheduling with an
 -- existing job name replaces that job, so re-running this also fixes an older job that refreshed
 -- only product_price_summary.

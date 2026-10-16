@@ -6,7 +6,7 @@
 -- Expect: 5 functions, 1 materialized view, 4 indexes, 2 extensions.
 select 'function' as kind, proname as name from pg_proc
 where pronamespace = 'public'::regnamespace
-  and proname in ('f_search_normalize', 'browse_products', 'browse_products_matches',
+  and proname in ('f_search_normalize', 'f_like_escape', 'browse_products',
                   'browse_products_count', 'refresh_product_price_summary')
 union all
 select 'matview', matviewname from pg_matviews where schemaname = 'public' and matviewname = 'product_price_summary'
@@ -194,11 +194,37 @@ rollback;
 
 -- 12. Word order doesn't matter ---------------------------------------------------------------
 -- Expect: the three counts are equal, and only_in_one = 0 (same products for every word order).
-with a as (select id from public.browse_products_matches(p_query => 'plazma keks')),
-     b as (select id from public.browse_products_matches(p_query => 'keks plazma')),
-     c as (select id from public.browse_products_matches(p_query => 'Keks   PLAZMA'))
+with a as (select id from private.browse_products_matches(p_query => 'plazma keks')),
+     b as (select id from private.browse_products_matches(p_query => 'keks plazma')),
+     c as (select id from private.browse_products_matches(p_query => 'Keks   PLAZMA'))
 select
   (select count(*) from a) as plazma_keks,
   (select count(*) from b) as keks_plazma,
   (select count(*) from c) as keks_plazma_messy,
   (select count(*) from ((table a except table b) union all (table b except table a)) d) as only_in_one;
+
+-- 13. LIKE wildcards in the query are ordinary characters -----------------------------------
+-- Expect: escaped = "100\%\_\\x"; both counts = 0 unless a product name really contains "%" or "_"
+-- (and then far fewer than the roughly 58k products a wildcard would match).
+select public.f_like_escape('100%_\x') as escaped;
+select
+  (select count(*) from private.browse_products_candidates('%')) as percent_matches,
+  (select count(*) from private.browse_products_candidates('_')) as underscore_matches;
+
+-- 14. Sign-in showcase is read from the precomputed view ------------------------------------
+-- Expect: cached_rows between 1 and 32; from_function = least(cached_rows, 16); no seq scan of
+-- shopping_list_items in the plan of the second query.
+select count(*) as cached_rows from public.signin_showcase_cache;
+select jsonb_array_length(public.get_signin_showcase(16)) as from_function;
+
+-- 15. The helpers are private -----------------------------------------------------------------
+-- Expect: three rows, all in schema "private" (none in "public"); anon_can_run = false;
+-- authenticated_can_run = true (the entry points call them as the signed-in user).
+select n.nspname as schema, p.proname as name
+from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+where p.proname in ('browse_products_candidates', 'browse_products_matches', 'product_price_in_scope')
+order by 1, 2;
+select
+  has_function_privilege('anon', 'private.browse_products_candidates(text)', 'execute') as anon_can_run,
+  has_function_privilege('authenticated', 'private.browse_products_candidates(text)', 'execute') as authenticated_can_run;
+-- Also confirm in Supabase (Settings → API → Exposed schemas) that "private" is not listed.

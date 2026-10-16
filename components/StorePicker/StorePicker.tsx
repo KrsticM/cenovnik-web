@@ -4,9 +4,10 @@ import { CheckCircle } from "@/components/ui/check-circle";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
+import { Heading as TitleText, Text } from "@/components/ui/typography";
 import { cn } from "@/lib/utils";
+import { SignedInLine, type SignedInLineProps } from "@/components/MyMarketsDialog/SignedInLine";
 import { ChainRow } from "./ChainRow";
-import { PickedStoreChips } from "./PickedStoreChips";
 import { StoreLimitNotice } from "./StoreLimitNotice";
 import { StoreSearch } from "./StoreSearch";
 import type { StorePickerState } from "./useStorePicker";
@@ -16,27 +17,45 @@ interface StorePickerProps {
   onSave: () => void;
   // A dialog passes its title component, so the heading names the dialog.
   heading?: ElementType;
+  // Only when the dialog cannot be closed: the way out for someone who signed in with the wrong account.
+  signOut?: SignedInLineProps;
+  // Takes the user to where Premium is explained; left out when the picker cannot be left.
+  onUpgrade?: (trigger: HTMLElement) => void;
 }
 
-export function StorePicker({ picker, onSave, heading: Heading = "h1" }: StorePickerProps) {
+export function StorePicker({ picker, onSave, heading: Heading = "h1", signOut, onUpgrade }: StorePickerProps) {
   return (
     <div className="flex flex-col animate-[fadeUp_300ms_ease_150ms_both]">
-      {picker.isNewAccount && (
-        <span className="flex items-center gap-2 text-[13px] font-medium text-sage-dark">
-          <CheckCircle />
-          Još samo ovaj korak
-        </span>
+      {picker.searchMode ? (
+        <TitleText as={Heading} className="sr-only">
+          Izaberi svoje markete
+        </TitleText>
+      ) : (
+        <>
+          {signOut && <SignedInLine {...signOut} />}
+          {picker.isNewAccount && (
+            <span className="flex items-center gap-2 text-[13px] font-medium text-sage-dark">
+              <CheckCircle />
+              Još samo ovaj korak
+            </span>
+          )}
+          <TitleText as={Heading} className={cn(picker.isNewAccount && "mt-4")}>
+            Izaberi svoje markete
+          </TitleText>
+          <Text className="mt-2.5">
+            Cene proizvoda nisu iste u svim marketima. Izaberi markete koji te zanimaju kako bismo ti prikazali odgovarajuće cene.
+          </Text>
+        </>
       )}
-      <Heading className={cn("text-[28px] font-semibold leading-[1.15] tracking-[-0.025em] text-ink", picker.isNewAccount && "mt-4")}>
-        Izaberi svoje markete
-      </Heading>
-      <p className="mt-2.5 text-base leading-normal text-ink-muted text-pretty">
-        Cene proizvoda nisu iste u svim marketima. Izaberi markete koji te zanimaju kako bismo ti prikazali odgovarajuće cene.
-      </p>
 
-      <StoreSearch value={picker.query} onChange={picker.setQuery} />
-      <PickedStoreChips chips={picker.chips} onRemove={picker.toggleStore} />
-      {picker.atLimit && <StoreLimitNotice text={picker.limitText} showUpsell={picker.showUpsell} />}
+      <StoreSearch
+        value={picker.query}
+        onChange={picker.setQuery}
+        onStart={picker.startSearch}
+        searchMode={picker.searchMode}
+        onCancel={picker.exitSearch}
+      />
+      {picker.atLimit && <StoreLimitNotice text={picker.limitText} onUpgrade={picker.showUpsell ? onUpgrade : undefined} />}
 
       <div className="mt-3.5 max-h-[min(48vh,440px)] overflow-y-auto overscroll-contain rounded-[18px] border border-line">
         <ChainList picker={picker} />
@@ -45,9 +64,10 @@ export function StorePicker({ picker, onSave, heading: Heading = "h1" }: StorePi
       <div className="mt-5 flex flex-col gap-2.5">
         <Button
           variant="sage"
+          size="cta"
           onClick={onSave}
           disabled={!picker.canSave}
-          className="h-[52px] rounded-full text-[15px] font-medium focus-visible:ring-offset-[3px] disabled:bg-sand-dark disabled:text-ink-warm disabled:opacity-100"
+          className="disabled:bg-sand-dark disabled:text-ink-warm disabled:opacity-100"
         >
           {picker.saving && <Spinner tone="cream" />}
           {picker.saveLabel}
@@ -94,9 +114,9 @@ function ChainList({ picker }: { picker: StorePickerState }) {
 
   if (picker.rows.length === 0) {
     return (
-      <p className="px-5 py-7 text-center text-sm leading-normal text-ink-muted text-pretty">
+      <Text size="small" className="px-5 py-7 text-center">
         Nema marketa za „{picker.query}“. Probaj naziv ulice ili mesta.
-      </p>
+      </Text>
     );
   }
 

@@ -34,6 +34,10 @@ const buttonVariants = cva(
         "danger-outline": "border border-rust-border bg-white text-rust hover:border-rust hover:bg-rust-tint focus-visible:ring-rust",
         danger: "bg-rust text-white focus-visible:ring-rust",
         "on-cream": "font-semibold text-sage-dark hover:bg-sage/14",
+        rust: "bg-rust font-semibold text-white hover:bg-rust-dark",
+        "ghost-sage": "text-sage-dark hover:bg-transparent hover:text-rust",
+        // A list row that is itself the disclosure trigger: no hover fill, the row owns the layout.
+        row: "font-normal hover:bg-transparent hover:text-accent-foreground",
       },
       size: {
         default: "h-10 px-4 py-2",
@@ -55,6 +59,11 @@ const buttonVariants = cva(
         "icon-touch": "size-11 rounded-full p-0 focus-visible:ring-offset-0",
         // The big pair of buttons on a confirmation step.
         confirm: "h-12 rounded-full px-[22px] text-[15px] focus-visible:ring-offset-white",
+        // Full-width call to action under a form or picker.
+        cta: "h-[52px] rounded-full text-[15px] font-medium focus-visible:ring-offset-[3px]",
+        // A sign-in provider button: label centred, icon pinned left.
+        oauth: "relative h-[52px] w-full rounded-full px-[52px] text-[15px] font-medium transition-[border-color,opacity] duration-150 focus-visible:ring-offset-[3px] disabled:opacity-100",
+        row: "h-auto min-h-[68px] flex-1 justify-start gap-3 whitespace-normal rounded-[12px] py-0 pl-0 pr-1 text-left focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-offset-0",
         "icon-xs": "h-[26px] w-[26px] rounded-full p-0",
         "icon-sm": "h-7 w-7 rounded-full p-0",
         "icon-md": "h-9 w-9 rounded-full p-0",

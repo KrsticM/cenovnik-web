@@ -3,7 +3,7 @@ import { browseProducts } from "@/lib/services/products";
 import { formatPrice } from "@/lib/formatPrice";
 import { isAborted } from "@/lib/services/serviceError";
 import { SEARCH_DEBOUNCE_MS, SEARCH_MIN_LENGTH } from "../config";
-import type { SearchSuggestion } from "../components/SearchField";
+import type { SearchSuggestion } from "../components/SuggestionList";
 
 const SUGGESTION_LIMIT = 6;
 

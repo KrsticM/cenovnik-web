@@ -23,6 +23,7 @@ export interface SettingsContentProps {
   qrUrl: string | null;
   account: { account: string; kind: AccountKind; line: string };
   focusDelete: boolean;
+  focusSubscription: boolean;
   onRetry: () => void;
   onDelete: () => void;
 }
@@ -34,6 +35,7 @@ export function SettingsContent({
   qrUrl,
   account,
   focusDelete,
+  focusSubscription,
   onRetry,
   onDelete,
 }: SettingsContentProps) {
@@ -41,7 +43,7 @@ export function SettingsContent({
     <>
       <SettingsHeader />
       <div className="min-h-0 flex-1 overflow-y-auto px-5 sm:px-7">
-        <SettingsSection title="Pretplata" first>
+        <SettingsSection title="Pretplata" first focusTitle={focusSubscription}>
           <SubscriptionStatus state={subscription} copy={subscriptionCopy} platform={platform} qrUrl={qrUrl} onRetry={onRetry} />
         </SettingsSection>
 
@@ -76,8 +78,9 @@ export function SettingsContent({
             }
           />
         </SettingsSection>
+        <LegalLinks links={LEGAL} placement="inline" />
       </div>
-      <LegalLinks links={LEGAL} />
+      <LegalLinks links={LEGAL} placement="pinned" />
     </>
   );
 }

@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { UNDO_WINDOW_MS, useShoppingList } from "@/contexts/ShoppingListContext";
 
 const TOAST_ID = "removal";
+const TOAST_OFFSET = "max(16px, env(safe-area-inset-bottom))";
 
-// Wide enough for long product names; the pill itself shrinks to fit and stays centred.
-const TOASTER_STYLE = { "--width": "min(560px, calc(100vw - 32px))" } as CSSProperties;
+// The pill shrinks to fit and stays centred; a long name wraps to two lines instead of pushing it off a phone.
+const TOASTER_STYLE = { "--width": "min(480px, calc(100vw - 32px))" } as CSSProperties;
 
 export function RemovalToast() {
   const { lastRemoved, undoRemove } = useShoppingList();
@@ -27,9 +28,9 @@ export function RemovalToast() {
       (id) => (
         <div
           data-removal-toast
-          className="pointer-events-auto mx-auto flex w-fit max-w-full items-center gap-4 rounded-[14px] bg-ink py-3 pl-[18px] pr-3 text-white shadow-[0_16px_40px_rgba(26,26,26,0.28)]"
+          className="pointer-events-auto mx-auto flex w-fit max-w-full items-center gap-3 rounded-[14px] bg-ink py-3 pl-[18px] pr-3 text-white shadow-[0_16px_40px_rgba(26,26,26,0.28)]"
         >
-          <span className="min-w-0 truncate text-sm">Uklonjeno: {lastRemoved.productName}</span>
+          <span className="line-clamp-2 min-w-0 text-sm leading-[1.4] wrap-anywhere">Uklonjeno: {lastRemoved.productName}</span>
           <Button
             variant="cream"
             onClick={() => {
@@ -49,7 +50,8 @@ export function RemovalToast() {
   return (
     <Toaster
       position="bottom-center"
-      offset={24}
+      offset={TOAST_OFFSET}
+      mobileOffset={TOAST_OFFSET}
       style={TOASTER_STYLE}
       toastOptions={{
         unstyled: true,
