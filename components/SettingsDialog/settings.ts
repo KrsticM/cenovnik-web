@@ -1,6 +1,8 @@
 import { signedInAs, type SignInKind } from "@/components/MyMarketsDialog/myMarkets";
 
 export const SETTINGS_PARAM = "podesavanja";
+// The parameter value that opens the dialog on its subscription section.
+export const SETTINGS_ON_SUBSCRIPTION = "pretplata";
 
 export type AccountKind = SignInKind;
 

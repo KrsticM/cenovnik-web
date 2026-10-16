@@ -35,6 +35,7 @@ const buttonVariants = cva(
         danger: "bg-rust text-white focus-visible:ring-rust",
         "on-cream": "font-semibold text-sage-dark hover:bg-sage/14",
         rust: "bg-rust font-semibold text-white hover:bg-rust-dark",
+        "ghost-sage": "text-sage-dark hover:bg-transparent hover:text-rust",
         // A list row that is itself the disclosure trigger: no hover fill, the row owns the layout.
         row: "font-normal hover:bg-transparent hover:text-accent-foreground",
       },

@@ -4,6 +4,7 @@ const TONES = {
   muted: "border-ink-muted",
   soft: "border-ink-soft",
   stone: "border-stone",
+  "ink-stone": "border-ink-stone",
 }
 
 interface RingIconProps {

@@ -15,7 +15,6 @@ const PAGE_NAMES: [prefix: string, name: string][] = [
   ["/lista", "tvoju listu"],
   ["/moji-marketi", "Moje markete"],
   ["/podesavanja", "Podešavanja"],
-  ["/premium", "Premium članstvo"],
 ];
 
 // Product links only carry an id, so they get a generic name.

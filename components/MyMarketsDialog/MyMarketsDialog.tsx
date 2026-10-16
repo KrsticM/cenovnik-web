@@ -2,19 +2,16 @@
 
 import type { ReactNode } from "react";
 import { ModalDialog } from "@/components/ui/modal-dialog";
-import { SignedInLine } from "./SignedInLine";
 
 interface MyMarketsDialogProps {
   open: boolean;
   dismissable: boolean;
   onClose: () => void;
   onRestoreFocus: () => void;
-  // Only when the dialog cannot be closed: the way out for someone who signed in with the wrong account.
-  signOut?: { account: string; via: string | null; onSignOut: () => void };
   children: ReactNode;
 }
 
-export function MyMarketsDialog({ open, dismissable, onClose, onRestoreFocus, signOut, children }: MyMarketsDialogProps) {
+export function MyMarketsDialog({ open, dismissable, onClose, onRestoreFocus, children }: MyMarketsDialogProps) {
   return (
     <ModalDialog
       open={open}
@@ -25,7 +22,6 @@ export function MyMarketsDialog({ open, dismissable, onClose, onRestoreFocus, si
       className="sm:max-h-[calc(100dvh-48px)] sm:w-[min(640px,calc(100%-48px))]"
     >
       <div className="overflow-y-auto p-[clamp(24px,6vw,44px)]">
-        {signOut && <SignedInLine {...signOut} />}
         {children}
       </div>
     </ModalDialog>

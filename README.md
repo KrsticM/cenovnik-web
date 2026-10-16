@@ -22,7 +22,6 @@ Web app for eCenovnik, the Serbian grocery price-comparison platform. It mirrors
   - offline: ticks queue on the device and sync on reconnect;
   - never shows owner details and is not indexed by search engines.
 - **System states**: 404, error pages, loading skeletons, empty states and an offline banner. All are listed under [System states](#system-states).
-- **Not built yet**: settings (`/podesavanja`) is a placeholder.
 
 UI copy is Serbian (Latin), in the informal "ti" form.
 
@@ -71,7 +70,7 @@ The database also needs the scripts under [Database](#database).
 | `/proizvodi` | signed in | Product catalog and detail dialog |
 | `/lista` | signed in | Older full-page list (the panel is the main list UI) |
 | `?moji-marketi=1` on any signed-in page | signed in | Moji marketi dialog (store picker). Opens from the account menu and the market links; it opens by itself, and cannot be closed, until an account has saved at least 2 stores. `/moji-marketi` and `/prodavnice` redirect to `/proizvodi?moji-marketi=1` |
-| `/podesavanja` | signed in | Placeholder |
+| `?podesavanja=1` on any signed-in page | signed in | Settings dialog (subscription, account, help, account deletion). Opens from the account menu; `?podesavanja=pretplata` opens it on the subscription section, which is where the "Premium članstvo" button of the 10-market notice leads. `/podesavanja` redirects to `/proizvodi?podesavanja=1` |
 | `/lista/[token]` | public | Shared list (server-rendered, real 404 for dead links) |
 | `/api/lista/[token]` | public | Shared list JSON for client refreshes |
 
@@ -104,7 +103,7 @@ Conventions:
 ### Data and sync
 
 - **Signed-in users** talk to Supabase directly from the browser; Row-Level Security limits them to their own lists.
-- **Catalog**: Postgres functions `browse_products` / `browse_products_count` do search, filters, sort, keyset pagination and a capped count. The cheapest price per product comes from the materialized view `product_price_summary`, and the daily "Preporučeno" order from `product_browse_order`; a pg_cron job refreshes both by calling `refresh_product_price_summary()`.
+- **Catalog**: Postgres functions `browse_products` / `browse_products_count` do search, filters, sort, keyset pagination and a capped count. The cheapest price per product comes from the materialized view `product_price_summary`, and the daily "Preporučeno" order from `product_browse_order`; a pg_cron job refreshes both, and the sign-in showcase cache (`signin_showcase_cache`), by calling `refresh_product_price_summary()`. Without that job the sign-in showcase and "Preporučeno" order go stale.
 - **Owner's list**: `ShoppingListContext` applies changes optimistically and saves them one after another. Realtime `postgres_changes` keeps other devices in sync, with reloads debounced and shared-list ticks ignored.
 - **Shared list**:
   - **Reads:** anonymous visitors have no table access at all. They read through `get_shared_list(token)` and tick through `set_shared_item_checked(token, …)`, both security-definer functions checked against the token.

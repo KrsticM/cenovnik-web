@@ -33,7 +33,7 @@ const STRIP: SearchFieldStyles = {
   input: "h-11 rounded-[22px] border-line pl-[42px] pr-[62px] text-base focus:shadow-[0_0_0_4px_rgba(112,132,95,0.12)]",
   icon: "left-4 size-[13px]",
   iconTone: "muted",
-  spinner: "right-[17px]",
+  spinner: "right-[17px] size-3.5",
   clear: "right-[34px]",
   dropdown: "rounded-[14px] shadow-[0_14px_40px_rgba(26,26,26,0.16)]",
   dropdownOffset: 8,

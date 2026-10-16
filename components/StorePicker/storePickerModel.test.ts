@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Retailer } from "@/lib/services/retailers";
-import { buildChainRows, toggleStoreSelection } from "./storePickerModel";
+import { buildChainRows, isDirty, premiumStep, saveLabel, toggleStoreSelection } from "./storePickerModel";
 
 describe("toggleStoreSelection", () => {
   it("adds a store while under the limit", () => {
@@ -64,5 +64,48 @@ describe("buildChainRows", () => {
       ["s1", false],
       ["s2", true],
     ]);
+  });
+
+  it("lists chains with picked stores first, keeping the order otherwise", () => {
+    expect(rows().map((chain) => chain.id)).toEqual(["maxi", "lidl"]);
+    expect(rows({ pinned: new Set(["s3"]) }).map((chain) => chain.id)).toEqual(["lidl", "maxi"]);
+  });
+
+  it("starts \"Ostale prodavnice\" at the first store after the picked ones, never while searching", () => {
+    const separated = (overrides = {}) => rows(overrides)[0].stores.map((store) => store.separated);
+    expect(separated({ pinned: new Set(["s2"]) })).toEqual([false, true]);
+    expect(separated()).toEqual([false, false]);
+    expect(separated({ pinned: new Set(["s2"]), query: "maxi" })).toEqual([false, false]);
+  });
+
+  it("counts picked stores in the subtitle, and results while searching", () => {
+    expect(rows({ picked: new Set(["s1"]) })[0].subtitle).toBe("1 od 2 izabrano");
+    expect(rows()[0].subtitle).toBe("2 marketa");
+    expect(rows({ query: "maxi" })[0].subtitle).toBe("2 rezultata");
+  });
+});
+
+describe("saveLabel", () => {
+  it("asks for the missing stores, then shows the count", () => {
+    expect(saveLabel(0, false)).toBe("Izaberi još 2 marketa");
+    expect(saveLabel(1, false)).toBe("Izaberi još 1 market");
+    expect(saveLabel(3, false)).toBe("Sačuvaj · 3 marketa");
+    expect(saveLabel(3, true)).toBe("Čuvamo…");
+  });
+});
+
+describe("isDirty", () => {
+  it("is false for the saved set in any order, true when a store was added or removed", () => {
+    expect(isDirty(new Set(["a", "b"]), new Set(["b", "a"]))).toBe(false);
+    expect(isDirty(new Set(["a", "b", "c"]), new Set(["a", "b"]))).toBe(true);
+    expect(isDirty(new Set(["a"]), new Set(["a", "b"]))).toBe(true);
+    expect(isDirty(new Set(["a", "c"]), new Set(["a", "b"]))).toBe(true);
+  });
+});
+
+describe("premiumStep", () => {
+  it("asks only when there is something unsaved", () => {
+    expect(premiumStep(true)).toBe("ask");
+    expect(premiumStep(false)).toBe("settings");
   });
 });

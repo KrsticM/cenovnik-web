@@ -7,7 +7,7 @@ import { usePlatform } from "@/hooks/usePlatform";
 import { useSubscription } from "@/hooks/useSubscription";
 import { subscriptionCopy } from "@/lib/subscription";
 import type { SettingsContentProps } from "./SettingsContent";
-import { SETTINGS_PARAM, accountSummary } from "./settings";
+import { SETTINGS_ON_SUBSCRIPTION, SETTINGS_PARAM, accountSummary } from "./settings";
 import { useDeleteAccountFlow } from "./useDeleteAccountFlow";
 
 interface ControllerOptions {
@@ -18,7 +18,7 @@ interface ControllerOptions {
 // Everything the settings dialog knows and does; the components only receive what they show.
 export function useSettingsDialogController({ suppressed }: ControllerOptions) {
   const { user, deleteAccount } = useAuth();
-  const { value, open, close, restoreFocus } = useHistoryParam(SETTINGS_PARAM);
+  const { value, open, swapIn, close, restoreFocus } = useHistoryParam(SETTINGS_PARAM);
   const platform = usePlatform();
   const { flow, reset, askDelete, back, deletion } = useDeleteAccountFlow(deleteAccount);
   // The days left are read against the moment the dialog was opened.
@@ -44,6 +44,16 @@ export function useSettingsDialogController({ suppressed }: ControllerOptions) {
     [open, reset]
   );
 
+  // Opens the dialog in place of another one (the market picker), returning focus to where that one came from.
+  const openInPlace = useCallback(
+    (trigger: HTMLElement | null, value: string, replacing: string) => {
+      reset();
+      setNow(Date.now());
+      swapIn(value, trigger, replacing);
+    },
+    [reset, swapIn]
+  );
+
   const details = subscription.status === "premium" ? subscription.details : null;
   const copy = subscriptionCopy(details, now);
   const activePremium = subscription.status === "premium" && !copy.cancelled;
@@ -57,6 +67,7 @@ export function useSettingsDialogController({ suppressed }: ControllerOptions) {
         qrUrl,
         account: accountSummary(user),
         focusDelete: flow.returned,
+        focusSubscription: value === SETTINGS_ON_SUBSCRIPTION,
         onRetry: retry,
         onDelete: askDelete,
       }
@@ -64,6 +75,7 @@ export function useSettingsDialogController({ suppressed }: ControllerOptions) {
 
   return {
     open: openDialog,
+    openInPlace,
     dialog: {
       open: isOpen,
       locked: flow.deleting,

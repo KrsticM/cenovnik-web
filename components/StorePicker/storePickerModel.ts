@@ -2,7 +2,8 @@ import { plural } from "@/lib/formatPrice";
 import { MIN_STORES } from "@/lib/storeLimits";
 import type { Retailer, RetailerStore } from "@/lib/services/retailers";
 
-export type StoreOptionRow = RetailerStore & { picked: boolean; blocked: boolean };
+// separated: the first store after the ones that were already picked, where "Ostale prodavnice" starts.
+export type StoreOptionRow = RetailerStore & { picked: boolean; blocked: boolean; separated: boolean };
 
 export type ChainRow = {
   id: string;
@@ -12,8 +13,6 @@ export type ChainRow = {
   open: boolean;
   stores: StoreOptionRow[];
 };
-
-export type PickedChip = { id: string; label: string };
 
 // "Šabac" and "sabac" match, and "đ" can be typed as "dj".
 export function normalizeSearch(text: string): string {
@@ -44,12 +43,24 @@ interface BuildRowsInput {
   limit: number;
 }
 
+const hasPinned = (retailer: Retailer, pinned: Set<string>) => retailer.stores.some((store) => pinned.has(store.id));
+
+function chainSubtitle(retailer: Retailer, matchCount: number, pickedCount: number, searching: boolean): string {
+  if (searching) return `${matchCount} ${plural(matchCount, "rezultat", "rezultata", "rezultata")}`;
+  if (pickedCount > 0) return `${pickedCount} od ${retailer.stores.length} izabrano`;
+  return `${retailer.stores.length} ${storesWord(retailer.stores.length)}`;
+}
+
 export function buildChainRows({ retailers, query, picked, pinned, openChains, limit }: BuildRowsInput): ChainRow[] {
   const q = normalizeSearch(query.trim());
   const full = picked.size >= limit;
   const rows: ChainRow[] = [];
 
-  for (const retailer of retailers) {
+  // Chains with picked stores come first, as of the last open/search.
+  const ordered = [...retailers].sort((a, b) => Number(hasPinned(b, pinned)) - Number(hasPinned(a, pinned)));
+
+  for (const retailer of ordered) {
+    const pickedCount = retailer.stores.filter((store) => picked.has(store.id)).length;
     const matches = retailer.stores
       .filter((store) => !q || normalizeSearch(`${retailer.name} ${store.name} ${store.address ?? ""}`).includes(q))
       .sort((a, b) => Number(pinned.has(b.id)) - Number(pinned.has(a.id)));
@@ -58,39 +69,33 @@ export function buildChainRows({ retailers, query, picked, pinned, openChains, l
     rows.push({
       id: retailer.id,
       name: retailer.name,
-      subtitle: q
-        ? `${matches.length} ${plural(matches.length, "rezultat", "rezultata", "rezultata")}`
-        : `${retailer.stores.length} ${storesWord(retailer.stores.length)}`,
-      pickedCount: retailer.stores.filter((store) => picked.has(store.id)).length,
+      subtitle: chainSubtitle(retailer, matches.length, pickedCount, q !== ""),
+      pickedCount,
       open: q ? true : openChains.has(retailer.id),
-      stores: matches.map((store) => {
+      stores: matches.map((store, index) => {
         const isPicked = picked.has(store.id);
-        return { ...store, picked: isPicked, blocked: !isPicked && full };
+        const separated = !q && index > 0 && !pinned.has(store.id) && pinned.has(matches[index - 1].id);
+        return { ...store, picked: isPicked, blocked: !isPicked && full, separated };
       }),
     });
   }
   return rows;
 }
 
-export function buildPickedChips(retailers: Retailer[], picked: Set<string>): PickedChip[] {
-  const chips: PickedChip[] = [];
-  for (const retailer of retailers) {
-    for (const store of retailer.stores) {
-      if (!picked.has(store.id)) continue;
-      const label = store.name.toLowerCase().startsWith(retailer.name.toLowerCase())
-        ? store.name
-        : `${retailer.name} · ${store.name}`;
-      chips.push({ id: store.id, label });
-    }
-  }
-  return chips;
+export function isDirty(picked: Set<string>, saved: Set<string>): boolean {
+  return picked.size !== saved.size || [...picked].some((id) => !saved.has(id));
+}
+
+// Unsaved picks are asked about before leaving for Premium; otherwise the dialogs just swap.
+export function premiumStep(dirty: boolean): "ask" | "settings" {
+  return dirty ? "ask" : "settings";
 }
 
 export function saveLabel(count: number, saving: boolean): string {
   if (saving) return "Čuvamo…";
   const missing = MIN_STORES - count;
   if (missing > 0) return `Izaberi još ${missing} ${plural(missing, "market", "marketa", "marketa")}`;
-  return `Sačuvaj (${count})`;
+  return `Sačuvaj · ${count} ${storesWord(count)}`;
 }
 
 export function saveHint(retailers: Retailer[], picked: Set<string>): string {

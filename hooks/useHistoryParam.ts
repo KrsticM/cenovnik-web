@@ -23,6 +23,22 @@ export function useHistoryParam(name: string) {
     [name]
   );
 
+  // Opens this view in place of another parameter's view (no new history entry), handing over where focus returns to.
+  const swapIn = useCallback(
+    (next: string, trigger: HTMLElement | null, replacing: string) => {
+      triggerRef.current = trigger;
+      window.history.replaceState(null, "", withParam(withParam(window.location.href, replacing, null), name, next));
+    },
+    [name]
+  );
+
+  // The element this view was opened from; handing it to another view means closing this one must not move focus.
+  const takeTrigger = useCallback(() => {
+    const trigger = triggerRef.current;
+    triggerRef.current = null;
+    return trigger;
+  }, []);
+
   const close = useCallback(() => {
     if (pushedRef.current) {
       pushedRef.current = false;
@@ -38,5 +54,5 @@ export function useHistoryParam(name: string) {
     if (trigger?.isConnected) trigger.focus({ preventScroll: true });
   }, []);
 
-  return { value, open, close, restoreFocus };
+  return { value, open, swapIn, takeTrigger, close, restoreFocus };
 }

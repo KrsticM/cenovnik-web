@@ -9,7 +9,6 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
@@ -64,13 +63,8 @@ export function AccountMenu() {
 
         <DropdownMenuItem onSelect={() => openMyMarkets(triggerRef.current)}>Moji marketi</DropdownMenuItem>
 
-        <DropdownMenuSeparator />
-
-        <DropdownMenuItem
-          onSelect={handleSignOut}
-          className="text-rust hover:bg-red-50 hover:text-red-600"
-        >
-          Odjava
+        <DropdownMenuItem onSelect={handleSignOut} className="text-ink-muted hover:text-rust focus:text-rust">
+          Odjavi se
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

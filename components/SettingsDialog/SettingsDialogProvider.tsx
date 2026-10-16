@@ -7,11 +7,16 @@ import { SettingsDialog } from "./SettingsDialog";
 import { BackHeader } from "./SettingsHeader";
 import { useSettingsDialogController } from "./useSettingsDialogController";
 
-const SettingsDialogContext = createContext<{ open: (trigger?: HTMLElement | null) => void } | null>(null);
+interface SettingsDialogApi {
+  open: (trigger?: HTMLElement | null) => void;
+  openInPlace: (trigger: HTMLElement | null, value: string, replacing: string) => void;
+}
+
+const SettingsDialogContext = createContext<SettingsDialogApi | null>(null);
 
 export function SettingsDialogProvider({ suppressed = false, children }: { suppressed?: boolean; children: ReactNode }) {
-  const { open, dialog, step, settings, deletion, onBack } = useSettingsDialogController({ suppressed });
-  const context = useMemo(() => ({ open }), [open]);
+  const { open, openInPlace, dialog, step, settings, deletion, onBack } = useSettingsDialogController({ suppressed });
+  const context = useMemo(() => ({ open, openInPlace }), [open, openInPlace]);
 
   return (
     <SettingsDialogContext.Provider value={context}>

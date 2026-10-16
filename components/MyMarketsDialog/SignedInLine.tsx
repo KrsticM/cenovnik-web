@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 
-interface SignedInLineProps {
+export interface SignedInLineProps {
   account: string;
   via: string | null;
   onSignOut: () => void;
