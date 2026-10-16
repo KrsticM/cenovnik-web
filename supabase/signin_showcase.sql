@@ -1,7 +1,10 @@
--- See README → Database for the run order. Safe to re-run.
--- Products shown behind the sign-in card: the most-added products of the last 30 days that
--- have a photo and a current price, topped up with deals. Runs as the owner so visitors need
--- no table access; the web app caches the result for a day.
+-- See README → Database for the run order. Safe to re-run. Run browse_products.sql first.
+-- Products shown behind the sign-in card. The ranking (most-added products of the last 30 days
+-- that have a photo and a current price, topped up with deals) is precomputed into
+-- public.signin_showcase_cache by refresh_product_price_summary() (browse_products.sql), so a
+-- direct call to this function costs a read of at most 32 rows. It runs as the owner so
+-- visitors need no table access; the web app also caches the result for a day. The ranking is only
+-- as fresh as the daily refresh job (see browse_products.sql): without it the showcase goes stale.
 
 create or replace function public.get_signin_showcase(p_limit integer default 16)
 returns jsonb
@@ -10,45 +13,13 @@ stable
 security definer
 set search_path = ''
 as $$
-  with popular as (
-    select i.product_id, count(*) as adds
-    from public.shopping_list_items i
-    where i.created_at > now() - interval '30 days'
-    group by i.product_id
-  ),
-  ranked as (
-    select
-      p.id,
-      p.product_name,
-      s.min_price,
-      s.regular_price,
-      s.is_deal,
-      coalesce(pop.adds, 0) as adds
-    from public.products p
-    join public.product_price_summary s on s.product_id = p.id
-    left join popular pop on pop.product_id = p.id
-    where p.has_image
-      and (pop.product_id is not null or s.is_deal)
-    order by coalesce(pop.adds, 0) desc, s.is_deal desc, p.id
+  select coalesce(jsonb_agg(c.item order by c.rank), '[]'::jsonb)
+  from (
+    select rank, item
+    from public.signin_showcase_cache
+    order by rank
     limit least(greatest(p_limit, 1), 32)
-  )
-  select coalesce(
-    jsonb_agg(
-      jsonb_build_object(
-        'product_id', r.id,
-        'product_name', r.product_name,
-        'barcode', (
-          select min(b.barcode collate "C") from public.barcodes b where b.product_id = r.id
-        ),
-        'min_price', r.min_price,
-        'regular_price', r.regular_price,
-        'is_deal', r.is_deal
-      )
-      order by r.adds desc, r.is_deal desc, r.id
-    ),
-    '[]'::jsonb
-  )
-  from ranked r;
+  ) c;
 $$;
 
 revoke all on function public.get_signin_showcase(integer) from public;
