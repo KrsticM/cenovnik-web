@@ -18,6 +18,8 @@ export function useSubscription(enabled = true) {
       .catch(() => !cancelled && setState({ status: "unknown" }));
     return () => {
       cancelled = true;
+      // The next open must not start from the last answer.
+      setState({ status: "loading" });
     };
   }, [enabled, attempt]);
 

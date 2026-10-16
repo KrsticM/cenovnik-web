@@ -33,7 +33,6 @@ export function SubscriptionStatus({ state, platform, qrUrl, copy, onRetry }: Su
   return (
     <Alert
       role="status"
-      aria-live="polite"
       aria-busy={state.status === "loading"}
       className={cn("flex flex-col gap-3.5 rounded-2xl px-5 py-[18px]", tone(state.status))}
     >
@@ -51,7 +50,7 @@ export function SubscriptionStatus({ state, platform, qrUrl, copy, onRetry }: Su
             <span className="text-[15px] font-semibold">Status trenutno nije dostupan</span>
             <p className={cn(NOTE, "text-ink-muted")}>Ne možemo da proverimo pretplatu. Pokušaj ponovo za trenutak.</p>
           </div>
-          <Button type="button" variant="pill" size="action" className="focus-visible:ring-offset-0" onClick={onRetry}>
+          <Button type="button" variant="pill" size="action" onClick={onRetry}>
             <RefreshCw strokeWidth={2} className="!size-[15px]" />
             Pokušaj ponovo
           </Button>

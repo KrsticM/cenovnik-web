@@ -34,7 +34,17 @@ describe("settingsFlowReducer", () => {
     expect(run([{ type: "deleteStarted" }], failed)).toMatchObject({ deleting: true, failed: false });
   });
 
-  it("starts from the settings step on reset", () => {
+  it("starts from the settings step on reset, whatever was left over", () => {
     expect(run([{ type: "askDelete" }, { type: "reset" }])).toEqual(initialSettingsFlow);
+
+    const leftOver = run([
+      { type: "askDelete" },
+      { type: "confirm", confirmed: true },
+      { type: "deleteStarted" },
+      { type: "deleteFailed" },
+      { type: "back" },
+    ]);
+    expect(leftOver.returned).toBe(true);
+    expect(run([{ type: "reset" }], leftOver)).toEqual(initialSettingsFlow);
   });
 });

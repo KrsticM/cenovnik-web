@@ -17,8 +17,9 @@ const MONTHS_GENITIVE = [
   "jula", "avgusta", "septembra", "oktobra", "novembra", "decembra",
 ];
 
-const STORE_LABELS: Record<PremiumStore, string> = { app_store: "App Store-u", google_play: "Google Play-u" };
-const ANY_STORE = "App Store-u ili Google Play-u, gde si je kupio";
+const STORE_LABELS: Record<PremiumStore, string> = { app_store: "u App Store-u", google_play: "u Google Play-u" };
+const ANY_STORE = "u App Store-u ili Google Play-u, gde si je kupio";
+const OTHER_STORE = "tamo gde si je kupio";
 
 export const CANCEL_STEPS: { store: PremiumStore; text: string }[] = [
   { store: "app_store", text: "Na iPhone-u otvori Podešavanja, dodirni svoje ime, pa Pretplate, i izaberi eCenovnik." },
@@ -30,25 +31,34 @@ export function formatLongDate(timestamp: number): string {
   return `${date.getDate()}. ${MONTHS_GENITIVE[date.getMonth()]} ${date.getFullYear()}.`;
 }
 
-export function storeLabel(store: PremiumStore | null | undefined): string {
+const PERIODS = { monthly: "Mesečno", yearly: "Godišnje" };
+const VERBS = { renews: "obnavlja se", ends: "ističe", unclear: "aktivan do" };
+
+function dateLine({ plan, renewal, endsAt }: SubscriptionDetails): string {
+  const verb = VERBS[renewal];
+  const sentence = `${verb} ${formatLongDate(endsAt)}`;
+  return plan ? `${PERIODS[plan]} · ${sentence}` : sentence.charAt(0).toUpperCase() + sentence.slice(1);
+}
+
+function storeLabel(store: SubscriptionDetails["store"] | undefined): string {
+  if (store === "other") return OTHER_STORE;
   return store ? STORE_LABELS[store] : ANY_STORE;
 }
 
 export function subscriptionCopy(details: SubscriptionDetails | null) {
-  const cancelled = details?.cancelled ?? false;
+  const cancelled = details?.renewal === "ends";
   const where = storeLabel(details?.store);
-  const period = details ? (details.plan === "monthly" ? "Mesečno" : "Godišnje") : null;
-  const when = details ? (cancelled ? "ističe" : "obnavlja se") : null;
+  const howSteps =
+    details?.store === "other" ? [] : details?.store ? CANCEL_STEPS.filter(({ store }) => store === details.store) : CANCEL_STEPS;
   return {
     cancelled,
-    dateLine: details ? `${period} · ${when} ${formatLongDate(details.endsAt)}` : null,
+    dateLine: details ? dateLine(details) : null,
     manageNote: cancelled
-      ? `Premium ostaje aktivan do isteka. Ponovo ga aktiviraš u ${where}.`
-      : `Pretplatom upravljaš u ${where}.`,
-    // Where a cancelled plan can be bought again, and the active one cancelled, is the store it came from.
-    howSteps: details?.store ? CANCEL_STEPS.filter(({ store }) => store === details.store) : CANCEL_STEPS,
-    showHow: !cancelled,
-    deleteNote: `Brisanje naloga ne otkazuje Premium. Pretplatu otkaži u ${where}, inače će se i dalje naplaćivati.`,
+      ? `Premium ostaje aktivan do isteka. Ponovo ga aktiviraš ${where}.`
+      : `Pretplatom upravljaš ${where}.`,
+    howSteps,
+    showHow: !cancelled && howSteps.length > 0,
+    deleteNote: `Brisanje naloga ne otkazuje Premium. Pretplatu otkaži ${where}, inače će se i dalje naplaćivati.`,
   };
 }
 

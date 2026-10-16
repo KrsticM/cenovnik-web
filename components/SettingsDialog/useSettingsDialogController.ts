@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useReducer } from "react";
+import { useCallback, useEffect, useReducer } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHistoryParam } from "@/hooks/useHistoryParam";
 import { usePlatform } from "@/hooks/usePlatform";
@@ -11,14 +11,28 @@ import type { SettingsContentProps } from "./SettingsContent";
 import { SETTINGS_PARAM, accountSummary } from "./settings";
 import { initialSettingsFlow, settingsFlowReducer } from "./settingsFlow";
 
+interface ControllerOptions {
+  // Another dialog that cannot be closed is on screen (the market picker); two stacked modals would trap focus against each other.
+  suppressed: boolean;
+}
+
 // Everything the settings dialog knows and does; the components only receive what they show.
-export function useSettingsDialogController() {
+export function useSettingsDialogController({ suppressed }: ControllerOptions) {
   const { user, deleteAccount } = useAuth();
   const { value, open, close, restoreFocus } = useHistoryParam(SETTINGS_PARAM);
   const platform = usePlatform();
-  const isOpen = value !== null && user !== null;
-  const { state: subscription, retry } = useSubscription(isOpen);
   const [flow, dispatch] = useReducer(settingsFlowReducer, initialSettingsFlow);
+  // A delete in flight keeps the dialog up even if the history entry is gone.
+  const isOpen = !suppressed && ((value !== null && user !== null) || flow.deleting);
+  const { state: subscription, retry } = useSubscription(isOpen);
+
+  useEffect(() => {
+    if (!isOpen) dispatch({ type: "reset" });
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (value === null && flow.deleting) open("1");
+  }, [value, flow.deleting, open]);
 
   const openDialog = useCallback(
     (trigger?: HTMLElement | null) => {
@@ -43,7 +57,7 @@ export function useSettingsDialogController() {
   const details = subscription.status === "premium" ? subscription.details : null;
   const copy = subscriptionCopy(details);
   const activePremium = subscription.status === "premium" && !copy.cancelled;
-  const qrUrl = platform === "other" && typeof window !== "undefined" ? new URL("/preuzmi", window.location.origin).href : null;
+  const qrUrl = isOpen && platform === "other" && typeof window !== "undefined" ? new URL("/preuzmi", window.location.origin).href : null;
 
   const settings: SettingsContentProps | null = user
     ? {

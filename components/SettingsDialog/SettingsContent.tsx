@@ -22,7 +22,6 @@ export interface SettingsContentProps {
   platform: Platform;
   qrUrl: string | null;
   account: { account: string; kind: AccountKind; line: string };
-  // Focus returns to "Obriši nalog" when the user comes back from the delete step.
   focusDelete: boolean;
   onRetry: () => void;
   onDelete: () => void;
@@ -70,7 +69,7 @@ export function SettingsContent({
                 type="button"
                 variant="danger-outline"
                 size="action"
-                className="px-[18px] focus-visible:ring-offset-0"
+                className="px-[18px]"
                 onClick={onDelete}
               >
                 Obriši nalog

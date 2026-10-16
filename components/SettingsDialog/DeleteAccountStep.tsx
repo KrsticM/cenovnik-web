@@ -17,7 +17,7 @@ export interface DeleteAccountStepProps {
   onCancel: () => void;
 }
 
-const BUTTON = "h-12 rounded-full px-[22px] text-[15px] focus-visible:ring-offset-white";
+const BUTTON = "px-[22px] focus-visible:ring-offset-white";
 
 export function DeleteAccountStep({
   subscriptionNote,
@@ -60,11 +60,15 @@ export function DeleteAccountStep({
         </Alert>
       )}
 
+      <span role="status" className="sr-only">
+        {pending ? "Brišem nalog…" : ""}
+      </span>
+
       <div className="mt-2 flex flex-col-reverse justify-end gap-2.5 sm:flex-row">
-        <Button autoFocus type="button" variant="pill" className={BUTTON} disabled={pending} onClick={onCancel}>
+        <Button autoFocus type="button" variant="pill" size="pill-lg" className={BUTTON} disabled={pending} onClick={onCancel}>
           Odustani
         </Button>
-        <Button type="button" variant="danger" className={BUTTON} disabled={!confirmed || pending} onClick={onConfirm}>
+        <Button type="button" variant="danger" size="pill-lg" className={BUTTON} disabled={!confirmed || pending} onClick={onConfirm}>
           {pending && <Spinner tone="cream" />}
           {pending ? "Brišem nalog…" : "Obriši nalog"}
         </Button>

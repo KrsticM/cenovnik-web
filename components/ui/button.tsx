@@ -46,7 +46,7 @@ const buttonVariants = cva(
         "pill-lg": "h-12 rounded-full px-[18px] text-[15px]",
         "pill-xl": "h-[52px] rounded-full px-7 text-base",
         // Full width on a phone, natural width from `sm`; for the actions inside dialogs.
-        action: "h-12 flex-[1_1_100%] rounded-full px-4 text-sm sm:h-10 sm:flex-none",
+        action: "h-12 flex-[1_1_100%] rounded-full px-4 text-sm focus-visible:ring-offset-0 sm:h-10 sm:flex-none",
         text: "h-auto p-0",
         "icon-xs": "h-[26px] w-[26px] rounded-full p-0",
         "icon-sm": "h-7 w-7 rounded-full p-0",

@@ -9,8 +9,8 @@ import { useSettingsDialogController } from "./useSettingsDialogController";
 
 const SettingsDialogContext = createContext<{ open: (trigger?: HTMLElement | null) => void } | null>(null);
 
-export function SettingsDialogProvider({ children }: { children: ReactNode }) {
-  const { open, dialog, step, settings, deletion, onBack } = useSettingsDialogController();
+export function SettingsDialogProvider({ suppressed = false, children }: { suppressed?: boolean; children: ReactNode }) {
+  const { open, dialog, step, settings, deletion, onBack } = useSettingsDialogController({ suppressed });
   const context = useMemo(() => ({ open }), [open]);
 
   return (

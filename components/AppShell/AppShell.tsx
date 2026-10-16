@@ -10,7 +10,7 @@ import { ShoppingListProvider } from "@/contexts/ShoppingListContext";
 export function AppShell({ requireMyMarkets = false, children }: { requireMyMarkets?: boolean; children: ReactNode }) {
   return (
     <MyMarketsDialogProvider required={requireMyMarkets}>
-      <SettingsDialogProvider>
+      <SettingsDialogProvider suppressed={requireMyMarkets}>
         <ShoppingListProvider>
           <div className="flex min-h-screen w-full flex-col pt-[68px]">
             <Navbar />

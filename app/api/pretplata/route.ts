@@ -26,14 +26,15 @@ export async function GET() {
           return null;
         })
       : null;
-    return NextResponse.json({ isPremium, subscription }, { headers: { "Cache-Control": "private, max-age=300" } });
+    // Not cached either: the browser keys its cache by URL, so another account or a fresh purchase would see a stale answer.
+    return NextResponse.json({ isPremium, subscription }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (err) {
     console.error("[pretplata] RevenueCat request failed:", err);
     return unknown(502);
   }
 }
 
-// Failures are never cached, or one RevenueCat blip would downgrade a paying user for minutes.
+// Failures are never cached, or one RevenueCat blip would downgrade a paying user.
 function unknown(status: number) {
   return NextResponse.json({ isPremium: null }, { status, headers: { "Cache-Control": "no-store" } });
 }

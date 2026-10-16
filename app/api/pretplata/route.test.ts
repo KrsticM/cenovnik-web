@@ -31,13 +31,13 @@ describe("GET /api/pretplata", () => {
     expect((await GET()).status).toBe(401);
   });
 
-  it("returns and briefly caches a successful lookup", async () => {
-    const subscription = { plan: "yearly", store: "app_store", cancelled: false, endsAt: 1 };
+  it("returns a successful lookup without letting the browser cache it", async () => {
+    const subscription = { plan: "yearly", store: "app_store", renewal: "renews", endsAt: 1 };
     fetchIsPremium.mockResolvedValue(true);
     fetchSubscriptionDetails.mockResolvedValue(subscription);
     const response = await GET();
     expect(await response.json()).toEqual({ isPremium: true, subscription });
-    expect(response.headers.get("Cache-Control")).toBe("private, max-age=300");
+    expect(response.headers.get("Cache-Control")).toBe("private, no-store");
     expect(fetchIsPremium).toHaveBeenCalledWith("user-1", { secret: "sk_test", projectId: "proj_test" });
   });
 

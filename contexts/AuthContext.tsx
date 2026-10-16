@@ -1,6 +1,7 @@
 "use client";
 
 import { classifyVerifyError, type VerifyFailureKind } from "@/lib/authErrors";
+import { deleteAccountVia } from "@/lib/services/account";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
@@ -166,11 +167,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const supabase = createClient();
       // invoke() reports failures in `error` instead of throwing; a failed delete must not look like a success.
-      const { error } = await supabase.functions.invoke("delete-account", {
-        method: "POST",
-      });
-      if (error) throw error;
-      await supabase.auth.signOut({ scope: "local" });
+      await deleteAccountVia(
+        () => supabase.functions.invoke("delete-account", { method: "POST" }),
+        () => supabase.auth.signOut({ scope: "local" })
+      );
       setUser(null);
       router.push("/prijava");
     } catch (error) {
