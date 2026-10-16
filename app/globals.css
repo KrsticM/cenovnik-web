@@ -41,6 +41,11 @@
   --rust-border: #ecc9b2;
   --ink-stone: #8a8378;
   --line-warm: #eeebe5;
+  --gold-wash: #fff6e6;
+  --gold-border: #f5e1bf;
+  --ivory: #faf9f6;
+  --sage-wash-line: #e3e8dc;
+  --ink-hover: #333;
 
   /* Surfaces & backgrounds */
   --paper: #f8f8f8;
@@ -143,6 +148,11 @@
   --color-rust-border: var(--rust-border);
   --color-ink-stone: var(--ink-stone);
   --color-line-warm: var(--line-warm);
+  --color-gold-wash: var(--gold-wash);
+  --color-gold-border: var(--gold-border);
+  --color-ivory: var(--ivory);
+  --color-sage-wash-line: var(--sage-wash-line);
+  --color-ink-hover: var(--ink-hover);
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -203,6 +213,11 @@
 @keyframes qtyIn {
   from { opacity: 0; transform: scale(0.82); }
   to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes stepIn {
+  from { opacity: 0; transform: translateX(12px); }
+  to { opacity: 1; transform: none; }
 }
 
 @keyframes dropIn {

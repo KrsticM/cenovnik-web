@@ -6,5 +6,5 @@ import { useMyMarketsDialog } from "./MyMarketsDialogProvider";
 
 export function OpenMyMarketsButton(props: Omit<ComponentProps<typeof Button>, "onClick" | "asChild">) {
   const { open } = useMyMarketsDialog();
-  return <Button type="button" {...props} onClick={open} />;
+  return <Button type="button" {...props} onClick={() => open()} />;
 }

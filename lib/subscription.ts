@@ -51,3 +51,5 @@ export function subscriptionCopy(details: SubscriptionDetails | null) {
     deleteNote: `Brisanje naloga ne otkazuje Premium. Pretplatu otkaži u ${where}, inače će se i dalje naplaćivati.`,
   };
 }
+
+export type SubscriptionCopy = ReturnType<typeof subscriptionCopy>;

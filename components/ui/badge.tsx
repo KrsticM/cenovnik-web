@@ -26,6 +26,7 @@ const badgeVariants = cva(
         discount: "rounded-[6px] border-0 bg-rust px-1.5 py-0.5 text-[11px] text-white",
         qty: "whitespace-nowrap rounded-[9px] border-0 bg-cream px-2.5 py-1 text-[13px] text-sage-dark",
         soon: "h-[26px] rounded-[13px] border-0 bg-cream px-3 py-0 text-[13px] text-rust",
+        cancelled: "h-[22px] rounded-[11px] border-rust-border bg-rust-tint px-[9px] py-0 text-xs text-rust",
         code: "select-all rounded-[5px] border-0 bg-sand px-1.5 py-0.5 font-mono text-xs font-normal text-ink",
       },
     },

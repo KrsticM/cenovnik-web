@@ -29,6 +29,9 @@ const buttonVariants = cva(
         "ghost-clear": "text-ink-muted hover:bg-sand hover:text-ink",
         "on-sage": "font-semibold text-cream hover:bg-cream/18",
         "on-sage-remove": "font-normal bg-cream/16 text-cream hover:bg-rust",
+        dark: "bg-ink text-white hover:bg-ink-hover",
+        "danger-outline": "border border-rust-border bg-white text-rust hover:border-rust hover:bg-rust-tint focus-visible:ring-rust",
+        danger: "bg-rust text-white focus-visible:ring-rust",
         "on-cream": "font-semibold text-sage-dark hover:bg-sage/14",
       },
       size: {
@@ -42,6 +45,8 @@ const buttonVariants = cva(
         "pill-md": "h-11 rounded-full px-5",
         "pill-lg": "h-12 rounded-full px-[18px] text-[15px]",
         "pill-xl": "h-[52px] rounded-full px-7 text-base",
+        // Full width on a phone, natural width from `sm`; for the actions inside dialogs.
+        action: "h-12 flex-[1_1_100%] rounded-full px-4 text-sm sm:h-10 sm:flex-none",
         text: "h-auto p-0",
         "icon-xs": "h-[26px] w-[26px] rounded-full p-0",
         "icon-sm": "h-7 w-7 rounded-full p-0",

@@ -5,10 +5,19 @@ const APPLE_PATH =
 
 // Brand marks keep their own colours; they are not palette colours. The `!` sizes beat the
 // `[&_svg]:size-4` rule every Button applies.
-function AppleIcon() {
+function AppleIcon({ mono = false }: { mono?: boolean }) {
   return (
     <svg aria-hidden="true" width="17" height="20" viewBox="0 0 384 512" className="!h-5 !w-[17px]">
-      <path fill="#000" d={APPLE_PATH} />
+      <path fill={mono ? "currentColor" : "#000"} d={APPLE_PATH} />
+    </svg>
+  )
+}
+
+// Follows the text colour, for the store buttons and the cancel steps.
+function GooglePlayIcon() {
+  return (
+    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" className="!size-[18px]">
+      <path fill="currentColor" d="M3.6 1.8c-.3.3-.5.8-.5 1.4v17.6c0 .6.2 1.1.5 1.4l.1.1 9.9-9.9v-.2L3.7 1.7l-.1.1zm13.2 13.2-3.3-3.3v-.2l3.3-3.3.1.1 3.9 2.2c1.1.6 1.1 1.7 0 2.3l-3.9 2.2-.1 0zm.1 0L13.5 11.6 3.6 21.6c.4.4 1 .4 1.7.1l11.6-6.7zM16.9 8.9 5.3 2.2c-.7-.4-1.300-.3-1.700.1l9.900 9.900 3.400-3.300z" />
     </svg>
   )
 }
@@ -28,4 +37,19 @@ function EmailIcon() {
   return <Mail aria-hidden="true" strokeWidth={1.7} className="!size-5 text-sage-dark" />
 }
 
-export { AppleIcon, EmailIcon, GoogleIcon }
+const TILE_ICONS = { google: GoogleIcon, apple: AppleIcon, email: EmailIcon }
+
+// The round white tile that holds the sign-in provider's mark.
+function ProviderTile({ kind }: { kind: keyof typeof TILE_ICONS }) {
+  const Icon = TILE_ICONS[kind]
+  return (
+    <span
+      aria-hidden="true"
+      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-line bg-white"
+    >
+      <Icon />
+    </span>
+  )
+}
+
+export { AppleIcon, EmailIcon, GoogleIcon, GooglePlayIcon, ProviderTile }
