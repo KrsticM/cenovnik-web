@@ -25,7 +25,7 @@ interface StorePickerProps {
 
 export function StorePicker({ picker, onSave, heading: Heading = "h1", signOut, onUpgrade }: StorePickerProps) {
   return (
-    <div className="flex flex-col animate-[fadeUp_300ms_ease_150ms_both]">
+    <div className={cn("flex flex-col animate-[fadeUp_300ms_ease_150ms_both]", picker.searchMode && "min-h-0 flex-1")}>
       {picker.searchMode ? (
         <TitleText as={Heading} className="sr-only">
           Izaberi svoje markete
@@ -57,7 +57,7 @@ export function StorePicker({ picker, onSave, heading: Heading = "h1", signOut, 
       />
       {picker.atLimit && <StoreLimitNotice text={picker.limitText} onUpgrade={picker.showUpsell ? onUpgrade : undefined} />}
 
-      <div className="mt-3.5 max-h-[min(48vh,440px)] overflow-y-auto overscroll-contain rounded-[18px] border border-line">
+      <div className={cn("mt-3.5 min-h-0 overflow-y-auto overscroll-contain rounded-[18px] border border-line", picker.searchMode ? "flex-1" : "max-h-[min(48vh,440px)]")}>
         <ChainList picker={picker} />
       </div>
 
