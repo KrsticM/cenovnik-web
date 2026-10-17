@@ -12,11 +12,11 @@ export function CompactBandSearch({ search }: { search: SearchBindings }) {
   );
 }
 
-// Below lg the hero field scrolls away; this strip slides out of the header to replace it.
+// Below lg the hero field scrolls away; this strip slides out from under the header (one layer below it, so the menu buttons stay on top) to replace it.
 export function CompactDockedSearch({ search, docked }: { search: SearchBindings; docked: boolean }) {
   return (
     <div
-      className="fixed left-0 right-0 top-[67px] z-40 overflow-hidden border-b bg-white/95 backdrop-blur-md lg:hidden"
+      className="fixed left-0 right-0 top-[67px] z-[39] overflow-hidden border-b bg-white/95 backdrop-blur-md lg:hidden"
       style={{
         height: docked ? 68 : 0,
         borderColor: docked ? "var(--line)" : "transparent",

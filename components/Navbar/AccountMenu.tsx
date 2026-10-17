@@ -47,7 +47,7 @@ export function AccountMenu() {
         {initials}
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" sideOffset={8} className="w-[220px] rounded-[14px] border-line p-2 shadow-[0_14px_40px_rgba(26,26,26,0.14)]">
+      <DropdownMenuContent align="end" sideOffset={8} className="z-50 w-[220px] rounded-[14px] border-line p-2 shadow-[0_14px_40px_rgba(26,26,26,0.14)]">
         {/* User info header */}
         <div className="border-b border-line-soft px-3 pb-3 pt-2.5">
           <div className="text-sm font-semibold text-foreground truncate">
