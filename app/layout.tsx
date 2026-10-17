@@ -1,12 +1,9 @@
-import type { Metadata, Viewport } from "next";
+import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 
 const geist = Geist({ subsets: ["latin"] });
-
-// Android Chrome then shrinks the page when the keyboard opens, so full-height dialogs keep their bottom button above it.
-export const viewport: Viewport = { interactiveWidget: "resizes-content" };
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://web.ecenovnik.app"),
