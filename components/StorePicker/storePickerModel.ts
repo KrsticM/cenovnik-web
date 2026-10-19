@@ -40,6 +40,8 @@ interface BuildRowsInput {
   // Picked stores as of the last open/search, so rows don't jump while the user is ticking.
   pinned: Set<string>;
   openChains: Set<string>;
+  // Chains the user collapsed during the current search; any query change reopens them.
+  searchClosed: Set<string>;
   limit: number;
 }
 
@@ -51,7 +53,7 @@ function chainSubtitle(retailer: Retailer, matchCount: number, pickedCount: numb
   return `${retailer.stores.length} ${storesWord(retailer.stores.length)}`;
 }
 
-export function buildChainRows({ retailers, query, picked, pinned, openChains, limit }: BuildRowsInput): ChainRow[] {
+export function buildChainRows({ retailers, query, picked, pinned, openChains, searchClosed, limit }: BuildRowsInput): ChainRow[] {
   const q = normalizeSearch(query.trim());
   const full = picked.size >= limit;
   const rows: ChainRow[] = [];
@@ -71,7 +73,7 @@ export function buildChainRows({ retailers, query, picked, pinned, openChains, l
       name: retailer.name,
       subtitle: chainSubtitle(retailer, matches.length, pickedCount, q !== ""),
       pickedCount,
-      open: q ? true : openChains.has(retailer.id),
+      open: q ? !searchClosed.has(retailer.id) : openChains.has(retailer.id),
       stores: matches.map((store, index) => {
         const isPicked = picked.has(store.id);
         const separated = !q && index > 0 && !pinned.has(store.id) && pinned.has(matches[index - 1].id);
