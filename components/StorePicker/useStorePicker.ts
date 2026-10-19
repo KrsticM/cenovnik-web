@@ -16,6 +16,7 @@ export function useStorePicker(userId: string | null) {
   const { loadState, retailers, savedIds, retry } = useStorePickerData(userId);
   const [edit, setEdit] = useState<Edit | null>(null);
   const [openChains, setOpenChains] = useState<Set<string>>(new Set());
+  const [searchClosed, setSearchClosed] = useState<Set<string>>(new Set());
   const [query, setQueryState] = useState("");
   const [searchMode, setSearchMode] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -34,6 +35,7 @@ export function useStorePicker(userId: string | null) {
   const setQuery = useCallback(
     (value: string) => {
       setQueryState(value);
+      setSearchClosed(new Set());
       change({ pinned: new Set(picked) });
     },
     [change, picked]
@@ -73,9 +75,10 @@ export function useStorePicker(userId: string | null) {
   const toggleChain = useCallback(
     (chainId: string) => {
       change({ pinned: new Set(picked) });
-      setOpenChains((open) => toggled(open, chainId));
+      if (query.trim()) setSearchClosed((closed) => toggled(closed, chainId));
+      else setOpenChains((open) => toggled(open, chainId));
     },
-    [change, picked]
+    [change, picked, query]
   );
 
   const toggleStore = useCallback(
@@ -105,8 +108,8 @@ export function useStorePicker(userId: string | null) {
   const dirty = isDirty(picked, saved);
 
   const rows = useMemo(
-    () => buildChainRows({ retailers, query, picked, pinned, openChains, limit }),
-    [retailers, query, picked, pinned, openChains, limit]
+    () => buildChainRows({ retailers, query, picked, pinned, openChains, searchClosed, limit }),
+    [retailers, query, picked, pinned, openChains, searchClosed, limit]
   );
 
   return {

@@ -38,6 +38,7 @@ const rows = (overrides: Partial<Parameters<typeof buildChainRows>[0]> = {}) =>
     picked: new Set(),
     pinned: new Set(),
     openChains: new Set(),
+    searchClosed: new Set(),
     limit: Infinity,
     ...overrides,
   });
@@ -46,6 +47,11 @@ describe("buildChainRows", () => {
   it("finds stores ignoring accents, with đ typed as dj", () => {
     expect(rows({ query: "sabac" })[0].stores.map((store) => store.id)).toEqual(["s1"]);
     expect(rows({ query: "karadjordjeva" })[0].stores.map((store) => store.id)).toEqual(["s1"]);
+  });
+
+  it("lets a chain be collapsed while searching", () => {
+    const [row] = rows({ query: "nis", searchClosed: new Set(["lidl"]) });
+    expect(row).toMatchObject({ id: "lidl", open: false });
   });
 
   it("hides chains without a match and opens the ones that match", () => {
