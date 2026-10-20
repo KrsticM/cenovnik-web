@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { DOCK_EASE } from "../config";
 import { SearchField } from "./SearchField";
 import { SearchBindings } from "./SearchDock";
@@ -14,6 +15,15 @@ export function CompactBandSearch({ search }: { search: SearchBindings }) {
 
 // Below lg the hero field scrolls away; this strip slides out from under the header (one layer below it, so the menu buttons stay on top) to replace it.
 export function CompactDockedSearch({ search, docked }: { search: SearchBindings; docked: boolean }) {
+  // Lets the header drop its own bottom border so header + strip read as one bar, as in the design.
+  useEffect(() => {
+    if (!docked) return;
+    document.documentElement.dataset.searchStrip = "on";
+    return () => {
+      delete document.documentElement.dataset.searchStrip;
+    };
+  }, [docked]);
+
   return (
     <div
       className="fixed left-0 right-0 top-[67px] z-[39] overflow-hidden border-b bg-white/95 backdrop-blur-md lg:hidden"
