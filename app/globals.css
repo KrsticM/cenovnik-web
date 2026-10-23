@@ -26,6 +26,7 @@
   --sand: #f1eee8;
   --sand-dark: #eae5db;
   --paper-warm: #fbfaf7;
+  --oat: #f6f4ef;
   --tile-muted: #ecebe8;
   --stone: #c4bfb4;
   --bar-idle: #e6e2da;
@@ -133,6 +134,7 @@
   --color-sand: var(--sand);
   --color-sand-dark: var(--sand-dark);
   --color-paper-warm: var(--paper-warm);
+  --color-oat: var(--oat);
   --color-tile-muted: var(--tile-muted);
   --color-stone: var(--stone);
   --color-bar-idle: var(--bar-idle);
@@ -226,13 +228,33 @@
 }
 
 @keyframes panelIn {
-  from { transform: translateX(24px); opacity: 0; }
+  from { transform: translateX(48px); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes panelOut {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(48px); opacity: 0; }
+}
+
+@keyframes menuIn {
+  from { transform: translateY(-12px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes menuOut {
+  from { transform: translateY(0); opacity: 1; }
+  to { transform: translateY(-12px); opacity: 0; }
 }
 
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 
 
