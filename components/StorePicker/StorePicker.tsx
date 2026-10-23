@@ -1,4 +1,4 @@
-import type { ElementType } from "react";
+import { useRef, type ElementType } from "react";
 import { Button } from "@/components/ui/button";
 import { CheckCircle } from "@/components/ui/check-circle";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -24,10 +24,18 @@ interface StorePickerProps {
 }
 
 export function StorePicker({ picker, onSave, heading: Heading = "h1", signOut, onUpgrade }: StorePickerProps) {
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  // The undo button disappears with the changes; the heading keeps focus in the dialog without opening a phone keyboard.
+  const discard = () => {
+    picker.discard();
+    headingRef.current?.focus();
+  };
+
   return (
     <div className={cn("flex flex-col animate-[fadeUp_300ms_ease_150ms_both]", picker.searchMode && "min-h-0 flex-1")}>
       {picker.searchMode ? (
-        <TitleText as={Heading} className="sr-only">
+        <TitleText as={Heading} ref={headingRef} tabIndex={-1} className="sr-only">
           Izaberi svoje markete
         </TitleText>
       ) : (
@@ -39,7 +47,7 @@ export function StorePicker({ picker, onSave, heading: Heading = "h1", signOut, 
               Još samo ovaj korak
             </span>
           )}
-          <TitleText as={Heading} className={cn(picker.isNewAccount && "mt-4")}>
+          <TitleText as={Heading} ref={headingRef} tabIndex={-1} className={cn("outline-none", picker.isNewAccount && "mt-4")}>
             Izaberi svoje markete
           </TitleText>
           <Text className="mt-2.5">
@@ -62,16 +70,23 @@ export function StorePicker({ picker, onSave, heading: Heading = "h1", signOut, 
       </div>
 
       <div className="mt-5 flex flex-col gap-2.5">
-        <Button
-          variant="sage"
-          size="cta"
-          onClick={onSave}
-          disabled={!picker.canSave}
-          className="disabled:bg-sand-dark disabled:text-ink-warm disabled:opacity-100"
-        >
-          {picker.saving && <Spinner tone="cream" />}
-          {picker.saveLabel}
-        </Button>
+        {picker.showActions && (
+          <>
+            <Button
+              variant="sage"
+              size="cta"
+              onClick={onSave}
+              disabled={!picker.canSave}
+              className="disabled:bg-sand-dark disabled:text-ink-warm disabled:opacity-100"
+            >
+              {picker.saving && <Spinner tone="cream" />}
+              {picker.saveLabel}
+            </Button>
+            <Button variant="pill" size="pill-lg" onClick={discard} disabled={picker.saving} className="font-medium">
+              Poništi izmene
+            </Button>
+          </>
+        )}
         <span aria-live="polite" className={cn("text-center text-[13px]", picker.saveFailed ? "text-rust" : "text-ink-muted")}>
           {picker.saveHint}
         </span>

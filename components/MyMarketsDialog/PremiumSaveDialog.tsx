@@ -7,18 +7,17 @@ import { Spinner } from "@/components/ui/spinner";
 
 interface PremiumSaveDialogProps {
   open: boolean;
-  // false while the picker cannot be left: the picks must be saved before going on.
-  canSkip: boolean;
+  // false while the picker cannot be left: then nothing is saved yet and prices need the picks.
+  dismissable: boolean;
   saving: boolean;
   failed: boolean;
   onSave: () => void;
-  onSkip: () => void;
   onStay: () => void;
   onRestoreFocus: () => void;
 }
 
 // Asked when the Premium button is pressed with picks that are not saved yet, so they are not lost silently.
-export function PremiumSaveDialog({ open, canSkip, saving, failed, onSave, onSkip, onStay, onRestoreFocus }: PremiumSaveDialogProps) {
+export function PremiumSaveDialog({ open, dismissable, saving, failed, onSave, onStay, onRestoreFocus }: PremiumSaveDialogProps) {
   const saveRef = useRef<HTMLButtonElement>(null);
 
   // A failed save leaves the disabled button without focus; bring it back for the retry.
@@ -50,8 +49,8 @@ export function PremiumSaveDialog({ open, canSkip, saving, failed, onSave, onSki
             Sačuvati izabrane markete?
           </AlertDialogTitle>
           <AlertDialogDescription className="text-[15px] leading-normal text-ink-muted text-pretty">
-            {canSkip
-              ? "Pre nego što pređeš na Premium članstvo, želiš li da sačuvaš izabrane markete? Ako nastaviš bez čuvanja, izmene se gube."
+            {dismissable
+              ? "Pre nego što pređeš na Premium članstvo, sačuvaj izabrane markete da se izmene ne bi izgubile."
               : "Pre nego što pređeš na Premium članstvo, sačuvaj izabrane markete. Bez njih ne možemo da ti prikažemo cene."}
           </AlertDialogDescription>
           {failed && (
@@ -65,11 +64,6 @@ export function PremiumSaveDialog({ open, canSkip, saving, failed, onSave, onSki
             {saving && <Spinner tone="cream" />}
             {saving ? "Čuvamo…" : "Sačuvaj i nastavi"}
           </Button>
-          {canSkip && (
-            <Button type="button" variant="pill" size="cta" onClick={onSkip} disabled={saving}>
-              Nastavi bez čuvanja
-            </Button>
-          )}
           <Button type="button" variant="ghost-sage" size="pill-lg" onClick={onStay} disabled={saving} className="h-12 text-[15px] font-medium hover:underline">
             Nazad na izbor marketa
           </Button>

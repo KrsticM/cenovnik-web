@@ -105,6 +105,12 @@ export function useStorePicker(userId: string | null) {
     }
   }, [userId, picked, saving]);
 
+  const discard = useCallback(() => {
+    if (saving) return;
+    setSaveError(null);
+    setEdit(null);
+  }, [saving]);
+
   const dirty = isDirty(picked, saved);
 
   const rows = useMemo(
@@ -128,6 +134,9 @@ export function useStorePicker(userId: string | null) {
     limitText: limitText(limit),
     showUpsell: isPremium === false,
     dirty,
+    // A failed save keeps the buttons so the user can retry or undo.
+    showActions: dirty || saving || saveError !== null,
+    discard,
     canSave: picked.size >= MIN_STORES && !saving,
     saving,
     saveLabel: saveLabel(picked.size, saving),
