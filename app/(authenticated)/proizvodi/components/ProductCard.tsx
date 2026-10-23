@@ -73,6 +73,7 @@ function ProductCardComponent({
           alt=""
           className="aspect-square max-h-[340px] w-full"
           imgClassName="p-4"
+          missingNote="md"
         >
           {isDeal && (
             <Badge variant="deal" className="absolute left-3 top-3">

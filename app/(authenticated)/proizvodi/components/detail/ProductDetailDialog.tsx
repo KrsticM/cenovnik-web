@@ -48,8 +48,9 @@ export function ProductDetailDialog({ productId, known, onClose, onRestoreFocus 
         <DetailTopBar />
 
         <div onScroll={onScroll} className="flex-1 overflow-y-auto">
-          <div className="grid items-start gap-5 px-4 pb-10 pt-4 sm:grid-cols-[minmax(0,360px)_minmax(0,1fr)] sm:gap-8 sm:px-7 sm:pb-8 sm:pt-7">
-            <div className="sm:sticky sm:top-7">
+          <div className="grid items-start gap-5 px-4 pb-10 pt-4 sm:px-7 sm:pb-8 sm:pt-7 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)] lg:gap-8">
+            {/* Two columns only from lg: narrower modals stack like the phone, or the price column gets squeezed. */}
+            <div className="lg:sticky lg:top-7">
               <ProductThumb
                 barcode={product?.barcodes[0]}
                 hasImage={product?.hasImage ?? false}
@@ -57,6 +58,7 @@ export function ProductDetailDialog({ productId, known, onClose, onRestoreFocus 
                 size="full"
                 className="mx-auto aspect-square w-full max-w-[420px] rounded-2xl border border-line-soft"
                 imgClassName="p-6"
+                missingNote={product ? "lg" : undefined}
               />
             </div>
 
