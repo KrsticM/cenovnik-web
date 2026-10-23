@@ -16,7 +16,7 @@ export function DetailProductHeader({ product, stuck, cheapestPrice, favouriteCo
   return (
     <div
       className={cn(
-        "sticky top-0 z-[2] -mx-4 -mt-4 bg-white px-4 pb-3.5 pt-4 transition-shadow duration-[160ms] sm:-ml-4 sm:-mr-7 sm:-mt-7 sm:pl-4 sm:pr-7 sm:pt-7",
+        "sticky top-0 z-[2] -mx-4 -mt-4 bg-white px-4 pb-3.5 pt-4 transition-shadow duration-[160ms] sm:-mx-7 sm:px-7 lg:-ml-4 lg:-mr-7 lg:-mt-7 lg:pl-4 lg:pr-7 lg:pt-7",
         stuck && "shadow-[0_10px_14px_-12px_rgba(26,26,26,0.22)]"
       )}
     >

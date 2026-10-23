@@ -4,23 +4,39 @@ import { articles, formatPrice, plural } from "@/lib/formatPrice";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Chevron } from "@/components/ui/chevron";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Price } from "@/components/ui/price";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StoreCard } from "@/components/StoreCard/StoreCard";
+import { ALL_BOUGHT, progressCaption } from "./listProgress";
 import { ListComparison, StoreComparisonRow } from "./useListComparison";
 
 interface ListCompareProps {
   comparison: ListComparison;
   loading: boolean;
+  // Items still to buy; ticked ones are left out of every price here.
   itemCount: number;
+  boughtCount: number;
   listTotal: number;
 }
 
-export function ListCompare({ comparison, loading, itemCount, listTotal }: ListCompareProps) {
+export function ListCompare({ comparison, loading, itemCount, boughtCount, listTotal }: ListCompareProps) {
   const { rows, cheapestComplete, usedStoreCount, unavailableCount } = comparison;
+
+  if (itemCount === 0) {
+    return (
+      <EmptyState
+        size="md"
+        title={`${ALL_BOUGHT}.`}
+        description="Nema preostalih artikala za poređenje."
+        className="px-2 py-8"
+        titleClassName="font-semibold"
+      />
+    );
+  }
 
   if (loading && rows.length === 0) {
     return (
@@ -52,6 +68,7 @@ export function ListCompare({ comparison, loading, itemCount, listTotal }: ListC
 
   return (
     <div className="flex flex-col gap-3 pb-4 pt-3">
+      {boughtCount > 0 && <p className="text-[13px] text-ink-muted">{progressCaption(itemCount + boughtCount, itemCount)}</p>}
       {rows.map((row, index) => {
         const complete = row.missing.length === 0;
         return (

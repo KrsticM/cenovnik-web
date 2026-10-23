@@ -56,28 +56,30 @@ export function useListComparison(
   const { offers, stores } = data;
   const loading = enabled && productKey !== "" && data.key !== requestKey;
 
+  // Offers are loaded for the whole list so a tick doesn't refetch; only what's left is compared.
   const comparison = useMemo<ListComparison>(() => {
+    const active = items.filter((i) => !i.checkedAt);
     const priceAt = (item: ShoppingListItem, storeId: string) =>
       offers[item.productId]?.find((o) => o.storeId === storeId)?.price ?? null;
 
-    const rows = [...stores.values()]
+    const rows = (active.length > 0 ? [...stores.values()] : [])
       .map((store) => {
-        const available = items.filter((i) => priceAt(i, store.id) !== null);
-        const missing = items.filter((i) => priceAt(i, store.id) === null);
+        const available = active.filter((i) => priceAt(i, store.id) !== null);
+        const missing = active.filter((i) => priceAt(i, store.id) === null);
         const total = available.reduce((sum, i) => sum + priceAt(i, store.id)! * i.quantity, 0);
         return { store, total, available, missing };
       })
       .sort((a, b) => a.missing.length - b.missing.length || a.total - b.total);
 
     const usedStores = new Set(
-      items.map((i) => offers[i.productId]?.[0]?.storeId).filter(Boolean)
+      active.map((i) => offers[i.productId]?.[0]?.storeId).filter(Boolean)
     );
 
     return {
       rows,
       cheapestComplete: rows.find((r) => r.missing.length === 0) ?? null,
       usedStoreCount: usedStores.size,
-      unavailableCount: items.filter((i) => !offers[i.productId]?.length).length,
+      unavailableCount: active.filter((i) => !offers[i.productId]?.length).length,
     };
   }, [items, offers, stores]);
 

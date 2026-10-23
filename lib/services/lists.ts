@@ -127,6 +127,16 @@ export async function setItemQuantity(
   if (insertError) throw insertError;
 }
 
+// The owner ticks through the table; the shared link goes through set_shared_item_checked.
+export async function setItemChecked(listId: string, productId: string, checkedAt: string | null): Promise<void> {
+  const { error } = await createClient()
+    .from(SHOPPING_LIST_ITEMS_TABLE)
+    .update({ checked_at: checkedAt })
+    .eq("shopping_list_id", listId)
+    .eq("product_id", productId);
+  if (error) throw error;
+}
+
 export async function removeItem(listId: string, productId: string): Promise<void> {
   const supabase = createClient();
 

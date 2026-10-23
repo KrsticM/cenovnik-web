@@ -17,6 +17,7 @@ const headingVariants = cva("font-semibold text-ink", {
 interface HeadingProps extends React.HTMLAttributes<HTMLHeadingElement>, VariantProps<typeof headingVariants> {
   // A dialog passes its title component here, so the heading names the dialog.
   as?: React.ElementType
+  ref?: React.Ref<HTMLHeadingElement>
 }
 
 function Heading({ as: Tag = "h1", size, className, ...props }: HeadingProps) {

@@ -27,6 +27,7 @@ Defined in `app/globals.css`: raw values on `:root`, exposed to Tailwind as `--c
 | `sand` | #f1eee8 | tabs track, subtle hover fill |
 | `sand-dark` | #eae5db | hover of `sand` chips (Moji marketi) |
 | `paper-warm` | #fbfaf7 | shared-list row hover, "Kupljeno" section |
+| `oat` | #f6f4ef | no-photo placeholder, hover of bought rows |
 | `tile-muted` | #ecebe8 | initials tile of stores without the product |
 | `stone` | #c4bfb4 | middle logo bar, outline/dashed bars in state illustrations |
 | `bar-idle` | #e6e2da | inactive bars in state illustrations, offline banner border |
