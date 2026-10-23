@@ -13,7 +13,7 @@ export function Navbar() {
 
   return (
     <>
-      <header className="fixed left-0 right-0 top-0 z-40 border-b border-line bg-white/95 backdrop-blur-md">
+      <header className="fixed left-0 right-0 top-0 z-40 border-b border-line bg-white/95 backdrop-blur-md max-lg:[html[data-search-strip=on]_&]:border-transparent">
         <nav className="mx-auto flex h-[68px] w-full max-w-[1360px] items-center justify-between gap-5 px-4 sm:px-5 lg:px-8 2xl:max-w-[1720px] 2xl:px-12">
           <BrandLogo />
 
