@@ -22,12 +22,13 @@ import {
 } from "@/lib/services/lists";
 import { getUserStoreIds } from "@/lib/services/userStores";
 import { createClient } from "@/lib/supabase/client";
+import { isOwnEcho, tickAfterQuantity, type ListItemChange } from "@/lib/listTicks";
 
 export const UNDO_WINDOW_MS = 5000;
 const RELOAD_DEBOUNCE_MS = 200;
 
 // What a caller already knows about a product, so a newly added item renders right away.
-export type ItemDetails = Partial<Pick<ShoppingListItem, "productName" | "primaryBarcode" | "hasImage" | "price">>;
+export type ItemDetails = Partial<Pick<ShoppingListItem, "productName" | "primaryBarcode" | "hasImage" | "price" | "checkedAt">>;
 
 interface ShoppingListContextValue {
   list: ShoppingList | null;
@@ -136,11 +137,9 @@ function UserShoppingList({ children }: { children: React.ReactNode }) {
             },
             (payload) => {
               if (cancelled) return;
-              // Our own write echoing back; a tick from the shared link still differs and reloads.
               if (payload.eventType === "UPDATE") {
-                const row = payload.new as { id?: string; quantity?: number; checked_at?: string | null };
-                const shown = itemsRef.current.find((item) => item.id === row.id);
-                if (shown && shown.quantity === row.quantity && !shown.checkedAt === !row.checked_at) return;
+                const row = payload.new as ListItemChange;
+                if (isOwnEcho(itemsRef.current.find((item) => item.id === row.id), row)) return;
               }
               clearTimeout(reloadTimer);
               reloadTimer = setTimeout(() => {
@@ -210,9 +209,13 @@ function UserShoppingList({ children }: { children: React.ReactNode }) {
     if (!list) return;
     if (quantity <= 0) return removeItem(productId);
     const listId = list.id;
+    const existing = items.find((item) => item.productId === productId);
+    const checkedAt = tickAfterQuantity(existing, quantity, details.checkedAt);
     setItems((prev) =>
       prev.some((item) => item.productId === productId)
-        ? prev.map((item) => (item.productId === productId ? { ...item, quantity } : item))
+        ? prev.map((item) =>
+            item.productId === productId ? { ...item, quantity, ...(checkedAt === null && { checkedAt: null }) } : item
+          )
         : [
             ...prev,
             {
@@ -225,12 +228,12 @@ function UserShoppingList({ children }: { children: React.ReactNode }) {
               hasImage: details.hasImage ?? false,
               price: details.price ?? null,
               quantity,
-              checkedAt: null,
+              checkedAt: details.checkedAt ?? null,
               createdAt: new Date().toISOString(),
             },
           ]
     );
-    await save(listId, () => serviceSetQuantity(listId, productId, quantity), "Failed to update quantity");
+    await save(listId, () => serviceSetQuantity(listId, productId, quantity, checkedAt), "Failed to update quantity");
   };
 
   const undoRemove = async () => {

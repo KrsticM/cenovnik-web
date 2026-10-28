@@ -3,6 +3,7 @@
 import { useShoppingList } from "@/contexts/ShoppingListContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { splitBought } from "@/components/ListPanel/listProgress";
 import { cn } from "@/lib/utils";
 
 interface ListBadgeProps {
@@ -11,7 +12,9 @@ interface ListBadgeProps {
 }
 
 export function ListBadge({ landing, onClick }: ListBadgeProps) {
-  const { itemCount } = useShoppingList();
+  const { items } = useShoppingList();
+  // Counts what is still to buy, so a fully ticked list doesn't look full.
+  const itemCount = splitBought(items).active.length;
 
   return (
     <Button

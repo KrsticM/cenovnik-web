@@ -11,11 +11,10 @@ import { ClearListDialog } from "./ClearListDialog";
 import { ListCompare } from "./ListCompare";
 import { ListPanelFooter } from "./ListPanelFooter";
 import { ListPanelHeader } from "./ListPanelHeader";
-import { ListPanelRow } from "./ListPanelRow";
 import { ListPanelSkeleton } from "./ListPanelSkeleton";
 import { ShareListDialog } from "./ShareListDialog";
-import { BoughtItems } from "./BoughtItems";
-import { ALL_BOUGHT, itemsTotal, progressCaption, splitBought } from "./listProgress";
+import { itemsTotal, progressCaption, splitBought } from "./listProgress";
+import { ListItems } from "./ListItems";
 import { useListComparison } from "./useListComparison";
 
 interface ListPanelProps {
@@ -78,28 +77,13 @@ export function ListPanel({ open, onOpenChange }: ListPanelProps) {
 
             <TabsContent value="items" className="mt-0 min-h-0 flex-1">
               <ScrollArea className="h-full">
-                <div className="px-5 py-2">
-                  {active.map((item) => (
-                    <ListPanelRow
-                      key={item.id}
-                      item={item}
-                      onCheck={() => setChecked(item.productId, true)}
-                      onIncrement={() => setQuantity(item.productId, item.quantity + 1)}
-                      onDecrement={() => setQuantity(item.productId, item.quantity - 1)}
-                      onRemove={() => removeItem(item.productId)}
-                    />
-                  ))}
-                  {active.length === 0 && (
-                    <EmptyState
-                      size="md"
-                      title={`${ALL_BOUGHT}.`}
-                      description="Kupljeni artikli su ispod."
-                      className="px-2 py-8"
-                      titleClassName="font-semibold"
-                    />
-                  )}
-                  {bought.length > 0 && <BoughtItems items={bought} onUncheck={(productId) => setChecked(productId, false)} />}
-                </div>
+                <ListItems
+                  active={active}
+                  bought={bought}
+                  onCheck={setChecked}
+                  onQuantity={setQuantity}
+                  onRemove={removeItem}
+                />
               </ScrollArea>
             </TabsContent>
             <TabsContent value="compare" className="mt-0 min-h-0 flex-1">
@@ -109,7 +93,6 @@ export function ListPanel({ open, onOpenChange }: ListPanelProps) {
                     comparison={comparison}
                     loading={comparison.loading}
                     itemCount={active.length}
-                    boughtCount={bought.length}
                     listTotal={remainingTotal}
                   />
                 </div>

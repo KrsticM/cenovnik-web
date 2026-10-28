@@ -1,8 +1,6 @@
 import { articleCount } from "@/lib/formatPrice";
 import type { ShoppingListItem } from "@/types/shoppingList";
 
-export const ALL_BOUGHT = "Svi artikli sa liste su kupljeni";
-
 // Bought items leave the list and are shown newest first, like the shared list.
 export function splitBought(items: ShoppingListItem[]): { active: ShoppingListItem[]; bought: ShoppingListItem[] } {
   const active = items.filter((item) => !item.checkedAt);
@@ -13,7 +11,7 @@ export function splitBought(items: ShoppingListItem[]): { active: ShoppingListIt
 }
 
 export function progressCaption(count: number, remaining: number): string {
-  if (count > 0 && remaining === 0) return ALL_BOUGHT;
+  if (count > 0 && remaining === 0) return "Svi artikli sa liste su kupljeni";
   if (remaining < count) return `Preostalo za kupovinu · ${remaining} od ${count}`;
   return articleCount(count);
 }

@@ -33,11 +33,20 @@ export function AccountMenu() {
     .join("")
     .slice(0, 2);
 
+  const handleSettings = () => {
+    pickedRef.current = true;
+    openSettings(triggerRef.current);
+  };
+
+  const handleMyMarkets = () => {
+    pickedRef.current = true;
+    openMyMarkets(triggerRef.current);
+  };
+
   const handleSignOut = async () => {
     pickedRef.current = true;
     await signOutUser();
   };
-
 
   const changeOpen = (open: boolean) => {
     if (!open && !pickedRef.current) bounce();
@@ -71,15 +80,9 @@ export function AccountMenu() {
         </div>
 
         {/* Menu items */}
-        <DropdownMenuItem onSelect={() => {
-            pickedRef.current = true;
-            openSettings(triggerRef.current);
-          }}>Podešavanja</DropdownMenuItem>
+        <DropdownMenuItem onSelect={handleSettings}>Podešavanja</DropdownMenuItem>
 
-        <DropdownMenuItem onSelect={() => {
-            pickedRef.current = true;
-            openMyMarkets(triggerRef.current);
-          }}>Moji marketi</DropdownMenuItem>
+        <DropdownMenuItem onSelect={handleMyMarkets}>Moji marketi</DropdownMenuItem>
 
         <DropdownMenuItem onSelect={handleSignOut} className="text-ink-muted hover:text-rust focus:text-rust">
           Odjavi se

@@ -39,3 +39,23 @@ $$;
 
 revoke all on function public.set_shared_item_checked(uuid, uuid, boolean) from public;
 grant execute on function public.set_shared_item_checked(uuid, uuid, boolean) to anon, authenticated;
+
+-- The owner ticks with a plain UPDATE from the browser; stamp it with the server's clock too,
+-- so ticks from the owner list and from the shared link sort on one clock.
+create or replace function public.stamp_item_checked_at()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if new.checked_at is not null and old.checked_at is null then
+    new.checked_at := pg_catalog.now();
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists stamp_item_checked_at on public.shopping_list_items;
+create trigger stamp_item_checked_at
+  before update of checked_at on public.shopping_list_items
+  for each row execute function public.stamp_item_checked_at();

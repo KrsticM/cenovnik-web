@@ -1,3 +1,4 @@
+import type { Ref } from "react";
 import type { ShoppingListItem } from "@/types/shoppingList";
 import { QuantityStepper } from "@/components/QuantityStepper/QuantityStepper";
 import { Button } from "@/components/ui/button";
@@ -6,16 +7,17 @@ import { ProductThumb } from "@/components/ui/product-thumb";
 
 interface ListPanelRowProps {
   item: ShoppingListItem;
+  tickRef?: Ref<HTMLButtonElement>;
   onCheck: () => void;
   onIncrement: () => void;
   onDecrement: () => void;
   onRemove: () => void;
 }
 
-export function ListPanelRow({ item, onCheck, onIncrement, onDecrement, onRemove }: ListPanelRowProps) {
+export function ListPanelRow({ item, tickRef, onCheck, onIncrement, onDecrement, onRemove }: ListPanelRowProps) {
   return (
     <div className="grid grid-cols-[26px_56px_minmax(0,1fr)_auto] items-start gap-3.5 border-b border-line-soft py-4">
-      <TickBox checked={false} onCheckedChange={onCheck} aria-label={`Označi kao kupljeno: ${item.productName}`} className="-ml-[9px] mt-1.5" />
+      <TickBox ref={tickRef} checked={false} onCheckedChange={onCheck} aria-label={`Označi kao kupljeno: ${item.productName}`} className="-ml-[9px] mt-1.5" />
       <ProductThumb barcode={item.primaryBarcode} hasImage={item.hasImage} alt="" className="h-14 rounded-[10px]" />
 
       <div className="min-w-0">
