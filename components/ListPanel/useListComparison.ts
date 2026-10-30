@@ -2,20 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { fetchProductOffers, ProductOffer } from "@/lib/services/products";
 import type { Store } from "@/lib/services/stores";
 import { ShoppingListItem } from "@/types/shoppingList";
-
-export type StoreComparisonRow = {
-  store: Store;
-  total: number;
-  available: ShoppingListItem[];
-  missing: ShoppingListItem[];
-};
-
-export type ListComparison = {
-  rows: StoreComparisonRow[];
-  cheapestComplete: StoreComparisonRow | null;
-  usedStoreCount: number;
-  unavailableCount: number;
-};
+import { compareStores } from "./compareStores";
 
 export function useListComparison(
   items: ShoppingListItem[],
@@ -56,30 +43,8 @@ export function useListComparison(
   const { offers, stores } = data;
   const loading = enabled && productKey !== "" && data.key !== requestKey;
 
-  const comparison = useMemo<ListComparison>(() => {
-    const priceAt = (item: ShoppingListItem, storeId: string) =>
-      offers[item.productId]?.find((o) => o.storeId === storeId)?.price ?? null;
-
-    const rows = [...stores.values()]
-      .map((store) => {
-        const available = items.filter((i) => priceAt(i, store.id) !== null);
-        const missing = items.filter((i) => priceAt(i, store.id) === null);
-        const total = available.reduce((sum, i) => sum + priceAt(i, store.id)! * i.quantity, 0);
-        return { store, total, available, missing };
-      })
-      .sort((a, b) => a.missing.length - b.missing.length || a.total - b.total);
-
-    const usedStores = new Set(
-      items.map((i) => offers[i.productId]?.[0]?.storeId).filter(Boolean)
-    );
-
-    return {
-      rows,
-      cheapestComplete: rows.find((r) => r.missing.length === 0) ?? null,
-      usedStoreCount: usedStores.size,
-      unavailableCount: items.filter((i) => !offers[i.productId]?.length).length,
-    };
-  }, [items, offers, stores]);
+  // Offers are loaded for the whole list so a tick doesn't refetch.
+  const comparison = useMemo(() => compareStores(items, offers, stores), [items, offers, stores]);
 
   return { ...comparison, loading };
 }

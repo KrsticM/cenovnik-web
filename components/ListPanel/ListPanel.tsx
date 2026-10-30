@@ -11,9 +11,10 @@ import { ClearListDialog } from "./ClearListDialog";
 import { ListCompare } from "./ListCompare";
 import { ListPanelFooter } from "./ListPanelFooter";
 import { ListPanelHeader } from "./ListPanelHeader";
-import { ListPanelRow } from "./ListPanelRow";
 import { ListPanelSkeleton } from "./ListPanelSkeleton";
 import { ShareListDialog } from "./ShareListDialog";
+import { itemsTotal, progressCaption, splitBought } from "./listProgress";
+import { ListItems } from "./ListItems";
 import { useListComparison } from "./useListComparison";
 
 interface ListPanelProps {
@@ -29,13 +30,15 @@ const TABS: [Tab, string][] = [
 ];
 
 export function ListPanel({ open, onOpenChange }: ListPanelProps) {
-  const { list, items, total, storeIds, loading, clearList, setQuantity, removeItem, setSharing } =
+  const { list, items, storeIds, loading, clearList, setQuantity, setChecked, removeItem, setSharing } =
     useShoppingList();
   const [tab, setTab] = useState<Tab>("items");
   const [shareOpen, setShareOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const comparison = useListComparison(items, storeIds, open && tab === "compare");
 
+  const { active, bought } = splitBought(items);
+  const remainingTotal = itemsTotal(active);
   const hasItems = items.length > 0;
   const listName = list?.name ?? "Tvoja lista";
   const close = () => onOpenChange(false);
@@ -49,8 +52,8 @@ export function ListPanel({ open, onOpenChange }: ListPanelProps) {
           // The undo toast lives outside the sheet; using it must not dismiss the panel.
           if ((e.target as HTMLElement | null)?.closest("[data-removal-toast]")) e.preventDefault();
         }}
-        overlayClassName="bg-scrim-soft data-[state=open]:animate-[fadeIn_200ms_ease_both]"
-        className="w-full max-w-full data-[state=open]:animate-[panelIn_260ms_cubic-bezier(0.22,1,0.36,1)_both] border-0 bg-white p-0 shadow-panel sm:w-[420px] sm:max-w-full lg:w-[440px]"
+        overlayClassName="bg-scrim-soft data-[state=open]:animate-[fadeIn_280ms_ease_both] data-[state=closed]:animate-[fadeOut_280ms_ease_both]"
+        className="w-full max-w-full data-[state=open]:animate-[panelIn_280ms_cubic-bezier(0,0,0.2,1)_both] data-[state=closed]:animate-[panelOut_280ms_cubic-bezier(0.4,0,1,1)_both] border-0 bg-white p-0 shadow-panel sm:w-[420px] sm:max-w-full lg:w-[440px]"
       >
         <ListPanelHeader listName={listName} isPublic={!!list?.shareToken} onShare={() => setShareOpen(true)} />
 
@@ -74,23 +77,24 @@ export function ListPanel({ open, onOpenChange }: ListPanelProps) {
 
             <TabsContent value="items" className="mt-0 min-h-0 flex-1">
               <ScrollArea className="h-full">
-                <div className="px-5 py-2">
-                  {items.map((item) => (
-                    <ListPanelRow
-                      key={item.id}
-                      item={item}
-                      onIncrement={() => setQuantity(item.productId, item.quantity + 1)}
-                      onDecrement={() => setQuantity(item.productId, item.quantity - 1)}
-                      onRemove={() => removeItem(item.productId)}
-                    />
-                  ))}
-                </div>
+                <ListItems
+                  active={active}
+                  bought={bought}
+                  onCheck={setChecked}
+                  onQuantity={setQuantity}
+                  onRemove={removeItem}
+                />
               </ScrollArea>
             </TabsContent>
             <TabsContent value="compare" className="mt-0 min-h-0 flex-1">
               <ScrollArea className="h-full">
                 <div className="px-5 py-2">
-                  <ListCompare comparison={comparison} loading={comparison.loading} itemCount={items.length} listTotal={total} />
+                  <ListCompare
+                    comparison={comparison}
+                    loading={comparison.loading}
+                    itemCount={active.length}
+                    listTotal={remainingTotal}
+                  />
                 </div>
               </ScrollArea>
             </TabsContent>
@@ -112,8 +116,8 @@ export function ListPanel({ open, onOpenChange }: ListPanelProps) {
         )}
 
         <ListPanelFooter
-          itemCount={items.length}
-          total={total}
+          caption={progressCaption(items.length, active.length)}
+          total={tab === "compare" && active.length > 0 ? remainingTotal : null}
           onContinue={close}
           onClear={() => hasItems && setConfirmOpen(true)}
         />

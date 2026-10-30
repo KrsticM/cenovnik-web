@@ -15,18 +15,20 @@ import {
   fetchListItems,
   setItemQuantity as serviceSetQuantity,
   removeItem as serviceRemoveItem,
+  setItemChecked as serviceSetChecked,
   clearList as serviceClearList,
   setListShareToken,
   attachPrices,
 } from "@/lib/services/lists";
 import { getUserStoreIds } from "@/lib/services/userStores";
 import { createClient } from "@/lib/supabase/client";
+import { isOwnEcho, tickAfterQuantity, type ListItemChange } from "@/lib/listTicks";
 
 export const UNDO_WINDOW_MS = 5000;
 const RELOAD_DEBOUNCE_MS = 200;
 
 // What a caller already knows about a product, so a newly added item renders right away.
-export type ItemDetails = Partial<Pick<ShoppingListItem, "productName" | "primaryBarcode" | "hasImage" | "price">>;
+export type ItemDetails = Partial<Pick<ShoppingListItem, "productName" | "primaryBarcode" | "hasImage" | "price" | "checkedAt">>;
 
 interface ShoppingListContextValue {
   list: ShoppingList | null;
@@ -40,6 +42,7 @@ interface ShoppingListContextValue {
   // Quantity 0 removes the item. Changes show immediately and are saved in order.
   setQuantity: (productId: string, quantity: number, details?: ItemDetails) => Promise<void>;
   removeItem: (productId: string) => Promise<void>;
+  setChecked: (productId: string, checked: boolean) => Promise<void>;
   undoRemove: () => Promise<void>;
   clearList: () => Promise<void>;
   setSharing: (isPublic: boolean) => Promise<void>;
@@ -134,11 +137,9 @@ function UserShoppingList({ children }: { children: React.ReactNode }) {
             },
             (payload) => {
               if (cancelled) return;
-              // Same quantity = only a shared-list tick, which the owner list doesn't show.
               if (payload.eventType === "UPDATE") {
-                const row = payload.new as { id?: string; quantity?: number };
-                const shown = itemsRef.current.find((item) => item.id === row.id);
-                if (shown && shown.quantity === row.quantity) return;
+                const row = payload.new as ListItemChange;
+                if (isOwnEcho(itemsRef.current.find((item) => item.id === row.id), row)) return;
               }
               clearTimeout(reloadTimer);
               reloadTimer = setTimeout(() => {
@@ -196,13 +197,25 @@ function UserShoppingList({ children }: { children: React.ReactNode }) {
     await save(list.id, () => serviceRemoveItem(list.id, productId), "Failed to remove item");
   };
 
+  const setChecked = async (productId: string, checked: boolean) => {
+    if (!list) return;
+    const listId = list.id;
+    const checkedAt = checked ? new Date().toISOString() : null;
+    setItems((prev) => prev.map((item) => (item.productId === productId ? { ...item, checkedAt } : item)));
+    await save(listId, () => serviceSetChecked(listId, productId, checkedAt), "Failed to update item");
+  };
+
   const setQuantity = async (productId: string, quantity: number, details: ItemDetails = {}) => {
     if (!list) return;
     if (quantity <= 0) return removeItem(productId);
     const listId = list.id;
+    const existing = items.find((item) => item.productId === productId);
+    const checkedAt = tickAfterQuantity(existing, quantity, details.checkedAt);
     setItems((prev) =>
       prev.some((item) => item.productId === productId)
-        ? prev.map((item) => (item.productId === productId ? { ...item, quantity } : item))
+        ? prev.map((item) =>
+            item.productId === productId ? { ...item, quantity, ...(checkedAt === null && { checkedAt: null }) } : item
+          )
         : [
             ...prev,
             {
@@ -215,12 +228,12 @@ function UserShoppingList({ children }: { children: React.ReactNode }) {
               hasImage: details.hasImage ?? false,
               price: details.price ?? null,
               quantity,
-              checkedAt: null,
+              checkedAt: details.checkedAt ?? null,
               createdAt: new Date().toISOString(),
             },
           ]
     );
-    await save(listId, () => serviceSetQuantity(listId, productId, quantity), "Failed to update quantity");
+    await save(listId, () => serviceSetQuantity(listId, productId, quantity, checkedAt), "Failed to update quantity");
   };
 
   const undoRemove = async () => {
@@ -267,6 +280,7 @@ function UserShoppingList({ children }: { children: React.ReactNode }) {
         lastRemoved,
         setQuantity,
         removeItem,
+        setChecked,
         undoRemove,
         clearList,
         setSharing,

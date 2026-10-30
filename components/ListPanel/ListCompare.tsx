@@ -4,23 +4,36 @@ import { articles, formatPrice, plural } from "@/lib/formatPrice";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Chevron } from "@/components/ui/chevron";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Price } from "@/components/ui/price";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StoreCard } from "@/components/StoreCard/StoreCard";
-import { ListComparison, StoreComparisonRow } from "./useListComparison";
+import type { ListComparison, StoreComparisonRow } from "./compareStores";
 
 interface ListCompareProps {
   comparison: ListComparison;
   loading: boolean;
+  // Items still to buy; ticked ones are left out of every price here.
   itemCount: number;
   listTotal: number;
 }
 
 export function ListCompare({ comparison, loading, itemCount, listTotal }: ListCompareProps) {
   const { rows, cheapestComplete, usedStoreCount, unavailableCount } = comparison;
+
+  if (itemCount === 0) {
+    return (
+      <EmptyState
+        size="md"
+        title="Nema preostalih artikala za poređenje."
+        className="px-2 py-8"
+        titleClassName="font-semibold"
+      />
+    );
+  }
 
   if (loading && rows.length === 0) {
     return (

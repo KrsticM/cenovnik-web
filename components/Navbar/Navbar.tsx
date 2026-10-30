@@ -6,10 +6,17 @@ import { BrandLogo } from "./BrandLogo";
 import { ListBadge } from "./ListBadge";
 import { AccountMenu } from "./AccountMenu";
 import { ListPanel } from "@/components/ListPanel/ListPanel";
+import { useLandBounce } from "@/hooks/useLandBounce";
 
 export function Navbar() {
   const { user } = useAuth();
   const [listPanelOpen, setListPanelOpen] = useState(false);
+  const { landing, bounce } = useLandBounce();
+
+  const changeListPanel = (open: boolean) => {
+    setListPanelOpen(open);
+    if (!open) bounce();
+  };
 
   return (
     <>
@@ -19,7 +26,7 @@ export function Navbar() {
 
           {user && (
             <div className="flex shrink-0 items-center gap-2.5">
-              <ListBadge onClick={() => setListPanelOpen(true)} />
+              <ListBadge landing={landing} onClick={() => setListPanelOpen(true)} />
               <AccountMenu />
             </div>
           )}
@@ -27,7 +34,7 @@ export function Navbar() {
       </header>
 
       {user && (
-        <ListPanel open={listPanelOpen} onOpenChange={setListPanelOpen} />
+        <ListPanel open={listPanelOpen} onOpenChange={changeListPanel} />
       )}
     </>
   );

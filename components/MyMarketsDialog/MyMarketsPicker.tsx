@@ -60,11 +60,10 @@ export function MyMarketsPicker({ signOut, dismissable, onOpenSettings }: MyMark
       />
       <PremiumSaveDialog
         open={asking}
-        canSkip={dismissable}
+        dismissable={dismissable}
         saving={picker.saving}
         failed={picker.saveFailed}
         onSave={saveAndGoToSettings}
-        onSkip={goToSettings}
         onStay={() => setAsking(false)}
         onRestoreFocus={() => upgradeTrigger.current?.focus()}
       />

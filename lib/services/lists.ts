@@ -99,16 +99,19 @@ export async function fetchListItems(listId: string): Promise<ShoppingListItem[]
 
 // Sets a product's quantity on a list, adding it if missing. Updating in place keeps the row's
 // created_at, so the list order doesn't jump when a quantity changes.
+// checkedAt: undefined leaves the tick alone, null puts the item back on the list.
 export async function setItemQuantity(
   listId: string,
   productId: string,
-  quantity: number
+  quantity: number,
+  checkedAt?: string | null
 ): Promise<void> {
   const supabase = createClient();
+  const tick = checkedAt === undefined ? {} : { checked_at: checkedAt };
 
   const { data, error } = await supabase
     .from(SHOPPING_LIST_ITEMS_TABLE)
-    .update({ quantity })
+    .update({ quantity, ...tick })
     .eq("shopping_list_id", listId)
     .eq("product_id", productId)
     .select("id");
@@ -120,11 +123,22 @@ export async function setItemQuantity(
       shopping_list_id: listId,
       product_id: productId,
       quantity,
+      ...tick,
       created_at: new Date().toISOString(),
     },
     { onConflict: "shopping_list_id,product_id" }
   );
   if (insertError) throw insertError;
+}
+
+// The owner ticks through the table; the shared link goes through set_shared_item_checked.
+export async function setItemChecked(listId: string, productId: string, checkedAt: string | null): Promise<void> {
+  const { error } = await createClient()
+    .from(SHOPPING_LIST_ITEMS_TABLE)
+    .update({ checked_at: checkedAt })
+    .eq("shopping_list_id", listId)
+    .eq("product_id", productId);
+  if (error) throw error;
 }
 
 export async function removeItem(listId: string, productId: string): Promise<void> {
