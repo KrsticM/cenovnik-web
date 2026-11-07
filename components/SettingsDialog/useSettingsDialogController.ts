@@ -36,10 +36,10 @@ export function useSettingsDialogController({ suppressed }: ControllerOptions) {
   }, [value, flow.deleting, open]);
 
   const openDialog = useCallback(
-    (trigger?: HTMLElement | null) => {
+    (trigger?: HTMLElement | null, section = "1") => {
       reset();
       setNow(Date.now());
-      open("1", trigger);
+      open(section, trigger);
     },
     [open, reset]
   );

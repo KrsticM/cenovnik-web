@@ -1,6 +1,9 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { AD_SLOTS, detailAdSize } from "@/lib/ads";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { AdSenseAd } from "@/components/AdSense/AdSenseAd";
 import type { Product } from "@/types/product";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ProductThumb } from "@/components/ui/product-thumb";
@@ -15,12 +18,21 @@ interface ProductDetailDialogProps {
   known: Product | null;
   onClose: () => void;
   onRestoreFocus: () => void;
+  showAds: boolean;
 }
 
-export function ProductDetailDialog({ productId, known, onClose, onRestoreFocus }: ProductDetailDialogProps) {
+function DetailAd({ className }: { className?: string }) {
+  const phone = !useMediaQuery("(min-width: 640px)");
+  return <AdSenseAd slot={AD_SLOTS.detail} size={detailAdSize(phone)} className={className} />;
+}
+
+export function ProductDetailDialog({ productId, known, onClose, onRestoreFocus, showAds }: ProductDetailDialogProps) {
   const { product, offers, favouriteCount } = useProductDetail(productId, known);
   const { stuck, onScroll, reset } = useStickyShrink();
+  const desktop = useMediaQuery("(min-width: 1024px)");
   const cheapestPrice = offers.status === "ready" ? (offers.cheapestPrice ?? undefined) : undefined;
+  const showAd = showAds && offers.status === "ready" && offers.groups.length > 0;
+  const adInColumn = showAd && desktop;
 
   return (
     <Dialog
@@ -50,7 +62,13 @@ export function ProductDetailDialog({ productId, known, onClose, onRestoreFocus 
         <div onScroll={onScroll} className="flex-1 overflow-y-auto">
           <div className="grid items-start gap-5 px-4 pb-10 pt-4 sm:px-7 sm:pb-8 sm:pt-7 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)] lg:gap-8">
             {/* Two columns only from lg: narrower modals stack like the phone, or the price column gets squeezed. */}
-            <div className="lg:sticky lg:top-7">
+            <div
+              className={cn(
+                "lg:top-7",
+                // With the ad under it, the photo only sticks where both still fit on screen.
+                adInColumn ? "[@media(min-width:1024px)_and_(min-height:820px)]:sticky" : "lg:sticky"
+              )}
+            >
               <ProductThumb
                 barcode={product?.barcodes[0]}
                 hasImage={product?.hasImage ?? false}
@@ -60,6 +78,7 @@ export function ProductDetailDialog({ productId, known, onClose, onRestoreFocus 
                 imgClassName="p-6"
                 missingNote={product ? "lg" : undefined}
               />
+              {adInColumn && <DetailAd className="mx-auto mt-6" />}
             </div>
 
             <div className="min-w-0">
@@ -71,6 +90,8 @@ export function ProductDetailDialog({ productId, known, onClose, onRestoreFocus 
               />
               <StoreOffers state={offers} />
             </div>
+
+            {showAd && !desktop && <DetailAd className="mx-auto pt-1" />}
           </div>
         </div>
       </DialogContent>

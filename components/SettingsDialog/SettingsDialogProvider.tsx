@@ -8,7 +8,7 @@ import { BackHeader } from "./SettingsHeader";
 import { useSettingsDialogController } from "./useSettingsDialogController";
 
 interface SettingsDialogApi {
-  open: (trigger?: HTMLElement | null) => void;
+  open: (trigger?: HTMLElement | null, section?: string) => void;
   openInPlace: (trigger: HTMLElement | null, value: string, replacing: string) => void;
 }
 
