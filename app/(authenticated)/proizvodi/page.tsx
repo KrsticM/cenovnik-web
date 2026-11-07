@@ -2,6 +2,10 @@
 
 import { Suspense, useRef, useState } from "react";
 import { OpenMyMarketsButton } from "@/components/MyMarketsDialog/OpenMyMarketsButton";
+import { AdSenseScript } from "@/components/AdSense/AdSenseScript";
+import { useSettingsDialog } from "@/components/SettingsDialog/SettingsDialogProvider";
+import { SETTINGS_ON_SUBSCRIPTION } from "@/components/SettingsDialog/settings";
+import { useShowAds } from "@/hooks/useShowAds";
 import { useFavouriteStores } from "@/contexts/ShoppingListContext";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
@@ -28,6 +32,8 @@ import { catalogHeading, catalogSubtitle, countLabel } from "./catalogLabels";
 function ProizvodiContent() {
   const { storeIds, ready: storesReady } = useFavouriteStores();
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const showAds = useShowAds();
+  const settings = useSettingsDialog();
 
   const bandRef = useRef<HTMLElement>(null);
   const bandFieldRef = useRef<HTMLDivElement>(null);
@@ -199,6 +205,8 @@ function ProizvodiContent() {
               endLabel={live ? "To je sve za ovu pretragu." : "To je sve za sada."}
               onReset={resetAll}
               onOpenProduct={detail.open}
+              showAds={showAds}
+              onPremium={(trigger) => settings.open(trigger, SETTINGS_ON_SUBSCRIPTION)}
             />
           </>
         )}
@@ -218,7 +226,10 @@ function ProizvodiContent() {
         known={detail.knownProduct}
         onClose={detail.close}
         onRestoreFocus={detail.restoreFocus}
+        showAds={showAds}
       />
+
+      {showAds && <AdSenseScript />}
     </>
   );
 }
